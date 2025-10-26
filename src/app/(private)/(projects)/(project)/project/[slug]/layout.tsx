@@ -9,8 +9,12 @@ export default async function ProjectSlugLayout({
   params,
 }: {
   children: ReactNode;
-  params: { slug: string };
+  // ← Promise<{ slug: string }> に変更
+  params: Promise<{ slug: string }>;
 }) {
+  // ← 追加：params の await
+  const { slug } = await params;
+
   const supabase = await createClient();
 
   // 認証チェック（必要なければ外してOK）
@@ -21,7 +25,7 @@ export default async function ProjectSlugLayout({
   const { data: proj, error } = await supabase
     .from("projects")
     .select("name")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("user_id", auth.user.id)
     .single();
 
