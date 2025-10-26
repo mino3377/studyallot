@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(auth)\login\actions.ts
+
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -11,7 +13,10 @@ export async function login() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'http://localhost:3000//auth/callback',
+      // 環境に応じてベースURLを切り替える（本番/プレビュー/ローカル対応）
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL
+        ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+        }/auth/callback`,
     },
   })
 

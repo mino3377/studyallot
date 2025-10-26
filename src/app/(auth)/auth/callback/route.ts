@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(auth)\auth\callback\route.ts
+
 import { NextResponse } from 'next/server'
 // The client you created from the Server-Side Auth instructions
 import { createClient } from '@/utils/supabase/server'

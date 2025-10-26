@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\(materials)\(material)\material\[id]\layout.tsx
+
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
