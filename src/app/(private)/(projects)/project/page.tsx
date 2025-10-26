@@ -146,7 +146,7 @@ export default async function ProjectPage() {
   const materialIds = materials.map(m => m.id)
 
   // 3) プラン（is_active 優先→なければ最新）
-  let chosenPlanByMaterial = new Map<number, PlanRow | undefined>()
+  const chosenPlanByMaterial = new Map<number, PlanRow | undefined>()
   if (materialIds.length > 0) {
     const { data: planRows } = await supabase
       .from("plans")
@@ -164,7 +164,7 @@ export default async function ProjectPage() {
   }
 
   // 4) セクション（各教材）
-  let sectionsByMaterial = new Map<number, SectionRow[]>()
+  const sectionsByMaterial = new Map<number, SectionRow[]>()
   const sectionToMaterial = new Map<number, number>()
   if (materialIds.length > 0) {
     const { data: secRows } = await supabase

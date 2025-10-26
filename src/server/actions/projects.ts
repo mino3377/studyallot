@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\server\actions\projects.ts
+
 "use server"
 
 import { redirect } from "next/navigation"
@@ -31,7 +33,17 @@ export async function createProject(fd: FormData) {
   let slug = slugify(name)
   if (!slug) slug = `p-${Date.now()}`
 
-  const payload: Record<string, any> = {
+  type ProjectInsert = {
+    user_id: string
+    name: string
+    slug: string
+    category?: string | null
+    goal?: string | null
+    notes?: string | null
+    weekly_hours?: number | null
+  }
+
+  const payload: ProjectInsert = {
     user_id: user.id,
     name,
     slug,
@@ -40,6 +52,7 @@ export async function createProject(fd: FormData) {
     notes: notes || null,
     weekly_hours: weeklyHours ?? null,
   }
+
 
   const { error } = await supabase
     .from("projects")

@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\components\menu-sidebar-client.tsx
+
 "use client";
 
 import { BookOpen, CalendarClock, CirclePlus, FolderOpenDot, LayoutDashboard, Sparkle } from "lucide-react";
@@ -7,11 +9,30 @@ import MenuLinkButton from "./menu-link-button";
 import { Button } from "./ui/button";
 import { logout } from "@/app/(auth)/login/actions";
 
-export default function MenuSidebarClient({ user }: { user: any }) {
-    const meta = user?.user_metadata ?? {};
+type Meta = { avatar_url?: string | null; full_name?: string | null; name?: string | null };
+
+function extractMeta(u: unknown): Meta {
+    if (typeof u === "object" && u !== null && "user_metadata" in u) {
+        const um = (u as { user_metadata?: unknown }).user_metadata;
+        if (typeof um === "object" && um !== null) {
+            const rec = um as Record<string, unknown>;
+            return {
+                avatar_url: typeof rec.avatar_url === "string" ? rec.avatar_url : null,
+                full_name: typeof rec.full_name === "string" ? rec.full_name : undefined,
+                name: typeof rec.name === "string" ? rec.name : undefined,
+            };
+        }
+    }
+    return {};
+}
+
+
+export default function MenuSidebarClient({ user }: { user: unknown }) {
+    const meta = extractMeta(user);
     const avatarUrl = meta.avatar_url ?? null;
     const fullName = meta.full_name ?? meta.name ?? "Guest";
     const initials = (Array.from(fullName).slice(0, 2).join("") || "?").toUpperCase();
+
 
     return (
         <aside
@@ -67,7 +88,7 @@ export default function MenuSidebarClient({ user }: { user: any }) {
                         </MenuLinkButton>
                         <MenuLinkButton href="/material">
                             <div className="flex items-center gap-2">
-                                <BookOpen className="size-5" aria-hidden/>
+                                <BookOpen className="size-5" aria-hidden />
                                 <span>マテリアル</span>
                             </div>
                         </MenuLinkButton>

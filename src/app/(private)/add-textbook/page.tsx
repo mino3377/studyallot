@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/server"
 import { CreateMaterialPayload } from "@/lib/validators/material"
 import { assertNoOverlap, normalizeActive } from "@/lib/materials/plans"
 
-export async function createMaterial(input: any): Promise<void> {
+export async function createMaterial(input: unknown): Promise<void> {
   const parsed = CreateMaterialPayload.safeParse(input)
   if (!parsed.success) {
     console.error("[Zod] issues:", parsed.error.flatten())

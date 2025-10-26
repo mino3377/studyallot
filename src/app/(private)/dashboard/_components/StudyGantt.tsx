@@ -1,3 +1,5 @@
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\dashboard\_components\StudyGantt.tsx
+
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -21,7 +23,12 @@ export default function StudyGantt({
   viewMode?: 'Day' | 'Week' | 'Month';
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const ganttRef = useRef<any>(null);
+
+  // ↓ any を廃止
+  interface FrappeGanttInstance {
+    refresh(tasks: Task[]): void;
+  }
+  const ganttRef = useRef<FrappeGanttInstance | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -29,7 +36,18 @@ export default function StudyGantt({
     // 既存を消してから再生成（簡易リフレッシュ）
     containerRef.current.innerHTML = '';
 
-    const gantt: any = new (Gantt as any)(containerRef.current, tasks, {
+    // ↓ any を廃止
+    const GanttCtor = Gantt as unknown as new (
+      el: Element,
+      tasks: Task[],
+      opts: {
+        view_mode: 'Day' | 'Week' | 'Month';
+        language?: string;
+        custom_popup_html?: ((task: Task) => string) | null;
+      }
+    ) => FrappeGanttInstance;
+
+    const gantt = new GanttCtor(containerRef.current, tasks, {
       view_mode: viewMode,
       language: 'en', // 必要なら 'ja'
       custom_popup_html: null,

@@ -195,8 +195,9 @@ export default function AddTextbookClient({ action, projects }: AddTextBookProps
     startTransition(async () => {
       try {
         await action(payload);
-      } catch (err: any) {
-        alert(err?.message || "作成に失敗しました。入力内容をご確認ください。");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "作成に失敗しました。入力内容をご確認ください。"
+        alert(msg)
       }
     });
   }

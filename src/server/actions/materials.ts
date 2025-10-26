@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\server\actions\materials.ts
+
 "use server"
 
 import { redirect } from "next/navigation"
@@ -5,7 +7,8 @@ import { createClient } from "@/utils/supabase/server"
 import { CreateMaterialPayload } from "@/lib/validators/material"
 import { assertNoOverlap, normalizeActive } from "@/lib/materials/plans"
 
-export async function createMaterial(input: any) {
+export async function createMaterial(input: unknown) {
+
   const parsed = CreateMaterialPayload.safeParse(input)
   if (!parsed.success) {
     console.error("[Zod] issues:", parsed.error.flatten())

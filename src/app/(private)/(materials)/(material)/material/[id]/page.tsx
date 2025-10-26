@@ -175,7 +175,7 @@ export default async function MaterialDetailPage({
   const realSectionIds = sections.filter(s => s.id > 0).map(s => s.id)
 
   // 各 section_id×rap_no の「最新の recorded_on」
-  let initialRecords: Record<string, string> = {}
+  const initialRecords: Record<string, string> = {}
   if (realSectionIds.length > 0) {
     const { data: recs } = await supabase
       .from("section_records")

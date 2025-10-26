@@ -57,7 +57,7 @@ export default function BasicInfoCard({
           {/* 種別 */}
           <div className="space-y-2">
             <Label htmlFor="type">種別</Label>
-            <Select value={typeValue} onValueChange={(v) => onChangeType(v as any)}>
+            <Select value={typeValue} onValueChange={(v) => onChangeType(v as MaterialInfoProps["typeValue"])}>
               <SelectTrigger id="type">
                 <SelectValue placeholder="選択" />
               </SelectTrigger>

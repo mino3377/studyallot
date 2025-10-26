@@ -190,8 +190,9 @@ export default function DailyTasksClient({
           }
         }
       }
-    } catch (e: any) {
-      setSaveMsg(e?.message ?? "保存時にエラーが発生しました。");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "保存時にエラーが発生しました。"
+      setSaveMsg(msg);
     } finally {
       setSaving(false);
       setTimeout(() => setSaveMsg(null), 2500);

@@ -1,7 +1,7 @@
 import { BookOpen, CalendarClock, FolderOpenDot, LayoutDashboard, Sparkle } from 'lucide-react'
 import React from 'react'
 
-export default function SubHeaderIcon({title}:{title:String}) {
+export default function SubHeaderIcon({title}:{title:string}) {
   
     if(title==="ダッシュボード"){
      return   <LayoutDashboard className="size-5" aria-hidden />

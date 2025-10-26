@@ -33,6 +33,24 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
+type SourceType = "book" | "video" | "paper" | "web" | "other"
+
+type MaterialRow = {
+  id: number
+  title: string
+  source_type: SourceType
+}
+
+type PlanRow = {
+  material_id: number
+  total_units: number | null
+  rounds: number | null
+  start_date: string | null
+  end_date: string | null
+  is_active: boolean | null
+}
+
+
 function fmtDateYYYYMMDDSlash(d?: string | null) {
   if (!d) return ""
   return d.slice(0, 10).replaceAll("-", "/")
@@ -111,7 +129,7 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
   const materialIds = materials.map(m => m.id)
 
   // 3) プラン（is_active 優先 → なければ最新）
-  let latestPlanByMaterial = new Map<number, {
+  const latestPlanByMaterial = new Map<number, {
     total_units: number | null
     rounds: number | null
     start_date: string | null
@@ -126,8 +144,8 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: false })
 
-    const groups = new Map<number, any[]>()
-    for (const p of planRows ?? []) {
+    const groups = new Map<number, PlanRow[]>()
+    for (const p of (planRows ?? []) as PlanRow[]) {
       const arr = groups.get(p.material_id) ?? []
       arr.push(p)
       groups.set(p.material_id, arr)
@@ -197,7 +215,7 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
   let projectPlannedCellsUntilToday = 0
   let projectActualCellsUntilToday = 0
 
-  const materialsVM: VM[] = materials.map((m: any) => {
+  const materialsVM: VM[] = (materials as MaterialRow[]).map((m) => {
     const p = latestPlanByMaterial.get(m.id) ?? undefined
     const rounds = Math.max(1, Number(p?.rounds ?? 1))
     const sections = sectionByMaterial.get(m.id) ?? []

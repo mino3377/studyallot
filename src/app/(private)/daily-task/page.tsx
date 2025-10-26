@@ -156,8 +156,9 @@ export default async function DailyTaskPage() {
       }
 
       return { ok: true };
-    } catch (e: any) {
-      return { ok: false, message: e?.message ?? "save error" };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "save error"
+      return { ok: false, message: msg }
     }
   }
 

@@ -60,10 +60,30 @@ export type MaterialInfoProps = {
   onChangeLink: (v: string) => void;
 };
 
+// ✅ サーバーへ送信するデータ型（UIイベントは含めない）
+export type CreateMaterialInput = {
+  title: string;
+  source_type: "book" | "video" | "paper" | "web" | "other";
+  author: string | null;
+  link: string | null;
+  notes: string | null;
+  total_units: number;
+  project_id: string;
+  section_titles: string[];
+  plans: {
+    name: string;
+    start_date: string;
+    end_date: string;
+    rounds: number;
+    is_active: boolean;
+  }[];
+};
+
 export type AddTextBookProps = {
-  action: (payload: any) => Promise<void>;
+  action: (input: CreateMaterialInput) => Promise<void>;
   projects: ProjectOption[];
 };
+
 
 // ---------- 編集用（単一プランUI） ----------
 export type SinglePlanProps = {
@@ -91,3 +111,5 @@ export type SectionsEditorProps = {
   onBulkDelete?: (indices: number[]) => void;
   max?: number; // default 200
 };
+
+

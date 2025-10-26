@@ -4,13 +4,19 @@ import { redirect, notFound } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import EditProjectForm from "./edit-project-form"
 import { updateProject } from "@/server/actions/projects"
+import { PURPOSE_LABEL, type Purpose } from "@/lib/type/project"
+
+const PURPOSES = Object.keys(PURPOSE_LABEL) as Purpose[]
+const toPurpose = (x: unknown): Purpose =>
+  PURPOSES.includes(x as Purpose) ? (x as Purpose) : "other"
+
 
 export default async function EditProjectPage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: { slug: string }
 }) {
-  const { slug } = await params
+  const { slug } = params
 
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
@@ -41,7 +47,7 @@ export default async function EditProjectPage({
         initial={{
           slug: project.slug,
           name: project.name ?? "",
-          purpose: (project.category as any) ?? "other",
+          purpose: toPurpose(project.category),
           goal: project.goal ?? "",
           notes: project.notes ?? "",
           weeklyHours: (project.weekly_hours ?? "").toString(),

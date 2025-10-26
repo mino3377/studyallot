@@ -43,7 +43,7 @@ export default async function EditMaterialPage({ params }: { params: { id: strin
   const projects = (projectRows ?? []).map(p => ({ id: String(p.id), name: p.name }))
 
   // 更新アクション（IDベースの差分更新を含む完全版）
-  async function updateMaterialAction(input: any) {
+  async function updateMaterialAction(input: unknown) {
     "use server"
 
     const supa = await createClient()
@@ -56,12 +56,17 @@ export default async function EditMaterialPage({ params }: { params: { id: strin
     }
 
     // ★ バリデータ外で section_ids を受け取る（任意）
-    const incomingSectionIds: number[] | null =
-      Array.isArray((input as any)?.section_ids)
-        ? (input as any).section_ids
-            .map((x: any) => Number(x))
-            .filter((x: number) => Number.isInteger(x) && x >= 0) // 0 は「新規」を許容
-        : null
+    const rawSectionIds = (input as { section_ids?: unknown })?.section_ids
+    const incomingSectionIds: number[] | null = Array.isArray(rawSectionIds)
+      ? rawSectionIds
+        .map((x): number => {
+          if (typeof x === "number") return x
+          if (typeof x === "string") return Number(x)
+          return NaN
+        })
+        .filter((n) => Number.isInteger(n) && n >= 0)
+      : null
+
 
     const {
       title, source_type, author, link, notes,
@@ -223,7 +228,6 @@ export default async function EditMaterialPage({ params }: { params: { id: strin
         total_units: Number(plan?.total_units ?? 0),
         rounds: Number(plan?.rounds ?? 1),
         section_titles: sectionTitles,
-        // ★ 追加
         section_ids: sectionIds,
       }}
     />

@@ -1,8 +1,11 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\(projects)\project\actions.ts
+
 'use server'
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
+import { PostgrestError } from '@supabase/supabase-js'
 
 // 簡易スラグ化（英数・ハイフンのみ。重複は呼び出し側でメッセージ返す）
 function slugify(input: string) {
@@ -15,6 +18,19 @@ function slugify(input: string) {
     .replace(/[\s_-]+/g, '-')              // 連続空白/アンダー/ハイフン→ハイフン
     .replace(/^-+|-+$/g, '')               // 先頭末尾のハイフン除去
 }
+
+type ProjectInsert = {
+  user_id: string
+  name: string
+  slug: string
+  category?: string | null
+  goal?: string | null
+  notes?: string | null
+  weekly_hours?: number | null
+}
+
+
+
 
 export async function createProject(formData: FormData) {
   const supabase = await createClient()
@@ -42,14 +58,14 @@ export async function createProject(formData: FormData) {
   if (!slug) slug = `p-${Date.now()}`
 
   // categoryにpurposeをそのまま入れる（DBにcategory列が無ければこのフィールドは外してください）
-  const payload: Record<string, any> = {
+  const payload: ProjectInsert = {
     user_id: user.id,
     name,
     slug,
-    category: purpose,        // 例: 'language' | 'exam' ...
-    goal: goal || null,       // DBに列が無ければ削除
-    notes: notes || null,     // 同上
-    weekly_hours: weekly_hours || null, // 同上
+    category: purpose,
+    goal: goal || null,
+    notes: notes || null,
+    weekly_hours: weekly_hours || null,
   }
 
   // INSERT
@@ -59,10 +75,13 @@ export async function createProject(formData: FormData) {
     .select('slug')   // 作成後のslugを確認
     .single()
 
+  const isUniqueViolation = (e: unknown): e is PostgrestError =>
+    typeof e === "object" && e !== null && "code" in e
+
   if (error) {
     // 一意制約違反（slugユニーク）: Postgresエラーコード 23505
-    if ((error as any).code === '23505') {
-      return { ok: false, message: '同じslug（URL用識別子）が既に存在します。名前を少し変えてください。' }
+    if (isUniqueViolation(error) && error.code === "23505") {
+      return { ok: false, message: "同じslug（URL用識別子）が既に存在します。名前を少し変えてください。" }
     }
     return { ok: false, message: `作成に失敗しました: ${error.message}` }
   }

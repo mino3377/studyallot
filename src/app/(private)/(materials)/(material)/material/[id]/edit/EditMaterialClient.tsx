@@ -26,16 +26,17 @@ type Initial = {
   total_units: number;
   rounds: number;
   section_titles: string[];
-  // ★ 追加：サーバから受け取る既存セクションの ID 群（順序は titles と同じ）
   section_ids: number[];
 };
+
+type ActionInput = Omit<Initial, "id">
 
 export default function EditMaterialClient({
   action,
   projects,
   initial,
 }: {
-  action: (input: any) => Promise<void>;
+  action: (input: ActionInput) => Promise<void>;
   projects: ProjectOption[];
   initial: Initial;
 }) {
@@ -133,21 +134,20 @@ export default function EditMaterialClient({
   const todayISO = new Date().toISOString().slice(0, 10);
 
   function handleSubmit() {
-    const payload = {
+    const payload: ActionInput = {
       title,
       source_type: typeValue,
-      author: author || null,
-      link: link || null,
-      notes: notes || null,
+      author: author,
+      link: link,
+      notes: notes,
       start_date: fromDate,
       end_date: toDate,
       total_units: typeof totalUnits === "number" ? totalUnits : 0,
-      rounds: typeof lapsTotal === "number" ? lapsTotal : 1, // ★ lapsTotal を使用
+      rounds: typeof lapsTotal === "number" ? lapsTotal : 1,
       project_id: projectId,
       section_titles: sectionTitles,
-      // ★ サーバへ現在順序の ID を渡す（0は新規として扱われる想定）
       section_ids: sectionIds,
-    };
+    }
     startTransition(async () => {
       await action(payload);
     });

@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\components\material-check-table.tsx
+
 "use client"
 
 import * as React from "react"
@@ -146,8 +148,9 @@ export default function MaterialCheckTable({
       setUnsavedChecked(new Set())
       setSavedBlink(true)
       setTimeout(() => setSavedBlink(false), 1200)
-    } catch (e: any) {
-      alert(e?.message ?? "保存に失敗しました。時間をおいて再実行してください。")
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "保存に失敗しました。時間をおいて再実行してください。"
+      alert(msg)
     } finally {
       setSaving(false)
     }

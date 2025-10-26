@@ -36,7 +36,7 @@ export default function SectionsEditor({
   }
 
   // 番号入力は確定（Enter/Blur）でのみリオーダー
-  const [orderInputs, setOrderInputs] = useState<number[]>([]);
+  const [orderInputs, setOrderInputs] = useState<Array<number | "">>([]);
   useEffect(() => {
     setOrderInputs(Array.from({ length: unitCount }, (_, i) => i + 1));
   }, [unitCount, sectionTitles]);
@@ -44,10 +44,11 @@ export default function SectionsEditor({
   function setOrderInput(i: number, v: number | "") {
     setOrderInputs((prev) => {
       const next = [...prev];
-      next[i] = v === "" ? ("" as unknown as number) : Number(v);
+      next[i] = v === "" ? "" : Number(v);
       return next;
     });
   }
+
   function commitReorder(i: number) {
     const raw = orderInputs[i];
     const to = Number(raw);
@@ -121,13 +122,12 @@ export default function SectionsEditor({
                       type="number"
                       min={1}
                       max={unitCount}
-                      value={
-                        Number.isFinite(orderInputs[i]) ? orderInputs[i] : ("" as any)
-                      }
+                      value={orderInputs[i] ?? ""}
                       onChange={(e) => {
-                        const v = e.currentTarget.value === "" ? "" : Number(e.currentTarget.value);
-                        setOrderInput(i, v as any);
+                        const v: number | "" = e.currentTarget.value === "" ? "" : Number(e.currentTarget.value);
+                        setOrderInput(i, v);
                       }}
+
                       onBlur={() => commitReorder(i)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
