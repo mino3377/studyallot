@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/server"
 import { CreateProjectPayload, UpdateProjectPayload } from "@/lib/validators/project"
 import { slugify } from "@/lib/projects/slug"
 import { parseWeeklyHours } from "@/lib/projects/hours"
+import { PostgrestError } from "@supabase/supabase-js"
 
 // 新規作成
 export async function createProject(fd: FormData) {
@@ -60,10 +61,15 @@ export async function createProject(fd: FormData) {
     .select("slug")
     .single()
 
+  const isPgError = (e: unknown): e is PostgrestError =>
+    typeof e === "object" && e !== null && "code" in e;
+
+
   if (error) {
-    if ((error as any).code === "23505") {
-      return { ok: false, message: "同じslug（URL用識別子）が既に存在します。名前を少し変えてください。" }
+    if (isPgError(error) && error.code === "23505") {
+      return { ok: false, message: "同じslug（URL用識別子）が既に存在します。名前を少し変えてください。" };
     }
+
     return { ok: false, message: `作成に失敗しました: ${error.message}` }
   }
 
