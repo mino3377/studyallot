@@ -1,4 +1,3 @@
-// app/(private)/(materials)/(material)/material/[id]/layout.tsx
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -9,14 +8,15 @@ export default async function MaterialLayout({
   params,
 }: {
   children: ReactNode;
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const supabase = await createClient();
+  const { id } = await params;
 
+  const supabase = await createClient();
   const { data: mat, error } = await supabase
     .from("materials")
     .select("title")
-    .eq("id", Number(params.id))
+    .eq("id", Number(id))
     .single();
 
   if (error || !mat) notFound();
@@ -28,4 +28,3 @@ export default async function MaterialLayout({
     </div>
   );
 }
-
