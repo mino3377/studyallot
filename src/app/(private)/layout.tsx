@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\layout.tsx
+
 import Header from "@/components/header";
 import MenuSidebarServer from "@/components/menu-sidebar-server";
 

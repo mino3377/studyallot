@@ -1,4 +1,4 @@
-// app/dashboard/layout.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\(projects)\project\layout.tsx
 import type { ReactNode } from "react";
 import SubHeader from "@/components/sub-header";
 

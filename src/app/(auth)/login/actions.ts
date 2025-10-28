@@ -1,42 +1,49 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(auth)\login\actions.ts
-
+// src/app/(auth)/login/actions.ts
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-
+import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
-export async function login() {
+export async function login(formData: FormData) {
   const supabase = await createClient()
+
+  const next = (formData.get('next') as string) || '/dashboard'
+  console.log('[login] next =', next)
+
+  // ★ Next.js 15+: headers() は Promise なので await が必要
+  const h = await headers()
+
+  // Vercel/プロキシ下でも現在のオリジンを正しく復元
+  const proto = h.get('x-forwarded-proto') ?? 'http'
+  const host  = h.get('x-forwarded-host')  ?? h.get('host') ?? 'localhost:3000'
+  const base  = `${proto}://${host}`
+
+  const redirectTo = `${base}/auth/callback?next=${encodeURIComponent(next)}`
+  console.log('[login] base       =', base)
+  console.log('[login] redirectTo =', redirectTo)
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      // 環境に応じてベースURLを切り替える（本番/プレビュー/ローカル対応）
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL
-        ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-        }/auth/callback`,
-    },
+    options: { redirectTo },
   })
 
-  if (data.url) {
-    redirect(data.url) // use the redirect API for your server framework
+  if (data?.url) {
+    try {
+      const u = new URL(data.url)
+      console.log('[login] authorize host =', u.host)
+      console.log('[login] authorize path =', u.pathname + u.search)
+    } catch {}
+    redirect(data.url)
   }
 
-  if (error) {
-    redirect('/error')
-  }
-
-  revalidatePath('/', 'layout')
-  redirect('/')
+  console.log('[login] error =', error)
+  redirect('/login?error=OAuth%20failed')
 }
 
 export async function logout() {
   const supabase = await createClient()
   const { error } = await supabase.auth.signOut()
-  if (error) {
-    redirect('/error')
-  }
+  if (error) redirect('/error')
   redirect('/login')
 }
