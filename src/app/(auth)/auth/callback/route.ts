@@ -1,4 +1,4 @@
-// src/app/(auth)/auth/callback/route.ts
+//C:\Users\chiso\nextjs\study-allot\src\app\(auth)\auth\callback\route.ts
 import { NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 
@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   const nextParam = url.searchParams.get("next") ?? "/dashboard"
 
   // ログ
+  console.log("request",request)
   console.log("[callback] HIT")
   console.log("[callback] origin      =", url.origin)
   console.log("[callback] url         =", url.toString())
