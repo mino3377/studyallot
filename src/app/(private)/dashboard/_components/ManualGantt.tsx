@@ -7,7 +7,7 @@ import { MonitorUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   parseISODate, minMax, monthsBetween, daysBetween,
-  monthMM, dayDD, todayLocalISO, fmtISO, cmpDate
+  monthMM, dayDD, todayLocalISO, fmtISO,
 } from "@/lib/gantt-date"
 import {
   Dialog,
@@ -63,7 +63,7 @@ function useAutoScroll(columns: Date[], mode: ViewMode, colW: number, scrollEl: 
 
   useEffect(() => {
     if (!scrollEl) return
-    scrollEl.scrollTo({ left: Math.max(0, todayIndex * colW - 16), behavior: "instant" as any })
+    scrollEl.scrollTo({ left: Math.max(0, todayIndex * colW - 16), behavior: "auto" as ScrollBehavior })
   }, [scrollEl, todayIndex, colW])
 
   return { todayISO }
@@ -98,10 +98,11 @@ function RightGrid({
 
   // 今日の列（なければ -1）
   const todayIdx = useMemo(() => {
-    const t = parseISODate(todayISO)
-    if (!t) return -1
-    return idxOf(t)
-  }, [todayISO, columns])
+  const t = parseISODate(todayISO)
+  if (!t) return -1
+  return idxOf(t)
+}, [todayISO, columns, idxOf])
+
 
   // グリッドセルを生成（右罫線 + 下罫線のみ。上罫線は別で1本引く）
   function CellsGrid() {
@@ -198,13 +199,12 @@ function GanttSurface({
   fullscreen?: boolean; fixedRows?: number; className?: string; style?: React.CSSProperties;
 }) {
   const exact = useMemo(() => clampExactRange(mode, items), [mode, items])
-  if (!exact) {
-    return <div className={cn("w-full rounded-md border p-6 text-sm text-muted-foreground", className)} style={style}>
-      計画（開始/終了日）が設定された教材がありません。
-    </div>
-  }
 
-  const columns = useMemo(() => buildColumns(mode, exact.start, exact.end), [mode, exact])
+  // ★ 条件分岐の前に必ず Hooks を呼ぶ
+  const columns = useMemo(
+    () => (exact ? buildColumns(mode, exact.start, exact.end) : []),
+    [mode, exact]
+  )
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const { todayISO } = useAutoScroll(columns, mode, colWidth, scrollRef.current)
 
@@ -217,6 +217,13 @@ function GanttSurface({
     }))
     return [...items, ...blanks]
   }, [items, fullscreen, fixedRows])
+
+  // ★ ここで早期 return
+  if (!exact) {
+    return <div className={cn("w-full rounded-md border p-6 text-sm text-muted-foreground", className)} style={style}>
+      計画（開始/終了日）が設定された教材がありません。
+    </div>
+  }
 
   const visibleRows = fullscreen ? items.length : Math.max(items.length, fixedRows ?? 5)
   const rightWidth = columns.length * colWidth
@@ -254,7 +261,6 @@ function GanttSurface({
                 {mode === "year" ? monthMM(d) : dayDD(d)}
               </div>
             ))}
-            {/* 最終列の右端線 */}
             <div className="absolute top-0 bottom-0 border-l border-border" style={{ left: rightWidth, width: 0 }} />
           </div>
         </div>
@@ -285,7 +291,7 @@ function GanttSurface({
         </div>
 
         {/* 右：完全なグリッド＋矢印 */}
-        <div className="relative" style={{ width: rightWidth, height: "100%" }}>
+        <div className="relative" style={{ width: columns.length * colWidth, height: "100%" }}>
           <RightGrid
             items={paddedItems}
             columns={columns}
