@@ -42,15 +42,8 @@ export default async function LoginPage({
       <MotionDiv className="w-full max-w-md">
         <div className="rounded-2xl border bg-card/80 backdrop-blur-sm shadow-xl p-6 md:p-8 space-y-6">
           {/* ロゴ / タイトル */}
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-              <Sparkles className="size-4" />
-              <span>StudyAllot</span>
-            </div>
+          <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">ログイン</h1>
-            <p className="text-sm text-muted-foreground">
-              学習を続けるための「今日のタスク」にすぐアクセス。
-            </p>
           </div>
 
           {/* エラー表示（あれば） */}
@@ -92,12 +85,9 @@ export default async function LoginPage({
           </div>
 
           {/* 補助ナビ */}
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center text-sm">
             <Link href="/" className="text-muted-foreground hover:underline">
               ← トップへ戻る
-            </Link>
-            <Link href="/signup" className="text-muted-foreground hover:underline">
-              新規登録はこちら
             </Link>
           </div>
         </div>
