@@ -16,7 +16,7 @@ export default async function PublicLayout({ children }: { children: React.React
         <div className="mx-auto max-w-6xl h-14 px-4 md:px-6 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-3 text-lg md:text-xl font-semibold text-black hover:opacity-90 transition-opacity"
+            className="flex items-center gap-3 text-lg md:text-xl font-semibold hover:opacity-90 transition-opacity"
             aria-label="StudyAllot ホームへ"
           >
             <Image
