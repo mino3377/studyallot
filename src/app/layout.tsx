@@ -17,14 +17,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StudyAllot - 逆算した",
+  title: "StudyAllot｜逆算して学習計画を自動配分",
   description:
-    "教材・周回・進捗率を一元管理できる学習計画アプリ。",
-  keywords: ["StudyAllot", "学習管理", "進捗管理", "逆算", "資格試験"],
+    "教材を登録するだけで学習計画を自動配分。今日やること、進捗率、周回数、期限までの遅れを一元管理できる学習管理アプリ。",
+  keywords: ["資格試験","学習管理アプリ","遅れ","進捗","タスク","教材","逆算","周回","受験"],
   openGraph: {
-    title: "StudyAllot",
-    description: "学習計画を可視化するアプリ",
-    url: "https://your-vercel-url.vercel.app",
+    title: "StudyAllot｜逆算して学習計画を自動配分",
+    description: "教材を登録するだけで学習計画を自動配分。今日やること、進捗率、周回数、期限までの遅れを一元管理できる学習管理アプリ。",
+    url: "https://studyallot.com",
     siteName: "StudyAllot",
     type: "website",
   },
