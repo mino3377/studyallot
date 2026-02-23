@@ -28,8 +28,6 @@ export default async function PublicLayout({ children }: { children: React.React
             <span>StudyAllot</span>
           </Link>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
-
             {user ? (
               <Button asChild size="sm">
                 <Link href="/daily-task">アプリを開く</Link>
@@ -39,11 +37,14 @@ export default async function PublicLayout({ children }: { children: React.React
                 asChild
                 size="sm"
                 variant="outline"
-                className="hidden sm:inline-flex"
+                
               >
                 <Link href="/login">ログイン</Link>
               </Button>
             )}
+            <ThemeToggle />
+
+            
           </div>
         </div>
       </header>

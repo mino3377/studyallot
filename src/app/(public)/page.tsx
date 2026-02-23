@@ -59,10 +59,7 @@ export default async function Landing() {
 
       <MotionSection id="features" className="mx-auto max-w-6xl px-4 md:px-6 py-20 md:py-36">
         <div className="text-center space-y-3 mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">studyallot でできること</h2>
-          <p className="text-muted-foreground">
-            教材管理・全体スケジュール・日々の記録を、ひとつの画面群に。
-          </p>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">StudyAllot でできること</h2>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -73,7 +70,7 @@ export default async function Landing() {
           />
           <FeatureCard
             icon={<CalendarDays className="size-5" />}
-            title="ガントチャートで全体を見渡す(PC版)"
+            title="ガントチャートで全体を見渡す"
             desc="「いつ・どの教材を進めるか」を期間全体のグラフで可視化。目標まで迷いをなくします。"
           />
           <FeatureCard
