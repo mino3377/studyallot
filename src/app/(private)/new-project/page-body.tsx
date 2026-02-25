@@ -5,7 +5,7 @@
 import { useState, FormEvent, useTransition } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import ProjectBasicInfoCard from "@/components/projects/ProjectBasicInfoCard"
+import ProjectBasicInfoCard from "@/components/new/project/ProjectBasicInfoCard"
 
 type Props = { 
   onSubmit: (fd: FormData) => Promise<{ ok: boolean; message?: string } | void> 

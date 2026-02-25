@@ -4,8 +4,6 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sun, Moon } from "lucide-react"
 
-type ThemeMode = "light" | "dark"
-
 export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false)
   const [isDark, setIsDark] = useState(false)

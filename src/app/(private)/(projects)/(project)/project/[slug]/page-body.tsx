@@ -4,9 +4,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Separator } from "@/components/ui/separator"
 import AddButton from "@/components/add-button"
-import MaterialsNumCard from "@/components/infocards/materials-num-card"
 import ProgressRateCard from "@/components/infocards/progress-rate-card"
-import CompletionTillTodayCard from "@/components/infocards/ProgressAgainstPlan"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -186,18 +184,13 @@ export default async function ProjectPageBody(props: {
       </div>
 
       <div className="hidden sm:grid gap-4 grid-cols-3">
-        <MaterialsNumCard totalMaterials={stats.totalMaterials} activeMaterials={stats.activeMaterials} />
         <ProgressRateCard avgActualPct={stats.avgActualPct} avgPlannedPct={stats.avgPlannedPct} />
-        <CompletionTillTodayCard
-          actualCellsUntilToday={stats.projectActualCellsUntilToday}
-          plannedCellsUntilToday={stats.projectPlannedCellsUntilToday}
-          todayRatePct={stats.todayRatePct}
-        />
+
+
+        <AddButton href={"/new-material"} text={"教材を追加"} />
+
+        <MaterialsList materials={materialsVM} />
       </div>
-
-      <AddButton href={"/new-material"} text={"教材を追加"} title={"教材リスト"} />
-
-      <MaterialsList materials={materialsVM} />
     </div>
   )
 }

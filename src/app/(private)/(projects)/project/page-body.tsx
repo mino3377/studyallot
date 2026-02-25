@@ -1,168 +1,139 @@
-// page-body.tsx
-import Link from "next/link"
-import { Card } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
-import {
-  BookOpen,
-  BarChart3,
-  Target,
-  CalendarDays,
-  ChevronRight,
-  CheckCircle2,
-  Layers,
-} from "lucide-react"
-import AddButton from "@/components/add-button"
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\(projects)\project\page-body.tsx
 
-import ProgressRateCard from "@/components/infocards/progress-rate-card"
-import CompletionTillTodayCard from "@/components/infocards/ProgressAgainstPlan"
-import MaterialsNumCard from "@/components/infocards/materials-num-card"
-
+import ProjectMaterialsSwitcher from "@/components/projects/project-materials-switcher"
+import { loadProjectPageData } from "../(project)/project/[slug]/data"
 import { getProjectData } from "./data"
 
-export default async function PageBody({ userId, todayISO }: { userId: string, todayISO: string }) {
-  const { projects, summary } = await getProjectData(userId, todayISO)
+import { createClient } from "@/utils/supabase/server"
+import { redirect } from "next/navigation"
+import { getTodayISOForUser } from "@/lib/user-tz"
+import { getDailyTaskData } from "@/app/(private)/daily-task/data"
 
-  if (projects.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">プロジェクト数</div>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="mt-2 text-2xl font-semibold">0</div>
-            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              進行中 0 件
-            </div>
-          </Card>
+import { getMaterialData } from "@/app/(private)/(materials)/(material)/material/[slug]/data"
 
-          <Card className="p-4">
-            <div className="flex items中心 justify-between">
-              <div className="text-sm text-muted-foreground">進捗率（平均）</div>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="mt-2 text-2xl font-semibold">0%</div>
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-full relative">
-                  <div className="h-2 bg-muted rounded" />
-                  <div className="absolute left-0 top-0 h-2 bg-black rounded" style={{ width: `0%` }} />
-                </div>
-                <span className="text-xs w-12 text-right">0%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Progress value={0} className="h-2 w-full [&>div]:bg-yellow-500" />
-                <span className="text-xs w-12 text-right text-yellow-600">0%</span>
-              </div>
-            </div>
-          </Card>
+import { saveSectionRecords } from "@/app/(private)/(materials)/(material)/material/[slug]/actions"
 
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">教材数（合計）</div>
-              <Layers className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="mt-2 text-2xl font-semibold">0</div>
-            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              進行中 0 件
-            </div>
-          </Card>
-        </div>
+function addDaysZoned(baseISO: string, days: number, tz: string): string {
+  const d = new Date(`${baseISO}T12:00:00`)
+  d.setUTCDate(d.getUTCDate() + days)
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+  const p = fmt.formatToParts(d)
+  const y = p.find((x) => x.type === "year")?.value ?? "1970"
+  const m = p.find((x) => x.type === "month")?.value ?? "01"
+  const da = p.find((x) => x.type === "day")?.value ?? "01"
+  return `${y}-${m}-${da}`
+}
 
-        <AddButton href={"/new-project"} text={"プロジェクトを追加"} title={"プロジェクト一覧"} />
-      </div>
-    )
+function dayOfWeekInTZ(iso: string, tz: string): number {
+  const d = new Date(`${iso}T00:00:00`)
+  const wd = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: tz }).format(d)
+  const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+  return map[wd] ?? 0
+}
+
+function startOfWeekMondayISO(todayISO: string, tz: string): string {
+  const dow = dayOfWeekInTZ(todayISO, tz)
+  const offsetFromMon = (dow + 6) % 7
+  return addDaysZoned(todayISO, -offsetFromMon, tz)
+}
+
+type MaterialVM = {
+  id: number | string
+  title: string
+  slug: string
+  startDate: string
+  endDate: string
+  totalUnits: number
+  lapsNow: number
+  lapsTotal: number
+  plannedPct: number
+  actualPct: number
+}
+
+type SectionLite = { id: number; order: number; title: string }
+
+type ExpandedMaterialVM = {
+  matId: number
+  planId: number
+  rounds: number
+  sections: SectionLite[]
+  initialRecords: Record<string, string>
+  todayISO: string
+}
+
+export default async function PageBody({ userId }: { userId: string }) {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth?.user) redirect("/login")
+
+  const { tz, todayISO } = await getTodayISOForUser(auth.user.id)
+  const weekStartISO = startOfWeekMondayISO(todayISO, tz)
+
+  const { projects } = await getProjectData(userId, todayISO)
+
+  const entries = await Promise.all(
+    projects.map(async (p) => {
+      const data = await loadProjectPageData(userId, p.slug, todayISO)
+      return [p.slug, (data?.materialsVM ?? []) as MaterialVM[]] as const
+    })
+  )
+  const materialsBySlug: Record<string, MaterialVM[]> = Object.fromEntries(entries)
+
+  const expandedByProjectSlugEntries = await Promise.all(
+    projects.map(async (p) => {
+      const list = materialsBySlug[p.slug] ?? []
+
+      const expandedPairs = await Promise.all(
+        list.map(async (m) => {
+          const vm = await getMaterialData(userId, m.slug, todayISO, tz)
+
+          if (!vm) return [m.slug, null] as const
+
+          const planId = vm.plan.id
+          if (!planId) return [m.slug, null] as const
+
+          const expanded: ExpandedMaterialVM = {
+            matId: vm.mat.id,
+            planId,
+            rounds: vm.plan.rounds,
+            sections: vm.sections,
+            initialRecords: vm.initialRecords,
+            todayISO: vm.todayISO,
+          }
+
+          return [m.slug, expanded] as const
+        })
+      )
+
+      return [p.slug, Object.fromEntries(expandedPairs)] as const
+    })
+  )
+
+  const expandedByProjectSlug: Record<string, Record<string, ExpandedMaterialVM | null>> =
+    Object.fromEntries(expandedByProjectSlugEntries)
+
+  const dailyTaskDataPromise = getDailyTaskData(userId, weekStartISO, tz)
+
+  async function saveSectionRecordsAction(fd: FormData) {
+    "use server"
+    await saveSectionRecords(fd)
   }
 
   return (
     <div className="space-y-6">
-      <div className="hidden sm:grid gap-4 grid-cols-3">
-        <MaterialsNumCard
-          title={"プロジェクト数"}
-          totalMaterials={summary.totalProjects}
-          activeMaterials={summary.inProgressProjects}
-        />
-        <ProgressRateCard
-          avgActualPct={summary.avgActualPct}
-          avgPlannedPct={summary.avgPlannedPct}
-        />
-        <CompletionTillTodayCard
-          actualCellsUntilToday={summary.actualCellsUntilTodayAll}
-          plannedCellsUntilToday={summary.plannedCellsUntilTodayAll}
-          todayRatePct={summary.todayRatePctAll}
-        />
-      </div>
-
-      <AddButton href={"/new-project"} text={"プロジェクトを追加"} title={"プロジェクトリスト"} />
-
-      <div className="space-y-3">
-        {projects.map((p) => {
-          const status =
-            p.actualPct > p.plannedPct ? "ahead" : p.actualPct < p.plannedPct ? "behind" : "on"
-          void status
-
-          return (
-            <Card key={p.id} className="mb-6 p-4 hover:bg-muted/30 transition-colors">
-              <div className="gap-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex rounded-xl border bg-card p-2">
-                          <BookOpen className="h-4 w-4" />
-                        </span>
-                        <Link
-                          href={`/project/${p.slug}`}
-                          className="text-base font-medium hover:underline"
-                        >
-                          {p.name}
-                        </Link>
-                      </div>
-                    </div>
-                    <div className="flex justify-end md:self-start">
-                      <Button asChild size="sm" variant="ghost" className="group">
-                        <Link href={`/project/${p.slug}`}>
-                          <div className="hidden sm:flex">
-                            詳細を見る
-                          </div>
-                          <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <div className="inline-flex items-center gap-1.5">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {p.period.from} — {p.period.to}
-                    </div>
-                    <Separator orientation="vertical" className="h-4 hidden sm:block" />
-                    <div className="inline-flex items-center gap-1.5">
-                      <Target className="h-3.5 w-3.5" />
-                      {p.daysLeftLabel}
-                    </div>
-                    <Separator orientation="vertical" className="h-4 hidden sm:block" />
-                    <div className="inline-flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5" />
-                      <span>{`教材 ${p.materialsTotal}`}</span>
-                    </div>
-                  </div>
-
-                  <ProgressRateCard
-                    avgActualPct={p.actualPct}
-                    avgPlannedPct={p.plannedPct}
-                  />
-                </div>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
+      <ProjectMaterialsSwitcher
+        projects={projects}
+        materialsBySlug={materialsBySlug}
+        expandedByProjectSlug={expandedByProjectSlug}
+        saveSectionRecordsAction={saveSectionRecordsAction}
+        dailyTaskDataPromise={dailyTaskDataPromise}
+        todayISO={todayISO}
+      />
     </div>
   )
 }

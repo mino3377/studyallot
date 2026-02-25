@@ -6,9 +6,9 @@ import { useMemo, useState, useTransition } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import BasicInfoCard from "@/components/materials/BasicInfoCard";
-import SectionsEditor from "@/components/materials/SectionsEditor";
-import PlanListEditor from "@/components/materials/PlanListEditor";
+import BasicInfoCard from "@/components/new/material/BasicInfoCard";
+import SectionsEditor from "@/components/new/material/SectionsEditor";
+import PlanListEditor from "@/components/new/material/PlanListEditor";
 import type { PlanVM, ProjectOption, MaterialEditInitial, UpdateMaterialInput } from "@/lib/type/material";
 
 export default function EditMaterialClient({

@@ -7,12 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import MenuLinkButton from "@/components/menu/menu-link-button";
 import { logout } from "@/app/(auth)/login/actions";
 import {
-  BookOpen,
-  CalendarClock,
   CirclePlus,
   Compass,
   FolderOpenDot,
-  LayoutDashboard,
 } from "lucide-react";
 
 type Meta = { avatar_url?: string | null; full_name?: string | null; name?: string | null };
@@ -74,28 +71,14 @@ export default function MenuContent({ user }: { user: unknown }) {
 
         <Separator className="my-4" />
         <nav className="space-y-1 mx-2">
-          <div className="hidden lg:block">
+          {/* <div className="hidden lg:block">
             <MenuLinkButton href="/dashboard">
               <div className="flex items-center gap-2">
                 <LayoutDashboard className="size-5" aria-hidden />
                 <span>ダッシュボード</span>
               </div>
             </MenuLinkButton>
-          </div>
-
-          <MenuLinkButton href="/daily-task">
-            <div className="flex items-center gap-2">
-              <CalendarClock className="size-5" aria-hidden />
-              <span>デイリータスク</span>
-            </div>
-          </MenuLinkButton>
-
-          <MenuLinkButton href="/material">
-            <div className="flex items-center gap-2">
-              <BookOpen className="size-5" aria-hidden />
-              <span>教材</span>
-            </div>
-          </MenuLinkButton>
+          </div> */}
 
           <MenuLinkButton href="/project">
             <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-// page.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\(projects)\project\page.tsx
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import PageBody from "./page-body"
@@ -14,5 +14,5 @@ export default async function ProjectPage() {
 
   preloadProjectData(auth.user.id, todayISO)
 
-  return <PageBody userId={auth.user.id} todayISO={todayISO}/>
+  return <PageBody userId={auth.user.id} />
 }

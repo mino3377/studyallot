@@ -1,16 +1,15 @@
 //C:\Users\chiso\nextjs\study-allot\src\components\infocards\progress-rate-card.tsx
 
-import React from 'react'
-import { Card } from '../ui/card'
-import { BarChart3 } from 'lucide-react'
-import { Progress } from '../ui/progress'
+"use client"
+
+import { useEffect, useState } from "react"
 
 type ProgressRateCardProps = {
   avgActualPct: number
-  avgPlannedPct: number,
+  avgPlannedPct: number
 }
 
-type Status = 'ahead' | 'behind' | 'ontrack'
+type Status = "ahead" | "behind" | "ontrack"
 
 export default function ProgressRateCard({
   avgActualPct,
@@ -24,57 +23,59 @@ export default function ProgressRateCard({
     : 0
 
   const status: Status =
-    actual > planned ? 'ahead' : actual < planned ? 'behind' : 'ontrack'
+    actual > planned ? "ahead" : actual < planned ? "behind" : "ontrack"
+
+  const actualBarClass =
+    status === "ahead"
+      ? "bg-emerald-400"
+      : status === "behind"
+      ? "bg-red-400"
+      : "bg-yellow-400"
+
+  // actual% の文字色（バーと同じ系統）
+  const actualTextClass =
+    status === "ahead"
+      ? "text-emerald-500"
+      : status === "behind"
+      ? "text-red-500"
+      : "text-yellow-500"
+
+  // 0 -> actual へアニメーションさせるための表示用値
+  const [animatedActual, setAnimatedActual] = useState(0)
+
+  useEffect(() => {
+    // いったん0に戻してから伸ばす（表示切り替え時も毎回気持ちよく動く）
+    setAnimatedActual(0)
+    const raf = requestAnimationFrame(() => setAnimatedActual(actual))
+    return () => cancelAnimationFrame(raf)
+  }, [actual])
 
   return (
-    <Card className="gap-3 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">進捗率</div>
-        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+    <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-baseline gap-1">
+        <div className={`text-l font-semibold ${actualTextClass}`}>{actual}%</div>
+        <div className="text-xs text-muted-foreground">（{planned}%）</div>
       </div>
 
-      <div className="mt-2 text-2xl font-semibold sm:mr-2">{actual}%</div>
+      <div className="relative h-2 w-full overflow-hidden rounded bg-muted">
+        {/* ベース（今のまま） */}
+        <div
+          className="absolute left-0 top-0 h-full bg-gray-200"
+          style={{ width: `100%` }}
+        />
 
-      <div className="mt-2 whitespace-nowrap">
-        {/* 上：計画（黒） */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs w-12 text-muted-foreground">目標</span>
-          <div className="w-full relative">
-            <div className="h-2 bg-muted rounded" />
-            <div
-              className="absolute left-0 top-0 h-2 bg-yellow-500/60 rounded"
-              style={{ width: `${planned}%` }}
-            />
-          </div>
-          <span className="text-xs w-12 text-right text-yellow-500/60">{planned}%</span>
-        </div>
+        {/* actual：0 -> actual% に伸びる（transitionでアニメ） */}
+        <div
+          className={`absolute left-0 top-0 h-full z-20 ${actualBarClass} transition-[width] duration-700 ease-out`}
+          style={{ width: `${animatedActual}%` }}
+        />
 
-        {/* 下：実績（色） */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs w-12 text-muted-foreground">進捗</span>
-          <Progress
-            value={actual}
-            className={`h-2 w-full ${
-              status === 'ahead'
-                ? '[&>div]:bg-emerald-500/60'
-                : status === 'behind'
-                ? '[&>div]:bg-red-500/60'
-                : '[&>div]:bg-yellow-500/60'
-            }`}
-          />
-          <span
-            className={`text-xs w-12 text-right ${
-              status === 'ahead'
-                ? 'text-emerald-600/60'
-                : status === 'behind'
-                ? 'text-red-600/60'
-                : 'text-yellow-600/60'
-            }`}
-          >
-            {actual}%
-          </span>
-        </div>
+        {/* planned：そのまま */}
+        <div
+          className="absolute left-0 top-0 h-full z-10 bg-gray-400"
+          style={{ width: `${planned}%` }}
+        />
       </div>
-    </Card>
+    </div>
   )
 }

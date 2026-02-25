@@ -1,6 +1,6 @@
 // src/app/(private)/add-textbook/queries.ts
 import { createClient } from "@/utils/supabase/server"
-import type { ProjectOption } from "@/components/materials/BasicInfoCard"
+import type { ProjectOption } from "@/components/new/material/BasicInfoCard"
 
 export async function fetchProjectsForUser(userId: string): Promise<ProjectOption[]> {
   const supabase = await createClient()

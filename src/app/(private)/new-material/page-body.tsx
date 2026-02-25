@@ -4,9 +4,9 @@
 import { useMemo, useState, FormEvent, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import BasicInfoCard from "@/components/materials/BasicInfoCard";
-import PlanListEditor from "@/components/materials/PlanListEditor";
-import SectionsEditor from "@/components/materials/SectionsEditor";
+import BasicInfoCard from "@/components/new/material/BasicInfoCard";
+import PlanListEditor from "@/components/new/material/PlanListEditor";
+import SectionsEditor from "@/components/new/material/SectionsEditor";
 import type { ProjectOption, PlanVM } from "@/lib/type/material";
 
 type Props = {
