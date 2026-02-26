@@ -25,7 +25,7 @@ export async function updateMaterialAction(materialId: number, inputOrig: Update
   }
 
   const {
-    title, notes,total_units, rounds,
+    title, total_units, rounds,
     project_id, section_titles = [],
   } = parsed.data
 
@@ -38,7 +38,6 @@ export async function updateMaterialAction(materialId: number, inputOrig: Update
   {
     const { error } = await supa.from("materials").update({
       title,
-      notes: notes || null,
       project_id,
     }).eq("id", materialId).eq("user_id", user.id)
     if (error) throw new Error(`更新に失敗しました: ${error.message}`)

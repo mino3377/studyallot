@@ -5,7 +5,6 @@ export type ProjectRow = {
   id: number
   slug: string
   name: string
-  goal: string | null
   created_at: string | null
   user_id: string
 }
@@ -47,7 +46,7 @@ export const getProjectDetailVM = async (slug: string, userId: string) => {
 
   const { data: proj, error: projErr } = await supabase
     .from("projects")
-    .select("id, slug, name, goal, created_at, user_id")
+    .select("id, slug, name, created_at, user_id")
     .eq("slug", slug)
     .eq("user_id", userId)
     .single<ProjectRow>()

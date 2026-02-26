@@ -13,7 +13,6 @@ type Props = {
 
 export default function AddProjectForm({ onSubmit }: Props) {
   const [name, setName] = useState("")
-  const [goal, setGoal] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -22,7 +21,6 @@ export default function AddProjectForm({ onSubmit }: Props) {
     setError(null)
     const fd = new FormData()
     fd.set("name", name)
-    fd.set("goal", goal)
 
     startTransition(async () => {
       const res = await onSubmit(fd)
@@ -35,8 +33,6 @@ export default function AddProjectForm({ onSubmit }: Props) {
       <ProjectBasicInfoCard
         name={name}
         onChangeName={setName}
-        goal={goal}
-        onChangeGoal={setGoal}
       />
 
       {error ? <div className="text-sm text-red-600">{error}</div> : null}

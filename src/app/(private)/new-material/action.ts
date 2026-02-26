@@ -18,7 +18,7 @@ export async function createMaterial(input: unknown) {
   }
 
   const {
-    title, notes,
+    title,
     total_units, project_id, section_titles = [],
     plans,
   } = parsed.data
@@ -48,7 +48,6 @@ export async function createMaterial(input: unknown) {
     project_id,
     slug,
     title,
-    notes: notes ?? null,
   }])
   .select("id, slug")
   .single()

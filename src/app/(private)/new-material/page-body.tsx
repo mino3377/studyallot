@@ -33,8 +33,6 @@ export default function NewMaterialClient({ action, projects, tz, todayISO }: Pr
   const [totalSections, setTotalSections] = useState<number | "">("");
   const [sectionTitles, setSectionTitles] = useState<string[]>([]);
 
-  const [notes, setNotes] = useState("");
-
   const [plans, setPlans] = useState<PlanVM[]>([
     {
       id: "p-1",
@@ -164,7 +162,6 @@ export default function NewMaterialClient({ action, projects, tz, todayISO }: Pr
 
     const payload = {
       title,
-      notes: notes || null,
       total_units: ts,
       project_id: projectId,
       section_titles: sectionTitles,
@@ -198,8 +195,6 @@ export default function NewMaterialClient({ action, projects, tz, todayISO }: Pr
         projectId={projectId}
         onChangeProjectId={setProjectId}
         projects={projects}
-        notes={notes}
-        onChangeNotes={setNotes}
       />
 
       <PlanListEditor

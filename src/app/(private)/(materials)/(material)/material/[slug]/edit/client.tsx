@@ -28,7 +28,6 @@ export default function EditMaterialClient({
 
   const [title, setTitle] = useState(initial.title);
   const [projectId, setProjectId] = useState(initial.project_id);
-  const [notes, setNotes] = useState(initial.notes);
 
 
   const [plans, setPlans] = useState<PlanVM[]>(
@@ -198,7 +197,6 @@ export default function EditMaterialClient({
 
     const payload: UpdateMaterialInput = {
       title,
-      notes,
       start_date: rep?.startDate ?? "",
       end_date: rep?.endDate ?? "",
       total_units: sectionTitles.length,
@@ -224,8 +222,6 @@ export default function EditMaterialClient({
         projectId={projectId}
         onChangeProjectId={setProjectId}
         projects={projects}
-        notes={notes}
-        onChangeNotes={setNotes}
       />
 
       <PlanListEditor

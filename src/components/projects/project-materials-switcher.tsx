@@ -10,10 +10,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Card } from "@/components/ui/card"
 import type { PopupMaterial } from "@/components/daily-task/daily-task-board"
 
-// ✅ チェックテーブル
 import MaterialCheckTable from "@/app/(private)/(materials)/(material)/material/[slug]/material-check-table"
 
-// ✅ PC用モーダル
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type ProjectForCarousel = {
@@ -59,7 +57,6 @@ function useIsDesktop(breakpointPx = 768) {
     const apply = () => setIsDesktop(mq.matches)
     apply()
 
-    // Safari 対応
     if (mq.addEventListener) mq.addEventListener("change", apply)
     else mq.addListener(apply)
 
@@ -93,7 +90,6 @@ export default function ProjectMaterialsSwitcher({
   const selectedProject = React.useMemo(() => projects.find((p) => p.slug === selectedSlug), [projects, selectedSlug])
   const selectedProjectName = selectedProject?.name
 
-  // ✅ materialSlug -> projectSlug の逆引きMap（DailyTaskから開いた時に補完する）
   const materialToProjectSlug = React.useMemo(() => {
     const map: Record<string, string> = {}
     for (const [pSlug, mats] of Object.entries(materialsBySlug ?? {})) {
@@ -139,7 +135,6 @@ export default function ProjectMaterialsSwitcher({
   const [materialPopupOpen, setMaterialPopupOpen] = React.useState(false)
   const [openedMaterial, setOpenedMaterial] = React.useState<PopupMaterial | null>(null)
 
-  // ✅ ここで projectSlug を補完して保持する
   const onSelectMaterial = React.useCallback(
     (m: PopupMaterial) => {
       const resolvedProjectSlug = m.projectSlug ?? materialToProjectSlug[m.slug] ?? selectedSlug
@@ -154,7 +149,6 @@ export default function ProjectMaterialsSwitcher({
     setOpenedMaterial(null)
   }, [selectedSlug])
 
-  // ✅ ポップアップは selectedSlug ではなく「教材の所属projectSlug」で参照する
   const popupProjectSlug =
     openedMaterial?.projectSlug ??
     (openedMaterial ? materialToProjectSlug[openedMaterial.slug] : undefined) ??
@@ -197,7 +191,6 @@ export default function ProjectMaterialsSwitcher({
 
   return (
     <div className="space-y-6">
-      {/* ✅ ここがポイント：Portal系はCSSで隠しても出るので「片方だけ描画」 */}
       {isDesktop ? (
         <Dialog open={materialPopupOpen} onOpenChange={setMaterialPopupOpen}>
           <DialogContent className="max-w-5xl h-[85vh] p-0 flex flex-col min-h-0" showCloseButton={false}>
@@ -221,8 +214,8 @@ export default function ProjectMaterialsSwitcher({
       )}
 
       {/* md以上：2列（左=Materials / 右=DailyTask） */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="col-span-2">
           <ProjectCarousel projects={projects} onSelectSlug={setSelectedSlug} selectedSlug={selectedSlug} />
           <MaterialsList
             materials={materials}
@@ -232,7 +225,7 @@ export default function ProjectMaterialsSwitcher({
                 id: m.id,
                 slug: m.slug,
                 title: m.title,
-                projectSlug: selectedSlug, // ✅ MaterialsListからは明示的に渡す
+                projectSlug: selectedSlug,
               })
             }
           />
@@ -244,7 +237,6 @@ export default function ProjectMaterialsSwitcher({
         </div>
       </div>
 
-      {/* md未満：下からボトムシートで確認（既存） */}
       {dailyTaskDataPromise ? (
         <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3 md:hidden">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

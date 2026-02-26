@@ -23,7 +23,7 @@ export async function createProject(fd: FormData) {
   if (!parsed.success) {
     return { ok: false, message: "入力値が不正です。必須項目や文字数を確認してください。" }
   }
-  const { name, goal, notes } = parsed.data
+  const { name } = parsed.data
 
   const slug = makePublicId("p")
 
@@ -31,8 +31,6 @@ export async function createProject(fd: FormData) {
     user_id: user.id,
     name,
     slug,
-    goal: goal || null,
-    notes: notes || null,
   }
 
   const { error } = await supabase

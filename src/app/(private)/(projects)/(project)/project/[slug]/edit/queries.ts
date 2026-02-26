@@ -5,8 +5,6 @@ export type ProjectEditRow = {
   id: number
   slug: string
   name: string | null
-  goal: string | null
-  notes: string | null
   user_id?: string
 }
 
@@ -14,7 +12,7 @@ export async function fetchProjectForEdit(slug: string, userId: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("projects")
-    .select("id, slug, name, goal, notes")
+    .select("id, slug, name")
     .eq("slug", slug)
     .eq("user_id", userId)
     .single<ProjectEditRow>()

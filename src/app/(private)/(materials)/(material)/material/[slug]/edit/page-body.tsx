@@ -50,7 +50,6 @@ export default async function EditMaterialPageBody({
         id: String(mat.id),
         project_id: String(mat.project_id),
         title: mat.title,
-        notes: mat.notes ?? "",
         start_date: plansVM[0]?.startDate ?? "",
         end_date: plansVM[0]?.endDate ?? "",
         rounds: typeof plansVM[0]?.rounds === "number" ? plansVM[0].rounds : 1,

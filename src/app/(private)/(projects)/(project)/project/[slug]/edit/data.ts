@@ -5,8 +5,6 @@ import { fetchProjectForEdit } from "./queries"
 export type EditProjectInitial = {
   slug: string
   name: string
-  goal: string
-  notes: string
 }
 
 export type EditProjectData = {
@@ -23,8 +21,6 @@ export const loadEditProjectData = cache(async (userId: string, slug: string): P
     initial: {
       slug: row.slug,
       name: row.name ?? "",
-      goal: row.goal ?? "",
-      notes: row.notes ?? "",
     },
   }
 })

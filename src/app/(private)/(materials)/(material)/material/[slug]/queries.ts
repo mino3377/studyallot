@@ -11,7 +11,6 @@ export type MaterialDetailVM = {
     id: number;
     slug: string;
     title: string;
-    notes?: string | null;
   };
   project: { id: number; name: string; slug: string };
   plan: {
@@ -45,7 +44,7 @@ export async function getMaterialDetailVM(
   // 教材
   const { data: matRow, error: matErr } = await sb
     .from("materials")
-    .select("id, slug, title, notes, project_id")
+    .select("id, slug, title, project_id")
     .eq("slug", materialSlug)
     .eq("user_id", userId)
     .single();
@@ -143,7 +142,6 @@ export async function getMaterialDetailVM(
       id: matRow.id,
       slug: matRow.slug,
       title: matRow.title,
-      notes: matRow.notes,
     },
     project: { id: projRow.id, name: projRow.name, slug: projRow.slug },
     plan: {

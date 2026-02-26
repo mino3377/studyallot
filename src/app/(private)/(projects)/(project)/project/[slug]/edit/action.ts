@@ -29,14 +29,12 @@ export async function updateProject({
   if (!parsed.success) {
     return { ok: false, message: "入力値が不正です。必須項目や文字数を確認してください。" }
   }
-  const { name, goal, notes } = parsed.data
+  const { name } = parsed.data
 
   const { error } = await supabase
     .from("projects")
     .update({
       name,
-      goal: goal || null,
-      notes: notes || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", projectId)

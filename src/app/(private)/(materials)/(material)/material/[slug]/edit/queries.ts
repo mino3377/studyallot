@@ -10,7 +10,7 @@ export async function getEditMaterialQuery(userId: string, materialSlug: string)
 
   const { data: mat, error: matErr } = await sb
     .from("materials")
-    .select("id, slug, user_id, project_id, title, notes")
+    .select("id, slug, user_id, project_id, title")
     .eq("slug", materialSlug)
     .eq("user_id", userId)
     .maybeSingle()

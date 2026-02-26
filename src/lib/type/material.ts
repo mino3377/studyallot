@@ -15,7 +15,6 @@ export type MaterialEditInitial = {
   id: string
   project_id: string
   title: string
-  notes: string
   start_date: string
   end_date: string
   total_units: number
@@ -44,8 +43,6 @@ export type PlanListEditorProps = {
 export type MaterialInfoProps = {
   title: string
   onChangeTitle: (v: string) => void
-  notes: string;
-  onChangeNotes: (v: string) => void;
   projectId: string
   onChangeProjectId: (v: string) => void
   projects: ProjectOption[]
@@ -53,7 +50,6 @@ export type MaterialInfoProps = {
 
 export type CreateMaterialInput = {
   title: string
-  notes: string | null
   total_units: number
   project_id: string
   section_titles: string[]
@@ -78,7 +74,6 @@ export type SectionsEditorProps = {
 
 export type UpdateMaterialInput = {
   title: string
-  notes: string
   start_date: string
   end_date: string
   total_units: number

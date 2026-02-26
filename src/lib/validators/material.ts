@@ -84,10 +84,6 @@ export function assertExactlyOneActive(
 
 export const CreateMaterialPayload = z.object({
   title: z.string().min(1),
-  notes: z.preprocess(
-    (v) => (typeof v === "string" ? v.trim() : v),
-    z.string().max(2000).optional().nullable()
-  ),
   total_units: z.number().int().positive().max(200),
 
   project_id: z.coerce.number().int().positive(),
@@ -98,10 +94,6 @@ export const CreateMaterialPayload = z.object({
 export const EditMaterialPayload = z
   .object({
     title: z.string().min(1),
-    notes: z.preprocess(
-      (v) => (typeof v === "string" ? v.trim() : v),
-      z.string().max(2000).optional().nullable()
-    ),
     start_date: isoDate,
     end_date: isoDate,
     total_units: z.number().int().positive().max(200),

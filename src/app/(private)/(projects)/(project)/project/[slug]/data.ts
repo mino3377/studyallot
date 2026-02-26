@@ -46,7 +46,6 @@ export type ProjectHeaderVM = {
   slug: string
   name: string
   period: { from: string; to: string }
-  goalLabel: string
   daysLeftLabel: string
   materialsTotal: number
 }
@@ -171,7 +170,7 @@ export const loadProjectPageData = cache(
 
     const totalMaterials = materialsVM.length
     const activeMaterials = materialsVM.filter((m) => m.actualPct > 0 && m.actualPct < 100).length
-    
+
     const avgPlannedPct =
       projectTotalCells === 0 ? 0 : Math.floor((projectPlannedCellsUntilToday / projectTotalCells) * 100)
 
@@ -191,7 +190,6 @@ export const loadProjectPageData = cache(
         from: projectMinStart ? fmtDateYYYYMMDDSlash(projectMinStart) : "—",
         to: projectMaxEnd ? fmtDateYYYYMMDDSlash(projectMaxEnd) : "—",
       },
-      goalLabel: (proj.goal as string) ?? "",
       daysLeftLabel: makeDaysLeftLabel(projectMaxEnd, todayISO),
       materialsTotal: totalMaterials,
     }

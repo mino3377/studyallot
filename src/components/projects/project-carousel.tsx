@@ -46,7 +46,6 @@ export default function ProjectCarousel({
 }) {
   const [open, setOpen] = useState(false)
 
-  // ✅ 長押し→編集/削除 sheet
   const [actionOpen, setActionOpen] = useState(false)
 
   const longPressTimerRef = useRef<number | null>(null)
@@ -102,7 +101,6 @@ export default function ProjectCarousel({
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") setOpen((v) => !v)
                 }}
-                // ✅ 長押し直後のクリックでPopoverが開かないようにする
                 onClickCapture={(e) => {
                   if (longPressedRef.current) {
                     e.preventDefault()
@@ -133,16 +131,6 @@ export default function ProjectCarousel({
               >
                 <div className="space-y-1">
                   <div className="flex items-center text-base font-medium">{selectedProject?.name}</div>
-
-                  <div className="flex-wrap inline-flex items-center gap-1.5 text-muted-foreground text-xs">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    {selectedProject?.period.from} — {selectedProject?.period.to}
-                  </div>
-
-                  <ProgressRateCard
-                    avgActualPct={selectedProject?.actualPct ?? 0}
-                    avgPlannedPct={selectedProject?.plannedPct ?? 0}
-                  />
                 </div>
               </Card>
             </PopoverTrigger>
@@ -174,71 +162,6 @@ export default function ProjectCarousel({
               </div>
             </PopoverContent>
           </Popover>
-
-          {/* ✅ 長押し後に出す：編集/削除 */}
-          <Sheet open={actionOpen} onOpenChange={setActionOpen}>
-            <SheetContent side="bottom" className="rounded-t-2xl">
-              <SheetHeader>
-                <SheetTitle className="text-base">プロジェクト操作</SheetTitle>
-              </SheetHeader>
-
-              <div className="mt-4 space-y-2">
-                <div className="text-sm font-semibold">{selectedProject?.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {selectedProject?.period.from} — {selectedProject?.period.to}
-                </div>
-
-                <div className="mt-4 grid gap-2">
-                  <Button asChild variant="secondary" className="justify-start gap-2">
-                    <Link href={`/project/${selectedProject?.slug}/edit`} onClick={() => setActionOpen(false)}>
-                      <Pencil className="h-4 w-4" />
-                      編集する
-                    </Link>
-                  </Button>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" className="justify-start gap-2">
-                        <Trash2 className="h-4 w-4" />
-                        削除する
-                      </Button>
-                    </AlertDialogTrigger>
-
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          このプロジェクトを削除すると、関連する教材も削除されます。
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
-
-                        <form
-                          action={deleteProjectAction}
-                          onSubmit={() => {
-                            setActionOpen(false)
-                          }}
-                        >
-                          <input type="hidden" name="projectId" value={String(selectedProject?.id ?? "")} />
-                          <AlertDialogAction type="submit" className="bg-red-600 hover:bg-red-700">
-                            削除する
-                          </AlertDialogAction>
-                        </form>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-
-                <div className="pt-2">
-                  <Button variant="ghost" className="w-full" onClick={() => setActionOpen(false)}>
-                    閉じる
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       )}
     </div>

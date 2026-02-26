@@ -19,7 +19,7 @@ export default async function EditProjectPage({
 
   const { data: proj, error: fetchErr } = await supabase
     .from("projects")
-    .select("id, slug, name, goal, notes")
+    .select("id, slug, name")
     .eq("slug", slug)
     .eq("user_id", auth.user.id)
     .single()
@@ -40,8 +40,6 @@ export default async function EditProjectPage({
         initial={{
           slug: project.slug,
           name: project.name ?? "",
-          goal: project.goal ?? "",
-          notes: project.notes ?? "",
         }}
         onSubmit={updateProjectAction}
       />
