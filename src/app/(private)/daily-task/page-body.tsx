@@ -2,7 +2,6 @@
 "use client"
 
 import { use, useEffect, useMemo, useRef, useState } from "react"
-import TaskDoneCheckbox from "@/app/(private)/daily-task/task-done-checkbox"
 import { BookOpen, CheckCircle2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -249,12 +248,7 @@ export default function PageBody({
                                 }
                                 aria-disabled={!isToday}
                               >
-                                <TaskDoneCheckbox
-                                  checked={groupChecked}
-                                  onCheckedChange={(v) => {
-                                    if (isToday) setGroupChecked(day.dateISO, g, Boolean(v))
-                                  }}
-                                />
+                              
                               </div>
 
                               <div className="px-3 py-3 flex items-center">
@@ -314,12 +308,7 @@ export default function PageBody({
                                 }
                                 aria-disabled={!isToday}
                               >
-                                <TaskDoneCheckbox
-                                  checked={groupChecked}
-                                  onCheckedChange={(v) => {
-                                    if (isToday) setGroupChecked(day.dateISO, g, Boolean(v))
-                                  }}
-                                />
+                
                               </div>
 
                               <div className="flex items-start gap-2 min-w-0">

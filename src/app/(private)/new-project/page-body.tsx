@@ -3,12 +3,9 @@
 "use client"
 
 import { useState, FormEvent, useTransition } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import ProjectBasicInfoCard from "@/components/new/project/ProjectBasicInfoCard"
 
-type Props = { 
-  onSubmit: (fd: FormData) => Promise<{ ok: boolean; message?: string } | void> 
+type Props = {
+  onSubmit: (fd: FormData) => Promise<{ ok: boolean; message?: string } | void>
 }
 
 export default function AddProjectForm({ onSubmit }: Props) {
@@ -29,20 +26,8 @@ export default function AddProjectForm({ onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <ProjectBasicInfoCard
-        name={name}
-        onChangeName={setName}
-      />
-
-      {error ? <div className="text-sm text-red-600">{error}</div> : null}
-
-      <div className="flex items-center justify-end gap-2">
-        <Button asChild variant="ghost"><Link href="/project">キャンセル</Link></Button>
-        <Button type="submit" className="px-6" disabled={isPending}>
-          {isPending ? "作成中…" : "作成する"}
-        </Button>
-      </div>
+    <form className="space-y-6">
+      こんにちは
     </form>
   )
 }

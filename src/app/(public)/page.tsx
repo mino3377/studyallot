@@ -12,7 +12,7 @@ import studyallot1 from "@/components/image/studyallot1.png"
 export default async function Landing() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (user) redirect("/daily-task")
+  if (user) redirect("/project")
 
   return (
     <main className="relative">

@@ -14,13 +14,13 @@ export default async function PrivacyLayout({ children }: { children: React.Reac
         <div className="mx-auto max-w-6xl h-14 px-4 md:px-6 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-3 text-lg md:text-xl font-semibold text-black hover:opacity-90 transition-opacity"
+            className="flex items-center gap-3 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
             aria-label="StudyAllot ホームへ"
           >
             <Image
               src={studyallot_logo}
               alt="StudyAllot"
-              className="h-3 w-auto"
+              className="h-2 w-auto"
               priority
             />
             <span>StudyAllot</span>

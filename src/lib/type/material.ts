@@ -72,15 +72,17 @@ export type SectionsEditorProps = {
   max?: number
 }
 
-export type UpdateMaterialInput = {
+type UpdateMaterialInput = {
+  slug: string
+  projectMode: "existing" | "new"
+  selectedProjectId?: string
+  newProjectName?: string
+
   title: string
-  start_date: string
-  end_date: string
-  total_units: number
+  startDate: string
+  endDate: string
+  unitType: string
+  unitCount: number
   rounds: number
-  project_id: string
-  section_titles: string[]
-  section_ids: number[]
-  plans?: PlanVM[] 
-  deleted_plan_ids?: number[]
+  planDays: number[]
 }

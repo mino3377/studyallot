@@ -16,10 +16,10 @@ export default async function LoginPage({
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (user) redirect("/daily-task")
+  if (user) redirect("/project")
 
   const sp = await searchParams
-  const next = sp?.next ?? "/daily-task"
+  const next = sp?.next ?? "/project"
   const error = sp?.error
 
   return (

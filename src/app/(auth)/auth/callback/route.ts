@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/server"
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get("code")
-  const nextParam = url.searchParams.get("next") ?? "/daily-task"
+  const nextParam = url.searchParams.get("next") ?? "/project"
 
 
   if (!code) {
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   const safeNext =
     nextParam.startsWith("/") && !nextParam.startsWith("//")
       ? nextParam
-      : "/daily-task"
+      : "/project"
 
   const dest = `${url.origin}${safeNext}`
   console.log("[callback] redirect ->", dest)
