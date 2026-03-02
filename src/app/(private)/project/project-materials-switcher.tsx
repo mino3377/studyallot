@@ -19,11 +19,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ProjectPageButton } from "@/components/new-add-button"
-import { BookCheck, CalendarSync, Eraser, Pen, SquareCheckBig } from "lucide-react"
+import { BookCheck, CalendarSync, Eraser, Pen, SquareCheckBig, Trash2 } from "lucide-react"
 import ActualRecordCalendarPanel from "./actual-record-calendar-panel"
 import ProjectRecordCalendarPanel from "./project-record-calendar-panel"
 import MaterialsList from "./materials-list"
 import { useRouter } from "next/navigation"
+
+import type { MaterialVM, UnitType } from "@/lib/type/material"
+import { AlertDialogHeader, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@radix-ui/react-alert-dialog"
 
 type ProjectForCarousel = {
   id: number | string
@@ -34,21 +38,6 @@ type ProjectForCarousel = {
   materialsTotal: number
   actualPct: number
   plannedPct: number
-}
-
-type MaterialVM = {
-  id: number | string
-  title: string
-  slug: string
-  startDate: string
-  endDate: string
-  totalUnits: number
-  lapsNow: number
-  lapsTotal: number
-  plannedPct: number
-  actualPct: number
-  planDays?: number[]
-  actualDays?: number[]
 }
 
 type ExpandedMaterialVM = null
@@ -64,6 +53,8 @@ type PopupMaterial = {
   lapsTotal?: number
   planDays?: number[]
   actualDays?: number[]
+  unitType?: UnitType
+  unitLabel?: string
 }
 
 function useIsDesktop(breakpointPx = 768) {
@@ -93,6 +84,8 @@ export default function ProjectMaterialsSwitcher({
   updateProjectMetaAction,
   replanDelayedPlansAction,
   updateMaterialOrdersAction,
+  deleteMaterialAction, // ★追加
+  deleteProjectAction,  // ★追加
 }: {
   projects: ProjectForCarousel[]
   materialsBySlug: Record<string, MaterialVM[]>
@@ -101,6 +94,8 @@ export default function ProjectMaterialsSwitcher({
   updateProjectMetaAction: (fd: FormData) => Promise<void>
   replanDelayedPlansAction: (fd: FormData) => Promise<void>
   updateMaterialOrdersAction: (fd: FormData) => Promise<void>
+  deleteMaterialAction: (fd: FormData) => Promise<void> // ★追加
+  deleteProjectAction: (fd: FormData) => Promise<void>  // ★追加
 }) {
   const router = useRouter()
   const [selectedSlug, setSelectedSlug] = React.useState<string>(
@@ -156,13 +151,12 @@ export default function ProjectMaterialsSwitcher({
   )
 
   const toggleProjectProgress = React.useCallback(() => {
-    if (isDesktop) return
-
+    // プロジェクト進捗を見るときは教材パネルを閉じる
     setOpenedMaterial(null)
 
     setProjectProgressMode((prev) => {
       const next = !prev
-      setMobileSheetOpen(next)
+      if (!isDesktop) setMobileSheetOpen(next) // mobileだけSheetを開く
       return next
     })
   }, [isDesktop])
@@ -173,8 +167,10 @@ export default function ProjectMaterialsSwitcher({
     setProjectProgressMode(false)
   }, [selectedSlug])
 
-  const unitType = "section" as const
-  const unitLabel = "セクション"
+  const defaultUnitType: UnitType = "section"
+  const defaultUnitLabel = "セクション"
+  const projectUnitType: UnitType = materials[0]?.unitType ?? defaultUnitType
+  const projectUnitLabel = materials[0]?.unitLabel ?? defaultUnitLabel
 
   const ProjectPanel = (
     <ProjectRecordCalendarPanel
@@ -187,9 +183,10 @@ export default function ProjectMaterialsSwitcher({
         totalUnits: m.totalUnits,
         lapsTotal: m.lapsTotal,
         planDays: m.planDays,
+        actualDays: m.actualDays,
       }))}
-      unitType={unitType}
-      unitLabel={unitLabel}
+      unitType={projectUnitType}
+      unitLabel={projectUnitLabel}
       onSelectMaterialSlug={(slug) => {
         const m = materials.find((x) => x.slug === slug)
         if (!m) return
@@ -204,6 +201,9 @@ export default function ProjectMaterialsSwitcher({
           lapsTotal: m.lapsTotal,
           planDays: m.planDays,
           actualDays: m.actualDays,
+          // ★追加：教材ごとの unitType/unitLabel を渡す
+          unitType: m.unitType ?? defaultUnitType,
+          unitLabel: m.unitLabel ?? defaultUnitLabel,
         })
       }}
     />
@@ -219,19 +219,24 @@ export default function ProjectMaterialsSwitcher({
           initialPlanDays={openedMaterial.planDays ?? []}
           saveSectionRecordsAction={saveSectionRecordsAction}
           range={{
-            from: openedMaterial.startDate ? new Date(`${openedMaterial.startDate}T00:00:00`) : undefined,
-            to: openedMaterial.endDate ? new Date(`${openedMaterial.endDate}T00:00:00`) : undefined,
+            from: openedMaterial.startDate
+              ? new Date(`${openedMaterial.startDate}T00:00:00`)
+              : undefined,
+            to: openedMaterial.endDate
+              ? new Date(`${openedMaterial.endDate}T00:00:00`)
+              : undefined,
           }}
           unitCount={openedMaterial.totalUnits ?? 0}
           laps={openedMaterial.lapsTotal ?? 0}
-          unitLabel={unitLabel}
-          unitType={unitType}
+          // ★変更：openedMaterial 側の unitLabel / unitType を使う（= DBに応じて表示が変わる）
+          unitLabel={openedMaterial.unitLabel ?? defaultUnitLabel}
+          unitType={(openedMaterial.unitType ?? defaultUnitType) as UnitType}
         />
       </div>
     </div>
   ) : null
 
-  const RightPanel = MaterialPanel ?? ProjectPanel
+  const RightPanel = projectProgressMode ? ProjectPanel : (MaterialPanel ?? ProjectPanel)
 
   const [renameOpen, setRenameOpen] = React.useState(false)
   const [renameValue, setRenameValue] = React.useState("")
@@ -281,11 +286,47 @@ export default function ProjectMaterialsSwitcher({
     }
   }
 
+  const deleteProject = React.useCallback(
+  async (projectId: number | string, projectSlug: string) => {
+    const fd = new FormData()
+    fd.set("projectId", String(projectId))
+    await deleteProjectAction(fd)
+
+    // いま選択中プロジェクトを消したら、先頭に逃がす
+    if (selectedSlug === projectSlug) {
+      const next = projects.find((p) => p.slug !== projectSlug)?.slug ?? ""
+      setSelectedSlug(next)
+      setOpenedMaterial(null)
+      setProjectProgressMode(false)
+      setMobileSheetOpen(false)
+    }
+
+    router.refresh()
+  },
+  [deleteProjectAction, router, selectedSlug, projects]
+)
+
   const goEditMaterial = React.useCallback(
     (slug: string) => {
       router.push(`/new-add?edit=${encodeURIComponent(slug)}`)
     },
     [router]
+  )
+  const deleteMaterial = React.useCallback(
+    async (materialId: number | string, materialSlug?: string) => {
+      const fd = new FormData()
+      fd.set("materialId", String(materialId))
+      await deleteMaterialAction(fd)
+
+      // 開いてた教材が消えたら閉じる
+      if (materialSlug && openedMaterial?.slug === materialSlug) {
+        setOpenedMaterial(null)
+        setProjectProgressMode(false)
+      }
+
+      router.refresh()
+    },
+    [deleteMaterialAction, router, openedMaterial?.slug]
   )
 
   const [isReplanning, setIsReplanning] = React.useState(false)
@@ -322,40 +363,85 @@ export default function ProjectMaterialsSwitcher({
 
               <div className="space-y-2">
                 {orderProjects.map((p) => {
-                  const id = String(p.id)
-                  return (
-                    <div
-                      key={id}
-                      draggable
-                      onDragStart={() => setDragId(id)}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => {
-                        if (!dragId || dragId === id) return
-                        setOrderProjects((prev) => {
-                          const from = prev.findIndex((x) => String(x.id) === dragId)
-                          const to = prev.findIndex((x) => String(x.id) === id)
-                          if (from < 0 || to < 0) return prev
-                          const next = [...prev]
-                          const [moved] = next.splice(from, 1)
-                          next.splice(to, 0, moved)
-                          return next
-                        })
-                        setDragId(null)
-                      }}
-                      onDragEnd={() => setDragId(null)}
-                      className={[
-                        "flex items-center justify-between gap-3",
-                        "rounded-md border px-3 py-2 bg-muted",
-                        "cursor-grab active:cursor-grabbing",
-                        dragId === id ? "opacity-60" : "",
-                      ].join(" ")}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium truncate">{p.name}</div>
-                      </div>
-                    </div>
-                  )
-                })}
+  const id = String(p.id)
+  const isCurrent = p.slug === selectedSlug
+
+  return (
+    <div
+      key={id}
+      draggable
+      onDragStart={() => setDragId(id)}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={() => {
+        if (!dragId || dragId === id) return
+        setOrderProjects((prev) => {
+          const from = prev.findIndex((x) => String(x.id) === dragId)
+          const to = prev.findIndex((x) => String(x.id) === id)
+          if (from < 0 || to < 0) return prev
+          const next = [...prev]
+          const [moved] = next.splice(from, 1)
+          next.splice(to, 0, moved)
+          return next
+        })
+        setDragId(null)
+      }}
+      onDragEnd={() => setDragId(null)}
+      className={[
+        "flex items-center justify-between gap-3",
+        "rounded-md border px-3 py-2 bg-muted",
+        "cursor-grab active:cursor-grabbing",
+        dragId === id ? "opacity-60" : "",
+      ].join(" ")}
+    >
+      <div className="min-w-0 flex items-center gap-2">
+        <div className="text-sm font-medium truncate">{p.name}</div>
+        {isCurrent ? (
+          <span className="text-[10px] px-2 py-0.5 rounded-full border bg-background text-muted-foreground">
+            選択中
+          </span>
+        ) : null}
+      </div>
+
+      <div
+        className="shrink-0"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              aria-label="プロジェクトを削除"
+              title="削除"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          </AlertDialogTrigger>
+
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+              <AlertDialogDescription>
+                「{p.name}」を削除すると、プロジェクト内の教材・計画・実績も含めて復元できません。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => void deleteProject(p.id, p.slug)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                削除する
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  )
+})}
               </div>
             </div>
 
@@ -372,7 +458,7 @@ export default function ProjectMaterialsSwitcher({
       </Dialog>
 
       {!isDesktop ? (
-        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+        <Sheet modal={false} open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
           <SheetContent side="bottom" className="h-[80vh] p-0 rounded-t-xl">
             <SheetHeader className="sr-only">
               <SheetTitle>実績入力</SheetTitle>
@@ -388,9 +474,7 @@ export default function ProjectMaterialsSwitcher({
         <div className="space-y-3 col-span-1 h-full min-h-0 flex flex-col">
           <ProjectCarousel projects={projects} onSelectSlug={setSelectedSlug} selectedSlug={selectedSlug} />
 
-          <div className="grid grid-cols-4 sm:justify-start gap-2 items-center">
-
-
+          <div className="grid grid-cols-2 sm:grid-cols-4 sm:justify-start gap-2 items-center">
             <ProjectPageButton ariaLabel="プロジェクトを編集" onClick={openRename}>
               <Eraser className="h-7 w-7" />
               <div className="">プロジェクト編集</div>
@@ -408,11 +492,11 @@ export default function ProjectMaterialsSwitcher({
               <CalendarSync className="h-7 w-7" />
               <div className="">{isReplanning ? "再配分中...." : "計画の再配分"}</div>
             </ProjectPageButton>
+
             <ProjectPageButton ariaLabel="本日タスク完了" onClick={toggleProjectProgress}>
-              <BookCheck className="h-7 w-7"/>
+              <BookCheck className="h-7 w-7" />
               <div className="">本日タスク完了</div>
             </ProjectPageButton>
-            
           </div>
 
           <div className="flex-1 min-h-0">
@@ -420,6 +504,9 @@ export default function ProjectMaterialsSwitcher({
               materials={materials}
               projectName={selectedProjectName}
               selectedMaterialSlug={openedMaterial?.slug ?? null}
+              onDeleteMaterial={async (m) => {
+                await deleteMaterial(m.id, m.slug)
+              }}
               onSelectMaterial={(m) =>
                 toggleSelectMaterial({
                   id: m.id,
@@ -432,6 +519,8 @@ export default function ProjectMaterialsSwitcher({
                   lapsTotal: m.lapsTotal,
                   planDays: m.planDays,
                   actualDays: m.actualDays,
+                  unitType: m.unitType ?? defaultUnitType,
+                  unitLabel: m.unitLabel ?? defaultUnitLabel,
                 })
               }
               onEditMaterial={(m) => goEditMaterial(m.slug)}
@@ -445,6 +534,7 @@ export default function ProjectMaterialsSwitcher({
               }}
             />
           </div>
+
           <div className="w-full flex justify-end">
             <ProjectPageButton ariaLabel="教材を新規追加" href="/new-add">
               <Pen className="h-7 w-7" />

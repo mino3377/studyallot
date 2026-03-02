@@ -169,7 +169,7 @@ export default function ProjectSelectStep({
         <Button
           type="button"
           variant="default"
-          className="hover:bg-muted transition-colors"
+          className="transition-colors"
           onClick={onNext}
           disabled={!canNext}
         >

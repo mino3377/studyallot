@@ -1,3 +1,4 @@
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\select-toggle.tsx
 "use client"
 
 import * as React from "react"
@@ -18,6 +19,7 @@ export default function SelectToggle({
   onOpenChange,
   onSelect,
   triggerHandlers,
+  disabled,
 }: {
   items: SelectToggleItem[]
   selectedId?: string
@@ -34,12 +36,14 @@ export default function SelectToggle({
     onPointerUp?: React.PointerEventHandler<HTMLDivElement>
     onPointerCancel?: React.PointerEventHandler<HTMLDivElement>
   }
+  disabled?: boolean
 }) {
   const [internalOpen, setInternalOpen] = React.useState(false)
   const isControlled = typeof open === "boolean"
   const actualOpen = isControlled ? open : internalOpen
 
   const setOpen = (v: boolean) => {
+    if (disabled) return
     if (!isControlled) setInternalOpen(v)
     onOpenChange?.(v)
   }
@@ -54,25 +58,45 @@ export default function SelectToggle({
   const isPlaceholder = !selectedLabel
 
   return (
-    <Popover open={actualOpen} onOpenChange={setOpen}>
+    <Popover open={disabled ? false : actualOpen} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div
           role="button"
-          tabIndex={0}
+          tabIndex={disabled ? -1 : 0}
+          aria-disabled={disabled ? true : undefined}
           onKeyDown={(e) => {
+            if (disabled) return
             if (e.key === "Enter" || e.key === " ") setOpen(!actualOpen)
             triggerHandlers?.onKeyDown?.(e)
           }}
-          onClickCapture={triggerHandlers?.onClickCapture}
-          onPointerDown={triggerHandlers?.onPointerDown}
-          onPointerMove={triggerHandlers?.onPointerMove}
-          onPointerUp={triggerHandlers?.onPointerUp}
-          onPointerCancel={triggerHandlers?.onPointerCancel}
+          onClickCapture={(e) => {
+            if (disabled) {
+              e.preventDefault()
+              e.stopPropagation()
+              return
+            }
+            triggerHandlers?.onClickCapture?.(e)
+          }}
+          onPointerDown={(e) => {
+            if (disabled) {
+              e.preventDefault()
+              e.stopPropagation()
+              return
+            }
+            triggerHandlers?.onPointerDown?.(e)
+          }}
+          onPointerMove={disabled ? undefined : triggerHandlers?.onPointerMove}
+          onPointerUp={disabled ? undefined : triggerHandlers?.onPointerUp}
+          onPointerCancel={disabled ? undefined : triggerHandlers?.onPointerCancel}
           className={[
-            "p-3 border rounded-sm cursor-pointer transition-all duration-200",
-            "hover:shadow",
+            "p-3 border rounded-sm transition-all duration-200",
+            disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow",
             "bg-card hover:bg-muted/20",
           ].join(" ")}
+          onClick={() => {
+            if (disabled) return
+            setOpen(!actualOpen)
+          }}
         >
           <div className="space-y-1">
             <div
@@ -100,12 +124,15 @@ export default function SelectToggle({
                 <button
                   key={it.id}
                   type="button"
+                  disabled={disabled}
                   onClick={() => {
+                    if (disabled) return
                     onSelect?.(it.id)
                     setOpen(false)
                   }}
                   className={[
                     "w-full flex items-center justify-between rounded-md px-2 py-2 text-left text-sm transition-colors",
+                    disabled ? "opacity-60 cursor-not-allowed" : "",
                     active ? "bg-emerald-500/15" : "hover:bg-muted",
                   ].join(" ")}
                 >

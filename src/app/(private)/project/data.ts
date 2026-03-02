@@ -1,5 +1,11 @@
 // C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\data.ts
-import { fetchMaterialsByProjectIds, fetchProjects, type MaterialRow, type ProjectRow } from "./queries"
+import {
+  fetchMaterialsByProjectIds,
+  fetchProjects,
+  type MaterialRow,
+  type ProjectRow,
+} from "./queries"
+import type { MaterialVM, UnitType } from "@/lib/type/material"
 
 export type ProjectForCarousel = {
   id: number | string
@@ -11,22 +17,6 @@ export type ProjectForCarousel = {
   materialsTotal: number
   actualPct: number
   plannedPct: number
-}
-
-export type MaterialVM = {
-  id: number | string
-  title: string
-  slug: string
-  order: number // ★追加
-  startDate: string
-  endDate: string
-  totalUnits: number
-  lapsNow: number
-  lapsTotal: number
-  plannedPct: number
-  actualPct: number
-  planDays?: number[]
-  actualDays?: number[]
 }
 
 function safeISO(s?: string | null) {
@@ -78,6 +68,8 @@ function materialToVM(m: MaterialRow): MaterialVM {
     actualPct,
     planDays: m.plan_days ?? [],
     actualDays: m.actual_days ?? [],
+    unitType: (m.unit_type as UnitType) ?? "section",
+    // unitLabel: (m.unit_label as string | undefined) ?? undefined, // ←DBにあればON
   }
 }
 
@@ -97,7 +89,6 @@ function groupMaterialsByProjectSlug(
     out[pSlug].push(materialToVM(m))
   }
 
-  // ★保険：projectごとにorder順へ
   for (const slug of Object.keys(out)) {
     out[slug].sort((a, b) => {
       if (a.order !== b.order) return a.order - b.order

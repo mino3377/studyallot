@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { eachDayOfInterval, format, isBefore, isAfter } from "date-fns"
+import { eachDayOfInterval, format } from "date-fns"
 import type { DateRange } from "react-day-picker"
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
@@ -33,7 +33,7 @@ type Props = {
   unitType: UnitType
   restDays: Set<number>
   onPlanDaysChange?: (days: number[]) => void
-  initialPlanDays?: number[] // ★編集用
+  initialPlanDays?: number[]
 }
 
 function iso(d: Date) {
@@ -50,25 +50,18 @@ function makeAllTasks(laps: number, units: number): Task[] {
   return out
 }
 
-function listTargetDays(range: DateRange, excludeWeekdays: Set<number>) {
-  if (!range.from || !range.to) return []
-  return eachDayOfInterval({ start: range.from, end: range.to }).filter(
-    (d) => !excludeWeekdays.has(d.getDay())
-  )
-}
-
 function distributeEvenly(
   tasks: Task[],
   range: DateRange,
   excludeWeekdays: Set<number>
 ): Record<string, Task[]> {
-  const days = listTargetDays(range, excludeWeekdays)
+  const days = eachDayOfInterval({ start: range.from!, end: range.to! }).filter(
+    (d) => !excludeWeekdays.has(d.getDay())
+  )
   const map: Record<string, Task[]> = {}
 
-  if (range.from && range.to) {
-    for (const d of eachDayOfInterval({ start: range.from, end: range.to })) {
-      map[iso(d)] = []
-    }
+  for (const d of eachDayOfInterval({ start: range.from!, end: range.to! })) {
+    map[iso(d)] = []
   }
   if (days.length === 0) return map
 
@@ -79,7 +72,6 @@ function distributeEvenly(
   for (const d of days) {
     const take = base + (rem > 0 ? 1 : 0)
     rem = Math.max(0, rem - 1)
-
     const dayISO = iso(d)
     map[dayISO] = tasks.slice(idx, idx + take)
     idx += take
@@ -88,7 +80,6 @@ function distributeEvenly(
   return map
 }
 
-// ★追加：DBの planDays(counts) → 日付ごとの Task[] に復元（休みは“表示”上の話なので、復元は全日でOK）
 function planFromCounts(
   tasks: Task[],
   range: DateRange,
@@ -137,13 +128,13 @@ export default function PlanAdjustDemo({
   const [plan, setPlan] = React.useState<Record<string, Task[]>>({})
 
   const restKey = React.useMemo(() => Array.from(restDays).sort().join(","), [restDays])
+  const initialKey = React.useMemo(() => (initialPlanDays ?? []).join("|"), [initialPlanDays])
 
   React.useEffect(() => {
     if (!ready) return
     const tasks = makeAllTasks(laps!, unitCount!)
     const exclude = restDays.size > 0 ? restDays : new Set<number>()
 
-    // ★修正：編集時の planDays を優先して復元
     const daysAll = eachDayOfInterval({ start: range!.from!, end: range!.to! })
     const N = daysAll.length
     const pArr = Array.from({ length: N }, (_, i) => {
@@ -163,7 +154,7 @@ export default function PlanAdjustDemo({
     range?.from?.getTime(),
     range?.to?.getTime(),
     restKey,
-    (initialPlanDays ?? []).join("|"),
+    initialKey,
   ])
 
   const chartData = React.useMemo(() => {
@@ -202,6 +193,7 @@ export default function PlanAdjustDemo({
         unitType={unitType}
         restDays={restDays}
         onPlanDaysChange={onPlanDaysChange}
+        initialPlanDays={initialPlanDays}
       />
 
       <div className="hidden lg:flex lg:flex-col flex-1 lg:col-span-1 md:ml-2 lg:mr-1">

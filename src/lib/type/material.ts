@@ -72,7 +72,29 @@ export type SectionsEditorProps = {
   max?: number
 }
 
-type UpdateMaterialInput = {
+// ★ここから追加（統一型）
+export type UnitType = "section" | "chapter" | "unit" | "page"
+
+export type MaterialVM = {
+  id: number | string
+  title: string
+  slug: string
+  order: number
+  startDate: string
+  endDate: string
+  totalUnits: number
+  lapsNow: number
+  lapsTotal: number
+  plannedPct: number
+  actualPct: number
+  planDays?: number[]
+  actualDays?: number[]
+  unitType: UnitType
+  // unitLabel は DBにあれば使う、無ければ unitType から導出でOK
+  unitLabel?: string
+}
+
+export type UpdateMaterialInput = {
   slug: string
   projectMode: "existing" | "new"
   selectedProjectId?: string
@@ -81,7 +103,7 @@ type UpdateMaterialInput = {
   title: string
   startDate: string
   endDate: string
-  unitType: string
+  unitType: UnitType // ★ string から UnitType へ
   unitCount: number
   rounds: number
   planDays: number[]

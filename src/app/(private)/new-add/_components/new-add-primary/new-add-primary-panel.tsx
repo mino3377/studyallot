@@ -23,6 +23,7 @@ type Props = {
   onChangeRestDays: React.Dispatch<React.SetStateAction<Set<number>>>
   onOpenDetails?: () => void
   onSave?: () => void
+  isEdit?: boolean
 }
 
 export default function NewAddPrimaryPanel({
@@ -38,9 +39,11 @@ export default function NewAddPrimaryPanel({
   onChangeRestDays,
   onOpenDetails,
   onSave,
+  isEdit,
 }: Props) {
   return (
-    <div className="flex flex-col w-full">
+    // ✅ 子が h-full を使えるように親も min-h-0 / h-full
+    <div className="flex flex-col w-full h-full min-h-0">
       <div className="pb-4 rounded-md mb-4">
         <NewAddStepNav
           current={currentStep}
@@ -50,7 +53,9 @@ export default function NewAddPrimaryPanel({
           }}
         />
       </div>
-      <div className="flex-1 rounded-xl">
+
+      {/* ✅ ここも min-h-0 必須（子の overflow が効く） */}
+      <div className="flex-1 min-h-0 rounded-xl">
         {currentStep === 1 ? (
           <ProjectSelectStep
             projects={projects}
@@ -66,6 +71,8 @@ export default function NewAddPrimaryPanel({
             onChangeRestDays={onChangeRestDays}
             onOpenDetails={onOpenDetails}
             onSave={onSave}
+            isEdit={isEdit}
+            onBack={() => onChangeStep(1)}   // ✅ これで「戻る」→ Step1へ
           />
         )}
       </div>

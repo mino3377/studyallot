@@ -1,25 +1,23 @@
-// C:\Users\chiso\nextjs\study-allot\src\components\material\materials-list.tsx
+// C:\Users\chiso\nextjs\study-allot\src\(private)/project/materials-list.tsx
 "use client"
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import ProgressRateCard from "@/app/(private)/project/_components/progress-rate-card"
-import { CheckSquare, Pencil, GripVertical } from "lucide-react"
-
-type MaterialVM = {
-  id: number | string
-  title: string
-  slug: string
-  startDate: string
-  endDate: string
-  totalUnits: number
-  lapsNow: number
-  lapsTotal: number
-  plannedPct: number
-  actualPct: number
-  planDays?: number[]
-  actualDays?: number[]
-}
+import { CheckSquare, Pencil, GripVertical, Trash2 } from "lucide-react"
+import type { MaterialVM, UnitType } from "@/lib/type/material"
+import { taskLabelRange, taskLabelSingle } from "@/components/unit-wording"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type Props = {
   materials: MaterialVM[]
@@ -27,10 +25,13 @@ type Props = {
   selectedMaterialSlug?: string | null
   onSelectMaterial?: (m: MaterialVM) => void
   onEditMaterial?: (m: MaterialVM) => void
-
-  // ★追加：並び替え保存（materials.order に入れるため）
-  onReorderMaterials?: (orders: { materialId: number; order: number }[]) => Promise<void> | void
+  onDeleteMaterial?: (m: MaterialVM) => Promise<void> | void
+  onReorderMaterials?: (
+    orders: { materialId: number; order: number }[]
+  ) => Promise<void> | void
 }
+
+type Task = { id: string; unitNo: number; lap: number }
 
 function getTodayISOJST() {
   const fmt = new Intl.DateTimeFormat("sv-SE", {
@@ -39,7 +40,7 @@ function getTodayISOJST() {
     month: "2-digit",
     day: "2-digit",
   })
-  return fmt.format(new Date()) // YYYY-MM-DD
+  return fmt.format(new Date())
 }
 
 function clampInt(n: number, min: number, max: number) {
@@ -47,41 +48,6 @@ function clampInt(n: number, min: number, max: number) {
   if (n < min) return min
   if (n > max) return max
   return n
-}
-
-function sumPrefix(arr: number[] | undefined, endExclusive: number) {
-  const a = Array.isArray(arr) ? arr : []
-  let s = 0
-  for (let i = 0; i < endExclusive; i++) {
-    const v = a[i]
-    s += Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0
-  }
-  return s
-}
-
-function calcDeltaUntilToday(m: MaterialVM) {
-  const start = (m.startDate ?? "").slice(0, 10)
-  const end = (m.endDate ?? "").slice(0, 10)
-  if (!start || !end) return { delta: 0, hasData: false }
-
-  const msPerDay = 24 * 60 * 60 * 1000
-  const startD = new Date(`${start}T00:00:00`)
-  const endD = new Date(`${end}T00:00:00`)
-  const todayD = new Date(`${getTodayISOJST()}T00:00:00`)
-
-  const D = Math.floor((endD.getTime() - startD.getTime()) / msPerDay) + 1
-  if (!Number.isFinite(D) || D <= 0) return { delta: 0, hasData: false }
-
-  const rawIdx = Math.floor((todayD.getTime() - startD.getTime()) / msPerDay)
-  const fixedLen = clampInt(rawIdx + 1, 0, D) // 今日まで含む
-
-  const planned = sumPrefix(m.planDays, fixedLen)
-  const actual = sumPrefix(m.actualDays, fixedLen)
-
-  const hasData =
-    (Array.isArray(m.planDays) && m.planDays.length > 0) ||
-    (Array.isArray(m.actualDays) && m.actualDays.length > 0)
-  return { delta: planned - actual, hasData }
 }
 
 function dayCount(m: MaterialVM) {
@@ -116,44 +82,149 @@ function todayIndexInRange(m: MaterialVM) {
   return { inRange: true, idx: clampInt(idx, 0, len - 1), len }
 }
 
+function sumPrefix(arr: number[] | undefined, endExclusive: number) {
+  const a = Array.isArray(arr) ? arr : []
+  let s = 0
+  for (let i = 0; i < endExclusive; i++) {
+    const v = a[i]
+    s += Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0
+  }
+  return s
+}
+
+function makeAllTasks(laps: number, units: number): Task[] {
+  const out: Task[] = []
+  for (let lap = 1; lap <= laps; lap++) {
+    for (let u = 1; u <= units; u++) {
+      out.push({ id: `L${lap}-U${u}`, unitNo: u, lap })
+    }
+  }
+  return out
+}
+
+function unitLabelFromType(t: UnitType): string {
+  if (t === "chapter") return "章"
+  if (t === "unit") return "ユニット"
+  if (t === "page") return "ページ"
+  return "セクション"
+}
+
+function toDisplayLabels(unitType: UnitType, tasks: Task[]) {
+  if (tasks.length === 0) return []
+
+  if (unitType !== "page") {
+    return tasks.map((t) => taskLabelSingle(unitType, t.unitNo, t.lap))
+  }
+
+  const sorted = [...tasks].sort((a, b) => (a.lap - b.lap) || (a.unitNo - b.unitNo))
+  const out: string[] = []
+  let i = 0
+  while (i < sorted.length) {
+    const start = sorted[i]!
+    let j = i
+    while (
+      j + 1 < sorted.length &&
+      sorted[j + 1]!.lap === start.lap &&
+      sorted[j + 1]!.unitNo === sorted[j]!.unitNo + 1
+    ) {
+      j++
+    }
+    const end = sorted[j]!
+    out.push(taskLabelRange(unitType, start.unitNo, end.unitNo, start.lap))
+    i = j + 1
+  }
+  return out
+}
+
 function getTodayPlanCount(m: MaterialVM) {
   const { inRange, idx } = todayIndexInRange(m)
-  if (!inRange) return { count: 0, hasPlan: false }
+  if (!inRange) return { count: 0, hasPlan: false, idx: -1 }
   const plan = Array.isArray(m.planDays) ? m.planDays : []
   const hasPlan = plan.length > 0
   const v = idx >= 0 && idx < plan.length ? plan[idx] : 0
   const count = Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0
-  return { count, hasPlan }
+  return { count, hasPlan, idx }
 }
 
-function formatTodayTaskLabel(count: number, unitLabel: string) {
-  if (count <= 0) return ""
-  if (count === 1) return `${unitLabel}1の1周目`
-  return `${unitLabel}1の1周目～${unitLabel}${count}の1周目`
+function buildTodayTaskText(m: MaterialVM) {
+  const unitType: UnitType = m.unitType ?? "section"
+  const unitLabel = m.unitLabel ?? unitLabelFromType(unitType)
+
+  const { count, idx, hasPlan } = getTodayPlanCount(m)
+  if (!hasPlan || count <= 0) return "今日のタスクなし"
+
+  const allTasks = makeAllTasks(Number(m.lapsTotal ?? 0), Number(m.totalUnits ?? 0))
+  const start = sumPrefix(m.planDays, Math.max(0, idx))
+  const end = Math.min(allTasks.length, start + count)
+  const todayTasks = allTasks.slice(start, end)
+  if (todayTasks.length === 0) return "今日のタスクなし"
+
+  const labels = toDisplayLabels(unitType, todayTasks)
+
+  if (labels.length <= 2) return labels.join(" / ")
+  return `${labels[0]} / … / ${labels[labels.length - 1]}`
+}
+
+function calcDeltaUntilToday(m: MaterialVM) {
+  const start = (m.startDate ?? "").slice(0, 10)
+  const end = (m.endDate ?? "").slice(0, 10)
+  if (!start || !end) return { delta: 0, hasData: false }
+
+  const msPerDay = 24 * 60 * 60 * 1000
+  const startD = new Date(`${start}T00:00:00`)
+  const endD = new Date(`${end}T00:00:00`)
+  const todayD = new Date(`${getTodayISOJST()}T00:00:00`)
+
+  const D = Math.floor((endD.getTime() - startD.getTime()) / msPerDay) + 1
+  if (!Number.isFinite(D) || D <= 0) return { delta: 0, hasData: false }
+
+  const rawIdx = Math.floor((todayD.getTime() - startD.getTime()) / msPerDay)
+  const fixedLen = clampInt(rawIdx + 1, 0, D)
+
+  const planned = sumPrefix(m.planDays, fixedLen)
+  const actual = sumPrefix(m.actualDays, fixedLen)
+
+  const hasData =
+    (Array.isArray(m.planDays) && m.planDays.length > 0) ||
+    (Array.isArray(m.actualDays) && m.actualDays.length > 0)
+  return { delta: planned - actual, hasData }
 }
 
 export default function MaterialsList({
   materials,
   onSelectMaterial,
   onEditMaterial,
+  onDeleteMaterial,
   selectedMaterialSlug,
   onReorderMaterials,
 }: Props) {
   const hasMaterials = materials.length > 0
 
-  // ★内部で順番を持つ（D&Dで並び替え）
   const [ordered, setOrdered] = React.useState<MaterialVM[]>(materials)
-  React.useEffect(() => setOrdered(materials), [materials])
-
   const [dragId, setDragId] = React.useState<string | null>(null)
   const [isSavingOrder, setIsSavingOrder] = React.useState(false)
 
-  const COLS = "grid-cols-[22px_minmax(0,1fr)_35px_35px_35px]"
+  // ★追加：編集ボタン押下でその行だけ「削除/編集」の2ボタン表示にする
+  const [actionOpenId, setActionOpenId] = React.useState<string | null>(null)
+  const [isDeletingId, setIsDeletingId] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (dragId) return
+    setOrdered(materials)
+  }, [materials, dragId])
+
+  // 教材リストが更新されたら、存在しない actionOpenId は閉じる
+  React.useEffect(() => {
+    if (!actionOpenId) return
+    const exists = ordered.some((m) => String(m.id) === actionOpenId)
+    if (!exists) setActionOpenId(null)
+  }, [ordered, actionOpenId])
+
+  const COLS = "grid-cols-[22px_minmax(0,1fr)_35px_35px_75px]"
 
   const persistOrder = React.useCallback(
     async (nextList: MaterialVM[]) => {
       if (!onReorderMaterials) return
-      // materials.id が number|string なので numberに寄せる（DB更新用）
       const payload = nextList
         .map((m, idx) => ({
           materialId: Number(m.id),
@@ -171,9 +242,19 @@ export default function MaterialsList({
     [onReorderMaterials]
   )
 
+  const pendingPersistRef = React.useRef<MaterialVM[] | null>(null)
+
+  React.useEffect(() => {
+    const next = pendingPersistRef.current
+    if (!next) return
+    pendingPersistRef.current = null
+    void persistOrder(next)
+  }, [ordered, persistOrder])
+
   const handleDropOn = React.useCallback(
-    async (targetId: string) => {
+    (targetId: string) => {
       if (!dragId || dragId === targetId) return
+
       setOrdered((prev) => {
         const from = prev.findIndex((x) => String(x.id) === dragId)
         const to = prev.findIndex((x) => String(x.id) === targetId)
@@ -181,13 +262,28 @@ export default function MaterialsList({
         const next = [...prev]
         const [moved] = next.splice(from, 1)
         next.splice(to, 0, moved)
-        // 保存（楽観的にUIは先に反映）
-        void persistOrder(next)
+        pendingPersistRef.current = next
         return next
       })
+
       setDragId(null)
     },
-    [dragId, persistOrder]
+    [dragId]
+  )
+
+  const runDelete = React.useCallback(
+    async (m: MaterialVM) => {
+      if (!onDeleteMaterial) return
+      const id = String(m.id)
+      try {
+        setIsDeletingId(id)
+        await onDeleteMaterial(m)
+        setActionOpenId(null)
+      } finally {
+        setIsDeletingId(null)
+      }
+    },
+    [onDeleteMaterial]
   )
 
   return (
@@ -238,17 +334,16 @@ export default function MaterialsList({
               const isDelay = hasData && delta > 0
               const isAhead = hasData && delta < 0
 
-              const { count: todayPlanCount } = getTodayPlanCount(m)
-              const todayTaskText =
-                todayPlanCount > 0
-                  ? formatTodayTaskLabel(todayPlanCount, "セクション")
-                  : "今日のタスクなし"
+              const todayTaskText = buildTodayTaskText(m)
+
+              const isActionOpen = actionOpenId === id
+              const isDeleting = isDeletingId === id
 
               return (
                 <div
                   key={id}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => void handleDropOn(id)}
+                  onDrop={() => handleDropOn(id)}
                   className={[
                     `grid ${COLS} items-center gap-x-3 p-1 rounded-md transition`,
                     "bg-muted hover:bg-muted/60",
@@ -276,7 +371,7 @@ export default function MaterialsList({
                   </div>
 
                   <div className="min-w-0 overflow-hidden">
-                    <div className="overflow-hidden whitespace-nowrap text-ellipsis text-base font-semibold">
+                    <div className="overflow-hidden whitespace-nowrap text-ellipsis text-sm md:text-base font-semibold">
                       {m.title}
                     </div>
 
@@ -312,20 +407,72 @@ export default function MaterialsList({
                     </Button>
                   </div>
 
+                  {/* ★編集列：Pencil → (削除/編集の2ボタン) */}
                   <div className="justify-self-center">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label="教材を編集"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEditMaterial?.(m)
-                      }}
-                      className="hover:bg-muted/30"
-                    >
-                      <Pencil className="h-5 w-5" />
-                    </Button>
+                    {!isActionOpen ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="教材の操作を開く"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActionOpenId((prev) => (prev === id ? null : id))
+                        }}
+                        className="hover:bg-muted/30"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </Button>
+                    ) : (
+                      <div
+                        className="inline-flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              aria-label="教材を削除"
+                              disabled={!onDeleteMaterial || isDeleting}
+                              title="削除"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </AlertDialogTrigger>
+
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                「{m.title}」を削除すると、計画・実績データも含めて復元できません。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => void runDelete(m)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                削除する
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label="教材を編集"
+                          onClick={() => onEditMaterial?.(m)}
+                          title="編集"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )

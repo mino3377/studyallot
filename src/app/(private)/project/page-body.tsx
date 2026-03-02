@@ -231,6 +231,59 @@ export default async function PageBody({ userId }: { userId: string }) {
     revalidatePath("/project")
   }
 
+  async function deleteMaterialAction(fd: FormData) {
+    "use server"
+    const supabase = await createClient()
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth?.user) redirect("/login")
+
+    const materialId = Number(fd.get("materialId"))
+    if (!materialId || Number.isNaN(materialId)) {
+      throw new Error("Invalid materialId")
+    }
+
+    const { error } = await supabase
+      .from("materials")
+      .delete()
+      .eq("id", materialId)
+      .eq("user_id", auth.user.id)
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath("/project")
+  }
+
+  async function deleteProjectAction(fd: FormData) {
+    "use server"
+    const supabase = await createClient()
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth?.user) redirect("/login")
+
+    const projectId = Number(fd.get("projectId"))
+    if (!projectId || Number.isNaN(projectId)) {
+      throw new Error("Invalid projectId")
+    }
+
+    // ★CASCADEが無い場合の安全策：先に教材を消す
+    const { error: matsErr } = await supabase
+      .from("materials")
+      .delete()
+      .eq("project_id", projectId)
+      .eq("user_id", auth.user.id)
+
+    if (matsErr) throw new Error(matsErr.message)
+
+    const { error: projErr } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", projectId)
+      .eq("user_id", auth.user.id)
+
+    if (projErr) throw new Error(projErr.message)
+
+    revalidatePath("/project")
+  }
+
   async function updateMaterialOrdersAction(fd: FormData) {
     "use server"
     const supabase = await createClient()
@@ -289,6 +342,8 @@ export default async function PageBody({ userId }: { userId: string }) {
           updateProjectMetaAction={updateProjectMetaAction}
           replanDelayedPlansAction={replanDelayedPlansAction}
           updateMaterialOrdersAction={updateMaterialOrdersAction}
+          deleteMaterialAction={deleteMaterialAction}
+          deleteProjectAction={deleteProjectAction}
         />
       </div>
     </div>

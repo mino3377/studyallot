@@ -15,14 +15,14 @@ import {
   unitLabel,
 } from "./_components/new-add-primary/material-register-step"
 
-import PlanAdjustDemo from "./_components/new-add-primary/plan-adjust" // あなたの実ファイル名に合わせて
+import PlanAdjustDemo from "./_components/new-add-primary/plan-adjust"
 import NewAddPrimaryPanel from "./_components/new-add-primary/new-add-primary-panel"
 
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import PlanAdjustCalendarPanel from "./_components/new-add-primary/plan-adjust-calendar-panel"
 
 import { saveNewMaterialAction } from "./actions"
-import { updateMaterialAction } from "./actions" // ★これが無いとエラー（同じaction.tsにexportしておく）
+import { updateMaterialAction } from "./actions"
 
 function fmtISODate(d?: Date) {
   if (!d) return ""
@@ -66,21 +66,12 @@ export default function NewAddPageBody({
   const [planDays, setPlanDays] = React.useState<number[]>(
     () => (initial?.planDays && Array.isArray(initial.planDays) ? initial.planDays : [])
   )
-  // ★ここが要望対応：編集時は未選択（空） / 新規は日曜[0]デフォルト
+
   const [restDays, setRestDays] = React.useState<Set<number>>(
-    () => (isEdit ? new Set<number>() : new Set<number>())
+    () => new Set<number>()
   )
 
   const [openDetails, setOpenDetails] = React.useState(false)
-
-  const missingForEdit =
-    isEdit &&
-    (!initial?.startDate ||
-      !initial?.endDate ||
-      !initial?.unitType ||
-      initial?.unitCount == null ||
-      initial?.laps == null ||
-      !initial?.planDays?.length)
 
   const [currentStep, setCurrentStep] = React.useState<Step>(() =>
     isEdit ? 2 : 1
@@ -152,59 +143,65 @@ export default function NewAddPageBody({
     })
   }
 
+  const stableInitialPlanDays = isEdit
+    ? (Array.isArray(initial?.planDays) ? initial!.planDays! : [])
+    : undefined
+
   return (
-    <main className="md:grid md:grid-cols-2 lg:grid-cols-3 h-full">
-      <div className="md:col-span-1">
-        <NewAddPrimaryPanel
-          currentStep={currentStep}
-          onChangeStep={setCurrentStep}
-          projects={projects}
-          step1={step1}
-          onChangeStep1={setStep1}
-          onNext={goStep2}
-          materialStep={materialStep}
-          onChangeMaterialStep={setMaterialStep}
-          restDays={restDays}
-          onChangeRestDays={setRestDays}
-          onOpenDetails={() => setOpenDetails(true)}
-          onSave={handleSave}
-        />
-      </div>
+  <main className="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 h-full min-h-0">
+    <div className="flex-1 min-h-0 md:col-span-1 md:flex-none">
+      <NewAddPrimaryPanel
+        currentStep={currentStep}
+        onChangeStep={setCurrentStep}
+        projects={projects}
+        step1={step1}
+        onChangeStep1={setStep1}
+        onNext={goStep2}
+        materialStep={materialStep}
+        onChangeMaterialStep={setMaterialStep}
+        restDays={restDays}
+        onChangeRestDays={setRestDays}
+        onOpenDetails={() => setOpenDetails(true)}
+        onSave={handleSave}
+        isEdit={isEdit}
+      />
+    </div>
 
-      <div className="hidden md:flex md:col-span-1 lg:col-span-2 h-full min-h-0">
-        <PlanAdjustDemo
-          range={range}
-          unitCount={unitCountNum}
-          laps={lapsNum}
-          unitLabel={unitLabelText}
-          restDays={restDays}
-          unitType={materialStep.unitType}
-          onPlanDaysChange={setPlanDays}
-          initialPlanDays={isEdit ? planDays : undefined}
-        />
-      </div>
+    <div className="hidden md:flex md:col-span-1 lg:col-span-2 h-full min-h-0">
+      <PlanAdjustDemo
+        range={range}
+        unitCount={unitCountNum}
+        laps={lapsNum}
+        unitLabel={unitLabelText}
+        restDays={restDays}
+        unitType={materialStep.unitType}
+        onPlanDaysChange={setPlanDays}
+        initialPlanDays={stableInitialPlanDays}
+      />
+    </div>
 
-      <div className="md:hidden">
-        <Sheet open={openDetails} onOpenChange={setOpenDetails}>
-          <SheetContent side="bottom" className="p-0 max-h-[85vh]">
-            <div className="h-[85vh] p-3 flex flex-col min-h-0">
-              <div className="flex-1 min-h-0">
-                {range?.from && range?.to && unitCountNum && lapsNum && unitLabelText ? (
-                  <PlanAdjustCalendarPanel
-                    range={range}
-                    unitCount={unitCountNum}
-                    laps={lapsNum}
-                    unitLabel={unitLabelText}
-                    restDays={restDays}
-                    unitType={materialStep.unitType}
-                    onPlanDaysChange={setPlanDays}
-                  />
-                ) : null}
-              </div>
+    <div className="md:hidden">
+      <Sheet open={openDetails} onOpenChange={setOpenDetails}>
+        <SheetContent side="bottom" className="p-0 max-h-[85vh]">
+          <div className="h-[85vh] p-3 flex flex-col min-h-0">
+            <div className="flex-1 min-h-0">
+              {range?.from && range?.to && unitCountNum && lapsNum && unitLabelText ? (
+                <PlanAdjustCalendarPanel
+                  range={range}
+                  unitCount={unitCountNum}
+                  laps={lapsNum}
+                  unitLabel={unitLabelText}
+                  restDays={restDays}
+                  unitType={materialStep.unitType}
+                  onPlanDaysChange={setPlanDays}
+                  initialPlanDays={stableInitialPlanDays}
+                />
+              ) : null}
             </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </main>
-  )
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
+  </main>
+)
 }

@@ -12,7 +12,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <>
-      <header className="sticky top-0 z-50 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 backdrop-blur-md supports-backdrop-filter:bg-background/60">
         <div className="mx-auto max-w-6xl h-14 px-4 md:px-6 flex items-center justify-between">
           <Link
             href="/"

@@ -1,4 +1,4 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\new-add-primary\plan-adjust-calendar-panel.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\new-add-primary\plan-adjust-calendar-panel.tsx
 "use client"
 
 import * as React from "react"
@@ -37,6 +37,7 @@ type Props = {
   unitType: UnitType
   restDays: Set<number>
   onPlanDaysChange?: (days: number[]) => void
+  initialPlanDays?: number[]
 }
 
 function iso(d: Date) {
@@ -150,6 +151,34 @@ function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
   return out
 }
 
+function planFromCounts(
+  tasks: Task[],
+  range: DateRange,
+  counts: number[]
+): Record<string, Task[]> {
+  const map: Record<string, Task[]> = {}
+  if (!range.from || !range.to) return map
+
+  const days = eachDayOfInterval({ start: range.from, end: range.to })
+  for (const d of days) map[iso(d)] = []
+
+  let idx = 0
+  for (let i = 0; i < days.length; i++) {
+    const takeRaw = counts[i]
+    const take = Number.isFinite(takeRaw) ? Math.max(0, Math.floor(takeRaw)) : 0
+    const dayISO = iso(days[i]!)
+    map[dayISO] = tasks.slice(idx, idx + take)
+    idx += take
+  }
+
+  if (idx < tasks.length && days.length > 0) {
+    const lastISO = iso(days[days.length - 1]!)
+    map[lastISO] = [...(map[lastISO] ?? []), ...tasks.slice(idx)]
+  }
+
+  return map
+}
+
 export default function PlanAdjustCalendarPanel({
   range,
   unitCount,
@@ -158,6 +187,7 @@ export default function PlanAdjustCalendarPanel({
   unitType,
   restDays,
   onPlanDaysChange,
+  initialPlanDays,
 }: Props) {
   const ready = !!range?.from && !!range?.to && !!unitCount && !!laps && !!unitLabel
 
@@ -165,12 +195,24 @@ export default function PlanAdjustCalendarPanel({
   const [plan, setPlan] = React.useState<Record<string, Task[]>>({})
 
   const restKey = React.useMemo(() => Array.from(restDays).sort().join(","), [restDays])
+  const initialKey = React.useMemo(() => (initialPlanDays ?? []).join("|"), [initialPlanDays])
 
   React.useEffect(() => {
     if (!ready) return
     const tasks = makeAllTasks(laps, unitCount)
+
+    const daysAll = eachDayOfInterval({ start: range.from!, end: range.to! })
+    const N = daysAll.length
+
+    const pArr = Array.from({ length: N }, (_, i) => {
+      const v = initialPlanDays?.[i]
+      return Number.isFinite(v) ? Math.max(0, Math.floor(v as number)) : 0
+    })
+    const hasPlan = pArr.some((n) => n > 0)
+
     const exclude = restDays.size > 0 ? restDays : new Set<number>()
-    const p = distributeEvenly(tasks, range, exclude)
+    const p = hasPlan ? planFromCounts(tasks, range, pArr) : distributeEvenly(tasks, range, exclude)
+
     setPlan(p)
     setSelectedDay(range.from)
   }, [
@@ -182,6 +224,7 @@ export default function PlanAdjustCalendarPanel({
     range?.from?.getTime(),
     range?.to?.getTime(),
     restKey,
+    initialKey,
   ])
 
   React.useEffect(() => {
@@ -243,35 +286,6 @@ export default function PlanAdjustCalendarPanel({
     })
   }
 
-  function planFromCounts(
-  tasks: Task[],
-  range: DateRange,
-  counts: number[]
-): Record<string, Task[]> {
-  const map: Record<string, Task[]> = {}
-  if (!range.from || !range.to) return map
-
-  const days = eachDayOfInterval({ start: range.from, end: range.to })
-  for (const d of days) map[iso(d)] = []
-
-  let idx = 0
-  for (let i = 0; i < days.length; i++) {
-    const takeRaw = counts[i]
-    const take = Number.isFinite(takeRaw) ? Math.max(0, Math.floor(takeRaw)) : 0
-    const dayISO = iso(days[i]!)
-    map[dayISO] = tasks.slice(idx, idx + take)
-    idx += take
-  }
-
-  // 取りこぼしがあったら最終日に寄せる（表示が壊れないように）
-  if (idx < tasks.length && days.length > 0) {
-    const lastISO = iso(days[days.length - 1]!)
-    map[lastISO] = [...(map[lastISO] ?? []), ...tasks.slice(idx)]
-  }
-
-  return map
-}
-
   const tomorrow = ready && selectedDay ? nextDayInRange(selectedDay, range) : null
   const tomorrowCount = tomorrow ? (plan[iso(tomorrow)]?.length ?? 0) : 0
   const canPlus = !!tomorrow && tomorrowCount > 0 && !!selectedDay && isInRange(selectedDay, range)
@@ -322,10 +336,11 @@ export default function PlanAdjustCalendarPanel({
                   const d = day.date
                   const dayISO = iso(d)
                   const count = plan[dayISO]?.length ?? 0
-                  const isRest = restDays.has(d.getDay())
                   const isIn = isInRange(d, range)
-                  const showCount = !modifiers.outside && count > 0
-                  const showRest = !modifiers.outside && !showCount && isIn && isRest
+
+                  // ★変更：範囲内で count===0 も「休」にする（空欄にしない）
+                  const showCount = !modifiers.outside && isIn && count > 0
+                  const showRest = !modifiers.outside && isIn && !showCount // ← 0も休
 
                   return (
                     <CalendarDayButton day={day} modifiers={modifiers} {...props}>
@@ -337,13 +352,9 @@ export default function PlanAdjustCalendarPanel({
                               {circledNumber(count)}
                             </span>
                           ) : showRest ? (
-                            <span className="text-[10px] text-muted-foreground leading-none">
-                              休
-                            </span>
+                            <span className="text-[10px] text-muted-foreground leading-none">休</span>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground leading-none">
-                              &nbsp;
-                            </span>
+                            <span className="text-[10px] text-muted-foreground leading-none">&nbsp;</span>
                           )}
                         </div>
                       )}

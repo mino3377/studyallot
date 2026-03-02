@@ -24,6 +24,8 @@ type MaterialLike = {
   totalUnits: number
   lapsTotal: number
   planDays?: number[]
+  // ★追加：実績（この日やった数）をプロジェクトカレンダーで出すため
+  actualDays?: number[]
 }
 
 type Task = {
@@ -50,11 +52,6 @@ function isInRange(d: Date, range?: DateRange) {
 function weekdayJP(d: Date) {
   const names = ["日", "月", "火", "水", "木", "金", "土"]
   return names[d.getDay()] ?? ""
-}
-
-function circledNumber(n: number) {
-  if (n <= 0) return ""
-  return String(n)
 }
 
 function makeAllTasks(laps: number, units: number): Task[] {
@@ -118,6 +115,22 @@ function buildPlanMapFromDays(
   return map
 }
 
+// ★追加：actualDays を dateISO -> count にする
+function buildCountMapFromDays(range: DateRange, counts?: number[]): Record<string, number> {
+  const from = range.from
+  const to = range.to
+  const out: Record<string, number> = {}
+  if (!from || !to) return out
+
+  const days = eachDayOfInterval({ start: from, end: to })
+  for (let i = 0; i < days.length; i++) {
+    const dISO = iso(days[i]!)
+    const v = counts?.[i]
+    out[dISO] = Number.isFinite(v) ? Math.max(0, Math.floor(v as number)) : 0
+  }
+  return out
+}
+
 function clampToRange(today: Date, range: DateRange) {
   const from = range.from
   const to = range.to
@@ -158,14 +171,14 @@ export default function ProjectRecordCalendarPanel({
 
   const ready = !!projectRange.from && !!projectRange.to
 
-const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(
-  clampToRange(new Date(), projectRange)
-)
+  const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(
+    clampToRange(new Date(), projectRange)
+  )
 
-React.useEffect(() => {
-  if (!ready) return
-  setSelectedDay(clampToRange(new Date(), projectRange))
-}, [ready, projectRange.from?.getTime(), projectRange.to?.getTime()])
+  React.useEffect(() => {
+    if (!ready) return
+    setSelectedDay(clampToRange(new Date(), projectRange))
+  }, [ready, projectRange.from?.getTime(), projectRange.to?.getTime()])
 
   const planByMaterial = React.useMemo(() => {
     const out: Record<string, { title: string; map: Record<string, Task[]> }> = {}
@@ -173,6 +186,15 @@ React.useEffect(() => {
       const range: DateRange = { from: parseISODateOnly(m.startDate), to: parseISODateOnly(m.endDate) }
       const tasks = makeAllTasks(m.lapsTotal, m.totalUnits)
       out[m.slug] = { title: m.title, map: buildPlanMapFromDays(range, tasks, m.planDays) }
+    }
+    return out
+  }, [materials])
+
+  const actualByMaterial = React.useMemo(() => {
+    const out: Record<string, Record<string, number>> = {}
+    for (const m of materials) {
+      const range: DateRange = { from: parseISODateOnly(m.startDate), to: parseISODateOnly(m.endDate) }
+      out[m.slug] = buildCountMapFromDays(range, m.actualDays)
     }
     return out
   }, [materials])
@@ -244,12 +266,19 @@ React.useEffect(() => {
                   const dayISO = iso(d)
                   const isIn = isInRange(d, projectRange)
 
-                  let total = 0
+                  let planTotal = 0
                   for (const k of Object.keys(planByMaterial)) {
-                    total += planByMaterial[k]!.map[dayISO]?.length ?? 0
+                    planTotal += planByMaterial[k]!.map[dayISO]?.length ?? 0
                   }
 
-                  const show = !modifiers.outside && isIn && total > 0
+                  let actualTotal = 0
+                  for (const k of Object.keys(actualByMaterial)) {
+                    actualTotal += actualByMaterial[k]![dayISO] ?? 0
+                  }
+
+                  const show = !modifiers.outside && isIn
+
+                  const isRest = planTotal <= 0
 
                   return (
                     <CalendarDayButton day={day} modifiers={modifiers} {...props}>
@@ -257,9 +286,14 @@ React.useEffect(() => {
                       {!modifiers.outside && (
                         <div className="mt-0.5 flex items-center justify-center">
                           {show ? (
-                            <span className="text-[11px] font-semibold leading-none">
-                              {circledNumber(total)}
-                            </span>
+                            isRest ? (
+                              <span className="text-[10px] text-muted-foreground leading-none">休</span>
+                            ) : (
+                              <span className="text-[10px] font-semibold leading-none">
+                                {String(Math.max(0, actualTotal))}
+                                <span className="text-muted-foreground">/{String(Math.max(0, planTotal))}</span>
+                              </span>
+                            )
                           ) : (
                             <span className="text-[10px] text-muted-foreground leading-none">&nbsp;</span>
                           )}

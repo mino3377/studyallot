@@ -390,8 +390,8 @@ export default function ActualRecordCalendarPanel({
           </div>
 
           <div className="flex items-end gap-2">
-            <div className="w-[60px]">
-              <div className="text-xs text-muted-foreground mb-1">今日の数</div>
+            <div className="inline-fit">
+              <div className="text-xs text-muted-foreground mb-1">やった数</div>
               <Input
                 type="number"
                 inputMode="numeric"
