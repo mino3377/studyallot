@@ -166,7 +166,7 @@ function buildCumulativeSeries(params: {
         : aCum
 
     out.push({
-      date: dISO, 
+      date: dISO,
       planned: pCum,
       actual: actualValue,
     })
@@ -650,7 +650,7 @@ export default function ProjectMaterialsSwitcher({
                   }
                   onClick={() => {
                     if (!confirmDeleteProject) return
-                    void deleteProject(confirmDeleteProject.id, confirmDeleteProject.slug)
+                    void deleteProject(confirmDeleteProject.id)
                   }}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
