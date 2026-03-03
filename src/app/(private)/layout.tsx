@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="h-screen flex max-w-screen-2xl mx-auto flex-col">
       <Header />
       <div className="flex h-full flex-1 ">
-        <div className="hidden md:flex w-12 mt-12 backdrop-blur-md items-center pl-1 pt-1 pt-5 gap-5 flex-col">
+        <div className="hidden md:flex w-12 mt-12 backdrop-blur-md items-center pl-1 pt-5 gap-5 flex-col">
           <Link
             href="/project"
             className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition"

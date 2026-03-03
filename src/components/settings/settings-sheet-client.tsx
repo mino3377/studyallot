@@ -20,10 +20,10 @@ export default function SettingsSheetClient({ user }: { user: unknown }) {
                 </Button>
             </SheetTrigger>
 
-           <SheetContent
-  side="right"
-  className="p-4 w-60 flex flex-col mt-12 rounded-l-md h-[calc(100vh-3rem)]"
->
+            <SheetContent
+                side="right"
+                className="p-4 w-60 flex flex-col mt-12 rounded-l-md h-[calc(100vh-3rem)]"
+            >
                 <SheetHeader>
                     <SheetTitle>設定</SheetTitle>
                 </SheetHeader>

@@ -188,7 +188,6 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   const slug = (input.slug ?? "").trim()
   assert(slug.length > 0, "slug が空です")
 
-  // ① 入力を先に正規化
   const startDate = toISODate((input.startDate ?? "").trim())
   const endDate = toISODate((input.endDate ?? "").trim())
   assertDateOrder(startDate, endDate)
@@ -212,7 +211,6 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   const totalTasks = unitCount * rounds
   assert(sum(planDays) === totalTasks, "planDays の合計が総タスク数と一致しません")
 
-  // ② 編集ロック対象をサーバーで強制するため、DBの既存値を取得
   const { data: existing, error: exErr } = await supabase
     .from("materials")
     .select("start_date, end_date, unit_count, rounds, unit_type")
@@ -223,16 +221,16 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   if (exErr) throw new Error(exErr.message)
   assert(existing, "教材が見つかりません")
 
-  // ③ 編集不可フィールドの改ざんを拒否（UIロックだけに頼らない）
+
   assert(existing.start_date === startDate, "開始日は編集できません")
   assert(existing.end_date === endDate, "終了日は編集できません")
   assert(Number(existing.unit_count) === unitCount, "区切り数は編集できません")
   assert(Number(existing.rounds) === rounds, "周回数は編集できません")
 
-  // unitType も編集不可なら縛る（編集可能にしたいならこの1行だけ消す）
+
   assert(String(existing.unit_type) === unitType, "区切りの呼び方は編集できません")
 
-  // ④ project は変更できる（既存 or 新規）
+
   const projectId = await resolveProjectId({
     supabase,
     userId,
@@ -241,14 +239,11 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
     newProjectName: input.newProjectName,
   })
 
-  // ⑤ 更新パッチ：編集可能なものだけを入れる
-  // ※上で改ざんチェックしてるので、ロック対象はDB更新しない方が安全
   const patch: Record<string, unknown> = {
     project_id: projectId,
     plan_days: planDays,
   }
 
-  // title は optional：空なら更新しない（旧データ欠損対応）
   const titleTrim = (input.title ?? "").trim()
   if (titleTrim.length > 0) patch.title = titleTrim
 

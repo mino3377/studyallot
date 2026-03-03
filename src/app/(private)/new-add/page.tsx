@@ -8,7 +8,6 @@ export const metadata = { title: "New Material | studyallot" }
 export default async function NewAddPage({
   searchParams,
 }: {
-  // ★ Next.js 15系でPromiseになることがあるので両対応
   searchParams?: Promise<{ edit?: string }> | { edit?: string }
 }) {
   const sp = (searchParams instanceof Promise) ? await searchParams : (searchParams ?? {})

@@ -113,7 +113,7 @@ export default async function PageBody({ userId }: { userId: string }) {
         month: "2-digit",
         day: "2-digit",
       })
-      return fmt.format(new Date()) // "YYYY-MM-DD"
+      return fmt.format(new Date())
     }
 
     const msPerDay = 24 * 60 * 60 * 1000
@@ -144,7 +144,6 @@ export default async function PageBody({ userId }: { userId: string }) {
       return out
     }
 
-    // ★余りは「今日に近い日」から優先して載せる（555554444 の形）
     const distributeFrontLoaded = (remain: number, days: number) => {
       const out = new Array(days).fill(0)
       if (days <= 0) return out
@@ -153,7 +152,7 @@ export default async function PageBody({ userId }: { userId: string }) {
       const extra = remain % days
 
       for (let i = 0; i < days; i++) out[i] = base
-      for (let i = 0; i < extra; i++) out[i] += 1 // 余りを前から
+      for (let i = 0; i < extra; i++) out[i] += 1 
       return out
     }
 
@@ -194,7 +193,6 @@ export default async function PageBody({ userId }: { userId: string }) {
       const D = Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1
       if (!Number.isFinite(D) || D <= 0) continue
 
-      // ★「今日まで」を含める：todayIndex+1 を固定範囲にする
       const rawIdx = Math.floor((today.getTime() - start.getTime()) / msPerDay)
       const fixedLen = clampInt(rawIdx + 1, 0, D)
 
@@ -204,12 +202,10 @@ export default async function PageBody({ userId }: { userId: string }) {
       const plannedCum = sumPrefix(planDays, fixedLen)
       const actualCum = sumPrefix(actualDays, fixedLen)
 
-      // 遅れてないならスキップ
       if (!(plannedCum > actualCum)) continue
 
       const totalTasks = Math.max(0, unitCount * rounds)
 
-      // ★固定部分：今日までの配列は actual をそのまま採用（[50000...] の考え方）
       const fixed = padPrefixFromActual(actualDays, fixedLen)
       const done = fixed.reduce((s, n) => s + n, 0)
 
@@ -264,7 +260,6 @@ export default async function PageBody({ userId }: { userId: string }) {
       throw new Error("Invalid projectId")
     }
 
-    // ★CASCADEが無い場合の安全策：先に教材を消す
     const { error: matsErr } = await supabase
       .from("materials")
       .delete()
@@ -301,7 +296,6 @@ export default async function PageBody({ userId }: { userId: string }) {
       if (Array.isArray(parsed)) orders = parsed
     } catch { }
 
-    // projectSlug -> projectId を解決（他人のprojectを更新できないように）
     const { data: proj, error: projErr } = await supabase
       .from("projects")
       .select("id")
@@ -312,7 +306,6 @@ export default async function PageBody({ userId }: { userId: string }) {
     if (projErr) throw new Error(projErr.message)
     if (!proj?.id) throw new Error("Project not found")
 
-    // まとめて更新したいならRPCがベストだけど、まずは安全にループでOK
     for (const it of orders) {
       const mid = Number(it.materialId)
       const order = Number(it.order)

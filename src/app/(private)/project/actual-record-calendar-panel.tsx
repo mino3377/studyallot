@@ -63,7 +63,6 @@ function startOfDay(d: Date) {
   return x
 }
 
-// ★追加：初期選択日を「今日（範囲内にクランプ）」にする
 function clampToRangeToday(range: DateRange) {
   if (!range.from || !range.to) return range.from
   const from = startOfDay(range.from)
@@ -221,7 +220,6 @@ export default function ActualRecordCalendarPanel({
     const p = hasPlan ? planFromCounts(allTasks, dayISOs, pArr) : distributeEvenly(allTasks, range)
     setPlan(p)
 
-    // ★変更：range.from ではなく「今日（範囲内）」へ
     setSelectedDay(clampToRangeToday(range))
 
     const init: Record<string, number> = {}

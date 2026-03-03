@@ -72,7 +72,6 @@ export type SectionsEditorProps = {
   max?: number
 }
 
-// ★ここから追加（統一型）
 export type UnitType = "section" | "chapter" | "unit" | "page"
 
 export type MaterialVM = {

@@ -219,7 +219,6 @@ export default function MaterialsList({
     setOrdered(materials)
   }, [materials, dragId])
 
-  // ★ここは「頑張って作ったレイアウト」を戻す：列幅を元通りに固定
   const COLS = "grid-cols-[22px_minmax(0,1fr)_35px_35px_35px]"
 
   const persistOrder = React.useCallback(

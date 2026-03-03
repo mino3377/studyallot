@@ -51,9 +51,9 @@ export async function fetchMaterialsByProjectIds(
 )
     .eq("user_id", userId)
     .in("project_id", projectIds)
-    .order("project_id", { ascending: true }) // ★まずprojectで固める
-    .order("order", { ascending: true })      // ★次にorder
-    .order("id", { ascending: true })         // ★最後に保険
+    .order("project_id", { ascending: true }) 
+    .order("order", { ascending: true }) 
+    .order("id", { ascending: true })  
 
   if (error) throw new Error(error.message)
   return (data ?? []) as MaterialRow[]

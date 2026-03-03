@@ -99,7 +99,7 @@ export default function NewAddPageBody({
   const unitLabelText = unitLabel(materialStep.unitType)
 
   const handleSave = async () => {
-  if (isSaving) return // ★追加：連打防止
+  if (isSaving) return 
 
   const startISO = fmtISODate(materialStep.startDate)
   const endISO = fmtISODate(materialStep.endDate)
@@ -116,7 +116,7 @@ export default function NewAddPageBody({
   if (sum !== totalTasks) return
 
   try {
-    setIsSaving(true) // ★追加：ここから保存中
+    setIsSaving(true) 
 
     if (isEdit) {
       await updateMaterialAction({
@@ -149,7 +149,7 @@ export default function NewAddPageBody({
       actualDays: Array.from({ length: planDays.length }, () => 0),
     })
   } finally {
-    setIsSaving(false) // ★追加：成功でも失敗でも解除
+    setIsSaving(false)
   }
 }
 

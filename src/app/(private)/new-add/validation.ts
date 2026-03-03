@@ -10,13 +10,12 @@ export function toISODate(d: string) {
   return d
 }
 
-// yyyy-MM-dd は文字列比較で大小比較できる
+// yyyy-MM-dd は文字列比較で大小比較
 export function assertDateOrder(startISO: string, endISO: string) {
   assert(startISO <= endISO, "開始日は終了日より後にできません")
 }
 
 export function daysBetweenInclusive(startISO: string, endISO: string) {
-  // date-fns無しでサーバーでも確実に動かす
   const s = new Date(`${startISO}T00:00:00Z`)
   const e = new Date(`${endISO}T00:00:00Z`)
   const diff = Math.floor((e.getTime() - s.getTime()) / (24 * 60 * 60 * 1000))
@@ -29,7 +28,6 @@ export function sum(arr: number[]) {
   return s
 }
 
-// client用：Dateを比較（同日OK）
 export function isAfterDay(a: Date, b: Date) {
   return a.getTime() > b.getTime()
 }

@@ -123,7 +123,6 @@ function buildPlanMapFromDays(
   return map
 }
 
-// ★追加：actualDays を dateISO -> count にする
 function buildCountMapFromDays(range: DateRange, counts?: number[]): Record<string, number> {
   const from = range.from
   const to = range.to

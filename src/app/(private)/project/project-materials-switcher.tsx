@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ProjectPageButton } from "@/components/new-add-button"
-import { BookCheck, CalendarSync, Eraser, Pen, SquareCheckBig, Trash2 } from "lucide-react"
+import { BookCheck, CalendarSync, Eraser, SquareCheckBig, Trash2 } from "lucide-react"
 import ActualRecordCalendarPanel from "./actual-record-calendar-panel"
 import ProjectRecordCalendarPanel from "./project-record-calendar-panel"
 import MaterialsList from "./materials-list"
@@ -36,7 +36,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import GuidePage from "../guide/page"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   ChartContainer,
@@ -45,7 +44,6 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 
-// ★Recharts + date-fns（グラフ用）
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 import { eachDayOfInterval, format } from "date-fns"
 
@@ -97,7 +95,6 @@ function useIsDesktop(breakpointPx = 768) {
   return isDesktop
 }
 
-// ★グラフ補助
 function toISO10(s?: string | null) {
   return (s ?? "").slice(0, 10)
 }
@@ -169,7 +166,7 @@ function buildCumulativeSeries(params: {
         : aCum
 
     out.push({
-      date: dISO,       // ★YYYY-MM-DDで持つ（tickFormatterで短縮）
+      date: dISO, 
       planned: pCum,
       actual: actualValue,
     })
@@ -275,8 +272,6 @@ export default function ProjectMaterialsSwitcher({
 
   const defaultUnitType: UnitType = "section"
   const defaultUnitLabel = "セクション"
-  const projectUnitType: UnitType = materials[0]?.unitType ?? defaultUnitType
-  const projectUnitLabel = materials[0]?.unitLabel ?? defaultUnitLabel
 
   const ProjectPanel = (
     <ProjectRecordCalendarPanel
@@ -344,11 +339,9 @@ export default function ProjectMaterialsSwitcher({
 
   const [renameOpen, setRenameOpen] = React.useState(false)
   const [renameValue, setRenameValue] = React.useState("")
-  const [isSavingRename, setIsSavingRename] = React.useState(false)
 
   const [orderProjects, setOrderProjects] = React.useState<ProjectForCarousel[]>([])
   const [dragId, setDragId] = React.useState<string | null>(null)
-  const [isSavingOrder, setIsSavingOrder] = React.useState(false)
   const [isDeletingProjectId, setIsDeletingProjectId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -392,7 +385,7 @@ export default function ProjectMaterialsSwitcher({
   }
 
   const deleteProject = React.useCallback(
-    async (projectId: number | string, projectSlug?: string) => {
+    async (projectId: number | string,) => {
       if (!deleteProjectAction) return
       const idStr = String(projectId)
       try {
