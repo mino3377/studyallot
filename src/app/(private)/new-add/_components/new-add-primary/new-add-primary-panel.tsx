@@ -22,7 +22,9 @@ type Props = {
   restDays: Set<number>
   onChangeRestDays: React.Dispatch<React.SetStateAction<Set<number>>>
   onOpenDetails?: () => void
-  onSave?: () => void
+
+  onSave?: () => Promise<void> | void
+  isSaving?: boolean // ★追加
   isEdit?: boolean
 }
 
@@ -39,6 +41,7 @@ export default function NewAddPrimaryPanel({
   onChangeRestDays,
   onOpenDetails,
   onSave,
+  isSaving,
   isEdit,
 }: Props) {
   return (
@@ -71,8 +74,9 @@ export default function NewAddPrimaryPanel({
             onChangeRestDays={onChangeRestDays}
             onOpenDetails={onOpenDetails}
             onSave={onSave}
+            isSaving={isSaving} // ★追加：ここで渡す
             isEdit={isEdit}
-            onBack={() => onChangeStep(1)}   // ✅ これで「戻る」→ Step1へ
+            onBack={() => onChangeStep(1)} // ✅ これで「戻る」→ Step1へ
           />
         )}
       </div>

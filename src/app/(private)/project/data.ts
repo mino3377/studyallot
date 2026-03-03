@@ -37,6 +37,30 @@ function clampPct100(n: number) {
   return n
 }
 
+// ★DBの unit_type を「実行時に」安全に UnitType へ正規化
+function normalizeUnitType(v: unknown): UnitType {
+  const s = String(v ?? "").trim().toLowerCase()
+  if (s === "chapter") return "chapter"
+  if (s === "unit") return "unit"
+  if (s === "page") return "page"
+  return "section"
+}
+
+// ★unitType からラベルを確定（DBに unit_label が無い前提）
+function unitTypeToLabel(unitType: UnitType) {
+  switch (unitType) {
+    case "chapter":
+      return "チャプター"
+    case "unit":
+      return "ユニット"
+    case "page":
+      return "ページ"
+    case "section":
+    default:
+      return "セクション"
+  }
+}
+
 function materialToVM(m: MaterialRow): MaterialVM {
   const startDate = safeISO(m.start_date) || ""
   const endDate = safeISO(m.end_date) || ""
@@ -54,6 +78,10 @@ function materialToVM(m: MaterialRow): MaterialVM {
 
   const lapsNow = totalUnits > 0 ? Math.floor(actualTotal / totalUnits) : 0
 
+  // ★ここが本体：unit_type を確実に正規化して、unitLabel も教材ごとに確定
+  const unitType = normalizeUnitType(m.unit_type)
+  const unitLabel = unitTypeToLabel(unitType)
+
   return {
     id: m.id,
     title: m.title,
@@ -68,8 +96,8 @@ function materialToVM(m: MaterialRow): MaterialVM {
     actualPct,
     planDays: m.plan_days ?? [],
     actualDays: m.actual_days ?? [],
-    unitType: (m.unit_type as UnitType) ?? "section",
-    // unitLabel: (m.unit_label as string | undefined) ?? undefined, // ←DBにあればON
+    unitType,
+    unitLabel,
   }
 }
 

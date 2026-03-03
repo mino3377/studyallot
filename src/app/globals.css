@@ -137,4 +137,17 @@
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
   }
+  :root {
+  /* グラフ用（ライト） */
+  --chart-planned: #111111; /* ほぼ黒 */
+  --chart-actual: #6b7280;  /* グレー */
+  --chart-grid: #e5e7eb;    /* 薄いグレー */
+}
+
+.dark {
+  /* グラフ用（ダーク） */
+  --chart-planned: #f3f4f6; /* ほぼ白 */
+  --chart-actual: #9ca3af;  /* 明るめグレー */
+  --chart-grid: #374151;    /* 暗めグレー */
+}
 }

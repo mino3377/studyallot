@@ -1,20 +1,13 @@
-// C:\Users\chiso\nextjs\study-allot\src\components\material\project-record-calendar-panel.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\project-record-calendar-panel.tsx
 "use client"
 
 import * as React from "react"
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import {
-  eachDayOfInterval,
-  format,
-  isAfter,
-  isBefore,
-  isSameDay,
-} from "date-fns"
+import { eachDayOfInterval, format, isAfter, isBefore, isSameDay } from "date-fns"
 import type { DateRange } from "react-day-picker"
-
-type UnitType = "section" | "chapter" | "unit" | "page"
+import { UnitType } from "@/lib/type/material"
 
 type MaterialLike = {
   slug: string
@@ -24,8 +17,9 @@ type MaterialLike = {
   totalUnits: number
   lapsTotal: number
   planDays?: number[]
-  // ★追加：実績（この日やった数）をプロジェクトカレンダーで出すため
   actualDays?: number[]
+  unitType?: UnitType
+  unitLabel?: string
 }
 
 type Task = {
@@ -52,6 +46,20 @@ function isInRange(d: Date, range?: DateRange) {
 function weekdayJP(d: Date) {
   const names = ["日", "月", "火", "水", "木", "金", "土"]
   return names[d.getDay()] ?? ""
+}
+
+function unitTypeToLabel(unitType?: UnitType) {
+  switch (unitType) {
+    case "chapter":
+      return "チャプター"
+    case "unit":
+      return "ユニット"
+    case "page":
+      return "ページ"
+    case "section":
+    default:
+      return "セクション"
+  }
 }
 
 function makeAllTasks(laps: number, units: number): Task[] {
@@ -183,7 +191,10 @@ export default function ProjectRecordCalendarPanel({
   const planByMaterial = React.useMemo(() => {
     const out: Record<string, { title: string; map: Record<string, Task[]> }> = {}
     for (const m of materials) {
-      const range: DateRange = { from: parseISODateOnly(m.startDate), to: parseISODateOnly(m.endDate) }
+      const range: DateRange = {
+        from: parseISODateOnly(m.startDate),
+        to: parseISODateOnly(m.endDate),
+      }
       const tasks = makeAllTasks(m.lapsTotal, m.totalUnits)
       out[m.slug] = { title: m.title, map: buildPlanMapFromDays(range, tasks, m.planDays) }
     }
@@ -193,7 +204,10 @@ export default function ProjectRecordCalendarPanel({
   const actualByMaterial = React.useMemo(() => {
     const out: Record<string, Record<string, number>> = {}
     for (const m of materials) {
-      const range: DateRange = { from: parseISODateOnly(m.startDate), to: parseISODateOnly(m.endDate) }
+      const range: DateRange = {
+        from: parseISODateOnly(m.startDate),
+        to: parseISODateOnly(m.endDate),
+      }
       out[m.slug] = buildCountMapFromDays(range, m.actualDays)
     }
     return out
@@ -203,14 +217,23 @@ export default function ProjectRecordCalendarPanel({
 
   const dayItems = React.useMemo(() => {
     if (!selectedISO) return []
-    const items: { slug: string; materialTitle: string; count: number }[] = []
-    for (const k of Object.keys(planByMaterial)) {
-      const entry = planByMaterial[k]!
-      const c = entry.map[selectedISO]?.length ?? 0
-      if (c > 0) items.push({ slug: k, materialTitle: entry.title, count: c })
+    const items: { slug: string; materialTitle: string; count: number; unitLabel: string }[] = []
+
+    for (const m of materials) {
+      const entry = planByMaterial[m.slug]
+      const c = entry?.map[selectedISO]?.length ?? 0
+      if (c > 0) {
+        items.push({
+          slug: m.slug,
+          materialTitle: m.title,
+          count: c,
+          unitLabel: m.unitLabel ?? unitTypeToLabel(m.unitType),
+        })
+      }
     }
+
     return items
-  }, [planByMaterial, selectedISO])
+  }, [materials, planByMaterial, selectedISO])
 
   const dayTotal = React.useMemo(() => dayItems.reduce((a, b) => a + b.count, 0), [dayItems])
 
@@ -228,7 +251,7 @@ export default function ProjectRecordCalendarPanel({
 
   return (
     <div className="space-y-2 flex flex-col flex-1 min-h-0 h-full">
-      <div className="bg-black dark:bg-white rounded-xl">
+      <div className="bg-gray-100 dark:bg-gray-300 rounded-xl">
         <Card className="w-fit p-0">
           <CardContent className="p-0">
             <Calendar
@@ -278,22 +301,18 @@ export default function ProjectRecordCalendarPanel({
 
                   const show = !modifiers.outside && isIn
 
-                  const isRest = planTotal <= 0
-
                   return (
                     <CalendarDayButton day={day} modifiers={modifiers} {...props}>
                       {children}
                       {!modifiers.outside && (
                         <div className="mt-0.5 flex items-center justify-center">
                           {show ? (
-                            isRest ? (
-                              <span className="text-[10px] text-muted-foreground leading-none">休</span>
-                            ) : (
-                              <span className="text-[10px] font-semibold leading-none">
-                                {String(Math.max(0, actualTotal))}
-                                <span className="text-muted-foreground">/{String(Math.max(0, planTotal))}</span>
+                            <span className="text-[10px] font-semibold leading-none">
+                              {String(Math.max(0, actualTotal))}
+                              <span className="text-muted-foreground">
+                                /{String(Math.max(0, planTotal))}
                               </span>
-                            )
+                            </span>
                           ) : (
                             <span className="text-[10px] text-muted-foreground leading-none">&nbsp;</span>
                           )}
@@ -338,7 +357,7 @@ export default function ProjectRecordCalendarPanel({
                 >
                   <div className="text-sm font-semibold truncate">{it.materialTitle}</div>
                   <div className="text-xs text-muted-foreground">
-                    {it.count} {unitLabel}
+                    {it.count} {it.unitLabel}
                   </div>
                 </li>
               ))}

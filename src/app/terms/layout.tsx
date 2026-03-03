@@ -20,7 +20,7 @@ export default async function TermsLayout({ children }: { children: React.ReactN
             <Image
               src={studyallot_logo}
               alt="StudyAllot"
-              className="h-2 w-auto"
+              className="h-4 w-4"
               priority
             />
             <span>StudyAllot</span>

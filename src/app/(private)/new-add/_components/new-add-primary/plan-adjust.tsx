@@ -199,13 +199,27 @@ export default function PlanAdjustDemo({
       <div className="hidden lg:flex lg:flex-col flex-1 lg:col-span-1 md:ml-2 lg:mr-1">
         <Card className="p-4">
           <CardContent className="p-0">
-            <div className="text-sm font-medium">累計タスク（計画 / 実績）</div>
+            <div className="text-sm font-medium">累計タスク（計画）</div>
+
             <ChartContainer config={chartConfig} className="h-[170px] w-full">
               <LineChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  tickFormatter={(value) => String(value).slice(5)} // MM-DD
+                />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                <Line dataKey="planned" type="monotone" stroke="var(--color-planned)" strokeWidth={2} dot={false} />
+
+                <Line
+                  dataKey="planned"
+                  type="monotone"
+                  stroke="var(--color-planned)"
+                  strokeWidth={2}
+                  dot={false}
+                />
                 <Line
                   dataKey="actual"
                   type="monotone"
@@ -219,6 +233,9 @@ export default function PlanAdjustDemo({
             </ChartContainer>
           </CardContent>
         </Card>
+        <div className="border bg-gray-100 dark:bg-gray-950 rounded-md h-full mt-3">
+
+        </div>
       </div>
     </div>
   )

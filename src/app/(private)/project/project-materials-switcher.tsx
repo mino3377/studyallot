@@ -26,8 +26,28 @@ import MaterialsList from "./materials-list"
 import { useRouter } from "next/navigation"
 
 import type { MaterialVM, UnitType } from "@/lib/type/material"
-import { AlertDialogHeader, AlertDialogFooter } from "@/components/ui/alert-dialog"
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@radix-ui/react-alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import GuidePage from "../guide/page"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart"
+
+// ★Recharts + date-fns（グラフ用）
+import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
+import { eachDayOfInterval, format } from "date-fns"
 
 type ProjectForCarousel = {
   id: number | string
@@ -77,6 +97,86 @@ function useIsDesktop(breakpointPx = 768) {
   return isDesktop
 }
 
+// ★グラフ補助
+function toISO10(s?: string | null) {
+  return (s ?? "").slice(0, 10)
+}
+function parseISODateOnly(s?: string | null) {
+  const iso10 = toISO10(s)
+  if (!iso10) return undefined
+  const d = new Date(`${iso10}T00:00:00`)
+  return Number.isNaN(d.getTime()) ? undefined : d
+}
+function iso(d: Date) {
+  return format(d, "yyyy-MM-dd")
+}
+function getTodayISOJST() {
+  const fmt = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+  return fmt.format(new Date())
+}
+function clampInt(n: number, min: number, max: number) {
+  if (!Number.isFinite(n)) return min
+  if (n < min) return min
+  if (n > max) return max
+  return n
+}
+function safeCount(v: unknown) {
+  const n = Number(v)
+  return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0
+}
+
+type ChartPoint = { date: string; planned: number; actual: number | null }
+
+function buildCumulativeSeries(params: {
+  from?: Date
+  to?: Date
+  planDays?: number[]
+  actualDays?: number[]
+  cutActualAfterToday?: boolean
+}): ChartPoint[] {
+  const { from, to, planDays = [], actualDays = [], cutActualAfterToday = true } = params
+  if (!from || !to) return []
+
+  const days = eachDayOfInterval({ start: from, end: to })
+  const N = days.length
+  if (N <= 0) return []
+
+  const todayISO = getTodayISOJST()
+  const today = new Date(`${todayISO}T00:00:00`)
+  const todayIdxRaw = Math.floor((today.getTime() - from.getTime()) / (24 * 60 * 60 * 1000))
+  const todayIdx = clampInt(todayIdxRaw, -1, N - 1)
+
+  let pCum = 0
+  let aCum = 0
+
+  const out: ChartPoint[] = []
+  for (let i = 0; i < N; i++) {
+    const dISO = iso(days[i]!)
+    const p = safeCount(planDays[i])
+    const a = safeCount(actualDays[i])
+
+    pCum += p
+    aCum += a
+
+    const actualValue =
+      cutActualAfterToday && i > todayIdx
+        ? null
+        : aCum
+
+    out.push({
+      date: dISO,       // ★YYYY-MM-DDで持つ（tickFormatterで短縮）
+      planned: pCum,
+      actual: actualValue,
+    })
+  }
+  return out
+}
+
 export default function ProjectMaterialsSwitcher({
   projects,
   materialsBySlug,
@@ -84,8 +184,8 @@ export default function ProjectMaterialsSwitcher({
   updateProjectMetaAction,
   replanDelayedPlansAction,
   updateMaterialOrdersAction,
-  deleteMaterialAction, // ★追加
-  deleteProjectAction,  // ★追加
+  deleteMaterialAction,
+  deleteProjectAction,
 }: {
   projects: ProjectForCarousel[]
   materialsBySlug: Record<string, MaterialVM[]>
@@ -94,8 +194,8 @@ export default function ProjectMaterialsSwitcher({
   updateProjectMetaAction: (fd: FormData) => Promise<void>
   replanDelayedPlansAction: (fd: FormData) => Promise<void>
   updateMaterialOrdersAction: (fd: FormData) => Promise<void>
-  deleteMaterialAction: (fd: FormData) => Promise<void> // ★追加
-  deleteProjectAction: (fd: FormData) => Promise<void>  // ★追加
+  deleteMaterialAction: (fd: FormData) => Promise<void>
+  deleteProjectAction: (fd: FormData) => Promise<void>
 }) {
   const router = useRouter()
   const [selectedSlug, setSelectedSlug] = React.useState<string>(
@@ -126,6 +226,13 @@ export default function ProjectMaterialsSwitcher({
 
   const isDesktop = useIsDesktop(768)
 
+  const goEditMaterial = React.useCallback(
+    (slug: string) => {
+      router.push(`/new-add?edit=${encodeURIComponent(slug)}`)
+    },
+    [router]
+  )
+
   const [mobileSheetOpen, setMobileSheetOpen] = React.useState(false)
   const [openedMaterial, setOpenedMaterial] =
     React.useState<PopupMaterial | null>(null)
@@ -151,12 +258,11 @@ export default function ProjectMaterialsSwitcher({
   )
 
   const toggleProjectProgress = React.useCallback(() => {
-    // プロジェクト進捗を見るときは教材パネルを閉じる
     setOpenedMaterial(null)
 
     setProjectProgressMode((prev) => {
       const next = !prev
-      if (!isDesktop) setMobileSheetOpen(next) // mobileだけSheetを開く
+      if (!isDesktop) setMobileSheetOpen(next)
       return next
     })
   }, [isDesktop])
@@ -184,9 +290,9 @@ export default function ProjectMaterialsSwitcher({
         lapsTotal: m.lapsTotal,
         planDays: m.planDays,
         actualDays: m.actualDays,
+        unitType: m.unitType ?? "section",
+        unitLabel: m.unitLabel ?? "セクション",
       }))}
-      unitType={projectUnitType}
-      unitLabel={projectUnitLabel}
       onSelectMaterialSlug={(slug) => {
         const m = materials.find((x) => x.slug === slug)
         if (!m) return
@@ -201,7 +307,6 @@ export default function ProjectMaterialsSwitcher({
           lapsTotal: m.lapsTotal,
           planDays: m.planDays,
           actualDays: m.actualDays,
-          // ★追加：教材ごとの unitType/unitLabel を渡す
           unitType: m.unitType ?? defaultUnitType,
           unitLabel: m.unitLabel ?? defaultUnitLabel,
         })
@@ -228,7 +333,6 @@ export default function ProjectMaterialsSwitcher({
           }}
           unitCount={openedMaterial.totalUnits ?? 0}
           laps={openedMaterial.lapsTotal ?? 0}
-          // ★変更：openedMaterial 側の unitLabel / unitType を使う（= DBに応じて表示が変わる）
           unitLabel={openedMaterial.unitLabel ?? defaultUnitLabel}
           unitType={(openedMaterial.unitType ?? defaultUnitType) as UnitType}
         />
@@ -245,6 +349,7 @@ export default function ProjectMaterialsSwitcher({
   const [orderProjects, setOrderProjects] = React.useState<ProjectForCarousel[]>([])
   const [dragId, setDragId] = React.useState<string | null>(null)
   const [isSavingOrder, setIsSavingOrder] = React.useState(false)
+  const [isDeletingProjectId, setIsDeletingProjectId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     setOrderProjects(projects)
@@ -287,38 +392,31 @@ export default function ProjectMaterialsSwitcher({
   }
 
   const deleteProject = React.useCallback(
-  async (projectId: number | string, projectSlug: string) => {
-    const fd = new FormData()
-    fd.set("projectId", String(projectId))
-    await deleteProjectAction(fd)
+    async (projectId: number | string, projectSlug?: string) => {
+      if (!deleteProjectAction) return
+      const idStr = String(projectId)
+      try {
+        setIsDeletingProjectId(idStr)
 
-    // いま選択中プロジェクトを消したら、先頭に逃がす
-    if (selectedSlug === projectSlug) {
-      const next = projects.find((p) => p.slug !== projectSlug)?.slug ?? ""
-      setSelectedSlug(next)
-      setOpenedMaterial(null)
-      setProjectProgressMode(false)
-      setMobileSheetOpen(false)
-    }
+        const fd = new FormData()
+        fd.set("projectId", idStr)
+        await deleteProjectAction(fd)
 
-    router.refresh()
-  },
-  [deleteProjectAction, router, selectedSlug, projects]
-)
-
-  const goEditMaterial = React.useCallback(
-    (slug: string) => {
-      router.push(`/new-add?edit=${encodeURIComponent(slug)}`)
+        setRenameOpen(false)
+        router.refresh()
+      } finally {
+        setIsDeletingProjectId(null)
+      }
     },
-    [router]
+    [deleteProjectAction, router]
   )
+
   const deleteMaterial = React.useCallback(
     async (materialId: number | string, materialSlug?: string) => {
       const fd = new FormData()
       fd.set("materialId", String(materialId))
       await deleteMaterialAction(fd)
 
-      // 開いてた教材が消えたら閉じる
       if (materialSlug && openedMaterial?.slug === materialSlug) {
         setOpenedMaterial(null)
         setProjectProgressMode(false)
@@ -344,6 +442,92 @@ export default function ProjectMaterialsSwitcher({
     }
   }
 
+  const [confirmDeleteProject, setConfirmDeleteProject] = React.useState<{
+    id: string
+    slug: string
+    name: string
+  } | null>(null)
+
+  const chartConfig = {
+    planned: {
+      label: "計画",
+      color: "var(--chart-planned)",
+    },
+    actual: {
+      label: "実績",
+      color: "var(--chart-actual)",
+    },
+  } satisfies ChartConfig
+
+  const chartData = React.useMemo<ChartPoint[]>(() => {
+    if (openedMaterial?.startDate && openedMaterial?.endDate) {
+      const from = parseISODateOnly(openedMaterial.startDate)
+      const to = parseISODateOnly(openedMaterial.endDate)
+      return buildCumulativeSeries({
+        from,
+        to,
+        planDays: openedMaterial.planDays ?? [],
+        actualDays: openedMaterial.actualDays ?? [],
+        cutActualAfterToday: true,
+      })
+    }
+
+    const mats = materials ?? []
+    const dates = mats
+      .flatMap((m) => [parseISODateOnly(m.startDate), parseISODateOnly(m.endDate)])
+      .filter(Boolean) as Date[]
+    if (dates.length === 0) return []
+
+    const from = new Date(Math.min(...dates.map((d) => d.getTime())))
+    const to = new Date(Math.max(...dates.map((d) => d.getTime())))
+
+    const days = eachDayOfInterval({ start: from, end: to })
+    const N = days.length
+    if (N <= 0) return []
+
+    const sumPlan: Record<string, number> = {}
+    const sumActual: Record<string, number> = {}
+
+    for (const d of days) {
+      const dISO = iso(d)
+      sumPlan[dISO] = 0
+      sumActual[dISO] = 0
+    }
+
+    for (const m of mats) {
+      const mFrom = parseISODateOnly(m.startDate)
+      const mTo = parseISODateOnly(m.endDate)
+      if (!mFrom || !mTo) continue
+
+      const mDays = eachDayOfInterval({ start: mFrom, end: mTo })
+      for (let i = 0; i < mDays.length; i++) {
+        const dISO = iso(mDays[i]!)
+        if (!(dISO in sumPlan)) continue
+        sumPlan[dISO] += safeCount(m.planDays?.[i])
+        sumActual[dISO] += safeCount(m.actualDays?.[i])
+      }
+    }
+
+    const planArr = days.map((d) => sumPlan[iso(d)] ?? 0)
+    const actualArr = days.map((d) => sumActual[iso(d)] ?? 0)
+
+    return buildCumulativeSeries({
+      from,
+      to,
+      planDays: planArr,
+      actualDays: actualArr,
+      cutActualAfterToday: true,
+    })
+  }, [
+    openedMaterial?.slug,
+    openedMaterial?.startDate,
+    openedMaterial?.endDate,
+    (openedMaterial?.planDays ?? []).join("|"),
+    (openedMaterial?.actualDays ?? []).join("|"),
+    selectedSlug,
+    materials,
+  ])
+
   return (
     <div className="space-y-6 min-h-0 h-full flex flex-col">
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
@@ -357,91 +541,75 @@ export default function ProjectMaterialsSwitcher({
 
             <div className="mt-4">
               <div className="text-sm font-semibold mb-2">プロジェクトの順番</div>
-              <div className="text-xs text-muted-foreground mb-2">
-                ドラッグして並び替え
-              </div>
+              <div className="text-xs text-muted-foreground mb-2">ドラッグして並び替え</div>
 
               <div className="space-y-2">
                 {orderProjects.map((p) => {
-  const id = String(p.id)
-  const isCurrent = p.slug === selectedSlug
+                  const id = String(p.id)
+                  const isCurrent = p.slug === selectedSlug
+                  const isDeletingThis = isDeletingProjectId === id
 
-  return (
-    <div
-      key={id}
-      draggable
-      onDragStart={() => setDragId(id)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={() => {
-        if (!dragId || dragId === id) return
-        setOrderProjects((prev) => {
-          const from = prev.findIndex((x) => String(x.id) === dragId)
-          const to = prev.findIndex((x) => String(x.id) === id)
-          if (from < 0 || to < 0) return prev
-          const next = [...prev]
-          const [moved] = next.splice(from, 1)
-          next.splice(to, 0, moved)
-          return next
-        })
-        setDragId(null)
-      }}
-      onDragEnd={() => setDragId(null)}
-      className={[
-        "flex items-center justify-between gap-3",
-        "rounded-md border px-3 py-2 bg-muted",
-        "cursor-grab active:cursor-grabbing",
-        dragId === id ? "opacity-60" : "",
-      ].join(" ")}
-    >
-      <div className="min-w-0 flex items-center gap-2">
-        <div className="text-sm font-medium truncate">{p.name}</div>
-        {isCurrent ? (
-          <span className="text-[10px] px-2 py-0.5 rounded-full border bg-background text-muted-foreground">
-            選択中
-          </span>
-        ) : null}
-      </div>
-
-      <div
-        className="shrink-0"
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              aria-label="プロジェクトを削除"
-              title="削除"
-            >
-              <Trash2 className="h-5 w-5" />
-            </Button>
-          </AlertDialogTrigger>
-
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
-              <AlertDialogDescription>
-                「{p.name}」を削除すると、プロジェクト内の教材・計画・実績も含めて復元できません。
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>キャンセル</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => void deleteProject(p.id, p.slug)}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                削除する
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
-  )
-})}
+                  return (
+                    <div
+                      key={id}
+                      draggable
+                      onDragStart={() => setDragId(id)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (!dragId || dragId === id) return
+                        setOrderProjects((prev) => {
+                          const from = prev.findIndex((x) => String(x.id) === dragId)
+                          const to = prev.findIndex((x) => String(x.id) === id)
+                          if (from < 0 || to < 0) return prev
+                          const next = [...prev]
+                          const [moved] = next.splice(from, 1)
+                          next.splice(to, 0, moved)
+                          return next
+                        })
+                        setDragId(null)
+                      }}
+                      onDragEnd={() => setDragId(null)}
+                      className={[
+                        "flex items-center justify-between gap-3",
+                        "rounded-md border px-3 py-2 bg-muted",
+                        "cursor-grab active:cursor-grabbing",
+                        dragId === id ? "opacity-60" : "",
+                      ].join(" ")}
+                    >
+                      <div className="min-w-0 flex items-center gap-2">
+                        <div className="text-sm font-medium truncate">{p.name}</div>
+                        {isCurrent ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full border bg-background text-muted-foreground">
+                            選択中
+                          </span>
+                        ) : null}
+                      </div>
+                      <div
+                        className="shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          aria-label="プロジェクトを削除"
+                          title="削除"
+                          disabled={isDeletingThis}
+                          onClick={() => {
+                            setConfirmDeleteProject({
+                              id,
+                              slug: p.slug,
+                              name: p.name,
+                            })
+                          }}
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -449,11 +617,58 @@ export default function ProjectMaterialsSwitcher({
               <Button variant="outline" onClick={() => setRenameOpen(false)} disabled={isSaving}>
                 キャンセル
               </Button>
-              <Button onClick={saveMeta} disabled={isSaving || !renameValue.trim() || orderProjects.length === 0}>
+              <Button
+                onClick={saveMeta}
+                disabled={isSaving || !renameValue.trim() || orderProjects.length === 0}
+              >
                 保存
               </Button>
             </div>
           </div>
+
+          <AlertDialog
+            open={!!confirmDeleteProject}
+            onOpenChange={(open) => {
+              if (!open) setConfirmDeleteProject(null)
+            }}
+          >
+            <AlertDialogContent className="z-[200]">
+              <AlertDialogHeader>
+                <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  「{confirmDeleteProject?.name ?? ""}」を削除すると、プロジェクト内の教材・計画・実績も含めて復元できません。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel
+                  disabled={
+                    !!confirmDeleteProject &&
+                    isDeletingProjectId === String(confirmDeleteProject.id)
+                  }
+                >
+                  キャンセル
+                </AlertDialogCancel>
+
+                <AlertDialogAction
+                  disabled={
+                    !confirmDeleteProject ||
+                    isDeletingProjectId === String(confirmDeleteProject.id)
+                  }
+                  onClick={() => {
+                    if (!confirmDeleteProject) return
+                    void deleteProject(confirmDeleteProject.id, confirmDeleteProject.slug)
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {!!confirmDeleteProject &&
+                    isDeletingProjectId === String(confirmDeleteProject.id)
+                    ? "削除中..."
+                    : "削除する"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DialogContent>
       </Dialog>
 
@@ -470,7 +685,7 @@ export default function ProjectMaterialsSwitcher({
         </Sheet>
       ) : null}
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 flex-1 min-h-0 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 flex-1 min-h-0 gap-4">
         <div className="space-y-3 col-span-1 h-full min-h-0 flex flex-col">
           <ProjectCarousel projects={projects} onSelectSlug={setSelectedSlug} selectedSlug={selectedSlug} />
 
@@ -534,20 +749,53 @@ export default function ProjectMaterialsSwitcher({
               }}
             />
           </div>
-
-          <div className="w-full flex justify-end">
-            <ProjectPageButton ariaLabel="教材を新規追加" href="/new-add">
-              <Pen className="h-7 w-7" />
-              <div className="">新規教材追加</div>
-            </ProjectPageButton>
-          </div>
         </div>
 
         <div className="hidden md:flex md:col-span-1 min-h-0 flex-col">
           <div className="flex-1 min-h-0">{RightPanel}</div>
         </div>
 
-        <div className="hidden lg:block" />
+        <div className="hidden lg:flex lg:flex-col flex-1 lg:col-span-1">
+          <Card className="p-4 w-full">
+            <CardContent className="p-0">
+              <div className="text-sm font-medium">累計タスク（実績・計画）</div>
+
+              <ChartContainer config={chartConfig} className="h-[170px] w-full">
+                <LineChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }}>
+                  <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => String(value).slice(5)}
+                  />
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+
+                  <Line
+                    dataKey="planned"
+                    type="monotone"
+                    stroke="var(--color-planned)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    dataKey="actual"
+                    type="monotone"
+                    stroke="var(--color-actual)"
+                    strokeWidth={2}
+                    dot={false}
+                    strokeDasharray="6 4"
+                    opacity={0.7}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+          <div className="border bg-gray-100 dark:bg-gray-950 rounded-md h-full mt-3">
+
+          </div>
+        </div>
       </div>
     </div>
   )

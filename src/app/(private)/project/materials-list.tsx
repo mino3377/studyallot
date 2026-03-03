@@ -7,6 +7,7 @@ import ProgressRateCard from "@/app/(private)/project/_components/progress-rate-
 import { CheckSquare, Pencil, GripVertical, Trash2 } from "lucide-react"
 import type { MaterialVM, UnitType } from "@/lib/type/material"
 import { taskLabelRange, taskLabelSingle } from "@/components/unit-wording"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type Props = {
   materials: MaterialVM[]
@@ -161,8 +169,8 @@ function buildTodayTaskText(m: MaterialVM) {
 
   const labels = toDisplayLabels(unitType, todayTasks)
 
-  if (labels.length <= 2) return labels.join(" / ")
-  return `${labels[0]} / … / ${labels[labels.length - 1]}`
+  if (labels.length <= 2) return labels
+  return `${labels[0]} ~ ${labels[labels.length - 1]}`
 }
 
 function calcDeltaUntilToday(m: MaterialVM) {
@@ -204,8 +212,6 @@ export default function MaterialsList({
   const [dragId, setDragId] = React.useState<string | null>(null)
   const [isSavingOrder, setIsSavingOrder] = React.useState(false)
 
-  // ★追加：編集ボタン押下でその行だけ「削除/編集」の2ボタン表示にする
-  const [actionOpenId, setActionOpenId] = React.useState<string | null>(null)
   const [isDeletingId, setIsDeletingId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -213,14 +219,8 @@ export default function MaterialsList({
     setOrdered(materials)
   }, [materials, dragId])
 
-  // 教材リストが更新されたら、存在しない actionOpenId は閉じる
-  React.useEffect(() => {
-    if (!actionOpenId) return
-    const exists = ordered.some((m) => String(m.id) === actionOpenId)
-    if (!exists) setActionOpenId(null)
-  }, [ordered, actionOpenId])
-
-  const COLS = "grid-cols-[22px_minmax(0,1fr)_35px_35px_75px]"
+  // ★ここは「頑張って作ったレイアウト」を戻す：列幅を元通りに固定
+  const COLS = "grid-cols-[22px_minmax(0,1fr)_35px_35px_35px]"
 
   const persistOrder = React.useCallback(
     async (nextList: MaterialVM[]) => {
@@ -278,7 +278,6 @@ export default function MaterialsList({
       try {
         setIsDeletingId(id)
         await onDeleteMaterial(m)
-        setActionOpenId(null)
       } finally {
         setIsDeletingId(null)
       }
@@ -335,9 +334,6 @@ export default function MaterialsList({
               const isAhead = hasData && delta < 0
 
               const todayTaskText = buildTodayTaskText(m)
-
-              const isActionOpen = actionOpenId === id
-              const isDeleting = isDeletingId === id
 
               return (
                 <div
@@ -407,42 +403,40 @@ export default function MaterialsList({
                     </Button>
                   </div>
 
-                  {/* ★編集列：Pencil → (削除/編集の2ボタン) */}
-                  <div className="justify-self-center">
-                    {!isActionOpen ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        aria-label="教材の操作を開く"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setActionOpenId((prev) => (prev === id ? null : id))
-                        }}
-                        className="hover:bg-muted/30"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </Button>
-                    ) : (
-                      <div
-                        className="inline-flex items-center gap-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                  <div
+                    className="justify-self-center"
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label="教材の操作"
+                          className="hover:bg-muted/30"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent align="end" side="bottom" sideOffset={6} className="p-1">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              aria-label="教材を削除"
-                              disabled={!onDeleteMaterial || isDeleting}
-                              title="削除"
+                            <DropdownMenuItem
+                              disabled={!onDeleteMaterial || isDeletingId === String(m.id)} // ★追加
+                              className="gap-2 text-destructive focus:text-destructive"
+                              onSelect={(e) => {
+                                e.preventDefault()
+                              }}
                             >
-                              <Trash2 className="h-5 w-5" />
-                            </Button>
+                              <Trash2 className="h-4 w-4" />
+                              <span className="text-sm">削除</span>
+                            </DropdownMenuItem>
                           </AlertDialogTrigger>
 
-                          <AlertDialogContent>
+                          <AlertDialogContent className="z-60">
                             <AlertDialogHeader>
                               <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
                               <AlertDialogDescription>
@@ -453,6 +447,7 @@ export default function MaterialsList({
                               <AlertDialogCancel>キャンセル</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => void runDelete(m)}
+                                disabled={!onDeleteMaterial || isDeletingId === String(m.id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 削除する
@@ -461,18 +456,19 @@ export default function MaterialsList({
                           </AlertDialogContent>
                         </AlertDialog>
 
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          aria-label="教材を編集"
-                          onClick={() => onEditMaterial?.(m)}
-                          title="編集"
+                        {/* 編集 */}
+                        <DropdownMenuItem
+                          className="gap-2"
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            onEditMaterial?.(m)
+                          }}
                         >
-                          <Pencil className="h-5 w-5" />
-                        </Button>
-                      </div>
-                    )}
+                          <Pencil className="h-4 w-4" />
+                          <span className="text-sm">編集</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               )

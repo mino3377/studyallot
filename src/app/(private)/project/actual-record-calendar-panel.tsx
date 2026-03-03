@@ -177,6 +177,8 @@ function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
   return out
 }
 
+
+
 export default function ActualRecordCalendarPanel({
   title,
   range,
@@ -191,7 +193,6 @@ export default function ActualRecordCalendarPanel({
 }: Props) {
   const ready = !!range?.from && !!range?.to && !!unitCount && !!laps && !!unitLabel
 
-  // ★変更：初期値を「今日（範囲内）」に
   const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(() =>
     clampToRangeToday(range)
   )
@@ -301,18 +302,33 @@ export default function ActualRecordCalendarPanel({
     }
   }
 
+  function unitTypeToLabel(unitType: UnitType) {
+  switch (unitType) {
+    case "section":
+      return "セクション"
+    case "chapter":
+      return "チャプター"
+    case "unit":
+      return "ユニット"
+    case "page":
+      return "ページ"
+    default:
+      return "セクション"
+  }
+}
+  
+
   if (!ready) return null
 
   return (
     <div className="space-y-2 flex flex-col flex-1 min-h-0 h-full">
-      <div className="bg-black dark:bg-white rounded-xl">
+      <div className="bg-gray-100 dark:bg-gray-300 rounded-xl">
         <Card className="w-fit p-0">
           <CardContent className="p-0">
             <Calendar
               mode="single"
               selected={selectedDay}
               onSelect={setSelectedDay}
-              // ★変更：表示月も今日（範囲内）に寄せる
               defaultMonth={selectedDay ?? range.from ?? new Date()}
               numberOfMonths={1}
               captionLayout="dropdown"
@@ -385,7 +401,7 @@ export default function ActualRecordCalendarPanel({
               {selectedDay ? `${iso(selectedDay)} (${weekdayJP(selectedDay)})` : "-"}
             </div>
             <div className="text-xs text-muted-foreground">
-              今日の計画: {plannedToday} {unitLabel}
+              今日の計画: {plannedToday} {unitTypeToLabel(unitType)}
             </div>
           </div>
 

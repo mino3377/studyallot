@@ -31,7 +31,7 @@ export function unitOrdinal(unitType: UnitType, n: number) {
 }
 
 export function taskLabelSingle(unitType: UnitType, unitNo: number, lap: number) {
-  return `${unitOrdinal(unitType, unitNo)} / ${lap}周目`
+  return `${unitOrdinal(unitType, unitNo)}/${lap}周目`
 }
 
 export function taskLabelRange(unitType: UnitType, fromUnit: number, toUnit: number, lap: number) {

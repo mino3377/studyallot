@@ -73,6 +73,8 @@ export default function NewAddPageBody({
 
   const [openDetails, setOpenDetails] = React.useState(false)
 
+  const [isSaving, setIsSaving] = React.useState(false)
+
   const [currentStep, setCurrentStep] = React.useState<Step>(() =>
     isEdit ? 2 : 1
   )
@@ -97,19 +99,24 @@ export default function NewAddPageBody({
   const unitLabelText = unitLabel(materialStep.unitType)
 
   const handleSave = async () => {
-    const startISO = fmtISODate(materialStep.startDate)
-    const endISO = fmtISODate(materialStep.endDate)
+  if (isSaving) return // ★追加：連打防止
 
-    const totalTasks =
-      (unitCountNum ?? 0) > 0 && (lapsNum ?? 0) > 0 ? unitCountNum! * lapsNum! : 0
+  const startISO = fmtISODate(materialStep.startDate)
+  const endISO = fmtISODate(materialStep.endDate)
 
-    if (!startISO || !endISO) return
-    if (!unitCountNum || !lapsNum) return
-    if (!materialStep.title.trim()) return
-    if (!planDays.length) return
+  const totalTasks =
+    (unitCountNum ?? 0) > 0 && (lapsNum ?? 0) > 0 ? unitCountNum! * lapsNum! : 0
 
-    const sum = planDays.reduce((a, b) => a + b, 0)
-    if (sum !== totalTasks) return
+  if (!startISO || !endISO) return
+  if (!unitCountNum || !lapsNum) return
+  if (!materialStep.title.trim()) return
+  if (!planDays.length) return
+
+  const sum = planDays.reduce((a, b) => a + b, 0)
+  if (sum !== totalTasks) return
+
+  try {
+    setIsSaving(true) // ★追加：ここから保存中
 
     if (isEdit) {
       await updateMaterialAction({
@@ -141,7 +148,10 @@ export default function NewAddPageBody({
       planDays,
       actualDays: Array.from({ length: planDays.length }, () => 0),
     })
+  } finally {
+    setIsSaving(false) // ★追加：成功でも失敗でも解除
   }
+}
 
   const stableInitialPlanDays = isEdit
     ? (Array.isArray(initial?.planDays) ? initial!.planDays! : [])
@@ -164,6 +174,7 @@ export default function NewAddPageBody({
         onOpenDetails={() => setOpenDetails(true)}
         onSave={handleSave}
         isEdit={isEdit}
+        isSaving={isSaving} 
       />
     </div>
 

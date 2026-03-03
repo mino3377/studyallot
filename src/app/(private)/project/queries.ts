@@ -47,8 +47,8 @@ export async function fetchMaterialsByProjectIds(
   const { data, error } = await supabase
     .from("materials")
     .select(
-      "id, slug, project_id, title, order, start_date, end_date, unit_type, unit_count, rounds, plan_days, actual_days"
-    )
+  "id, slug, project_id, title, order, start_date, end_date, unit_type, unit_count, rounds, plan_days, actual_days"
+)
     .eq("user_id", userId)
     .in("project_id", projectIds)
     .order("project_id", { ascending: true }) // ★まずprojectで固める

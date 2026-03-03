@@ -42,6 +42,7 @@ type Props = {
   onOpenDetails?: () => void
 
   onSave?: () => void
+  isSaving?: boolean // ★追加：保存中フラグ
   isEdit?: boolean
 }
 
@@ -93,6 +94,7 @@ export default function MaterialRegisterStep({
   onBack,
   onOpenDetails,
   onSave,
+  isSaving,
   isEdit,
 }: Props) {
   const set = (patch: Partial<MaterialRegisterValue>) => {
@@ -125,7 +127,7 @@ export default function MaterialRegisterStep({
     // ✅ 画面全体：上スクロール + 下固定ボタンのための土台
     <div className="flex flex-col h-full min-h-0">
       {/* ✅ 上側：スクロール領域 */}
-     <div className="flex-fit min-h-0 overflow-auto">
+      <div className="flex-fit min-h-0 overflow-auto">
         <section className="rounded-xl border bg-background p-3">
           <div className="grid gap-5">
             <div className="grid gap-2">
@@ -151,8 +153,17 @@ export default function MaterialRegisterStep({
                     <Calendar
                       mode="single"
                       selected={value.startDate}
-                      onSelect={(d) => set({ startDate: d })}
-                      disabled={lock}
+                      onSelect={(d) => {
+                        if (!d) return
+                        // 念のため（disabledが効いててもガード）
+                        if (value.endDate && d.getTime() > value.endDate.getTime()) return
+                        set({ startDate: d })
+                      }}
+                      disabled={(date) => {
+                        if (lock) return true
+                        if (value.endDate && date.getTime() > value.endDate.getTime()) return true
+                        return false
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
@@ -175,8 +186,16 @@ export default function MaterialRegisterStep({
                     <Calendar
                       mode="single"
                       selected={value.endDate}
-                      onSelect={(d) => set({ endDate: d })}
-                      disabled={lock}
+                      onSelect={(d) => {
+                        if (!d) return
+                        if (value.startDate && d.getTime() < value.startDate.getTime()) return
+                        set({ endDate: d })
+                      }}
+                      disabled={(date) => {
+                        if (lock) return true
+                        if (value.startDate && date.getTime() < value.startDate.getTime()) return true
+                        return false
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
@@ -265,14 +284,19 @@ export default function MaterialRegisterStep({
           </div>
         </div>
       </div>
-        <Button
-          type="button"
-          variant="default"
-          className="transition-colors w-full mt-3"
-          onClick={onSave}
-        >
-          保存
-        </Button>
+      <Button
+        type="button"
+        variant="default"
+        className="transition-colors w-full mt-3"
+        onClick={() => {
+          if (isSaving) return
+          onSave?.()
+        }}
+        disabled={!!isSaving}
+        aria-busy={!!isSaving}
+      >
+        {isSaving ? "保存中..." : "保存"}
+      </Button>
     </div>
   )
 }

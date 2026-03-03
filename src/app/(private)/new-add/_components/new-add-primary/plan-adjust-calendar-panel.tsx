@@ -299,7 +299,7 @@ export default function PlanAdjustCalendarPanel({
 
   return (
     <div className="md:ml-2 lg:mr-1 space-y-2 flex flex-col flex-1 min-h-0 h-full lg:col-span-1">
-      <div className="bg-black dark:bg-white rounded-xl">
+      <div className="bg-gray-100 dark:bg-gray-300 rounded-xl">
         <Card className="w-fit p-0">
           <CardContent className="p-0">
             <Calendar
@@ -337,8 +337,6 @@ export default function PlanAdjustCalendarPanel({
                   const dayISO = iso(d)
                   const count = plan[dayISO]?.length ?? 0
                   const isIn = isInRange(d, range)
-
-                  // ★変更：範囲内で count===0 も「休」にする（空欄にしない）
                   const showCount = !modifiers.outside && isIn && count > 0
                   const showRest = !modifiers.outside && isIn && !showCount // ← 0も休
 
