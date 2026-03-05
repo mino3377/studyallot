@@ -14,10 +14,11 @@ import ActualRecordCalendarPanel from "./_components/actual-record-calendar-pane
 import ProjectRecordCalendarPanel from "./_components/project-record-calendar-panel"
 import MaterialsList from "./_components/materials-list"
 import { useRouter } from "next/navigation"
-import type { MaterialVM, PopupMaterialForMaterialPage, UnitType } from "@/lib/type/material"
+import type { MaterialVM, PopupMaterialForMaterialPage} from "@/lib/type/material"
 import { ProjectForProjectPage } from "./data"
 import { ProjectRenameDialog } from "./_components/project-rename-dialog"
 import { ProjectActionButton } from "./_components/project-action-button"
+import { UnitType } from "@/lib/type/unit-type"
 
 function useIsDesktop(breakpointPx = 768) {
   const [isDesktop, setIsDesktop] = React.useState(false)

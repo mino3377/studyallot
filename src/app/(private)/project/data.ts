@@ -4,7 +4,8 @@ import {
   fetchMaterialsByProjectIds,
   fetchProjects,
 } from "./queries"
-import type { MaterialRow, MaterialVM, UnitType } from "@/lib/type/material"
+import type { MaterialRow, MaterialVM } from "@/lib/type/material"
+import { UnitType } from "@/lib/type/unit-type"
 
 export type ProjectForProjectPage = {
   id: number | string
