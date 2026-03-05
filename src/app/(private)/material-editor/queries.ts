@@ -1,4 +1,4 @@
-// src/app/(private)/new-add/queries.ts
+// src/app/(private)/material-editor/queries.ts
 import "server-only"
 import { createClient } from "@/utils/supabase/server"
 

@@ -1,4 +1,4 @@
-// src/app/(private)/new-add/page.tsx
+// src/app/(private)/material-editor/page.tsx
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import NewAddPageBody from "./page-body"

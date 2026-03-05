@@ -1,4 +1,4 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\plan-adjust.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\plan-adjust.tsx
 "use client"
 import { Card, CardContent } from "@/components/ui/card"
 import type { DateRange } from "react-day-picker"

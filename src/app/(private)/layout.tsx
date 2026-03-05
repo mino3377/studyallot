@@ -38,7 +38,7 @@ function SideNav() {
         <LayoutDashboard className="h-5 w-5" />
       </NavIcon>
 
-      <NavIcon href="/new-add">
+      <NavIcon href="/material-editor">
         <Pen className="h-5 w-5" />
       </NavIcon>
 
@@ -56,7 +56,7 @@ function MobileNav() {
         <LayoutDashboard className="h-5 w-5" />
       </NavIcon>
 
-      <NavIcon href="/new-add">
+      <NavIcon href="/material-editor">
         <Pen className="h-5 w-5" />
       </NavIcon>
 

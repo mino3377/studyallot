@@ -293,7 +293,7 @@ export default function MaterialsList({
               チェック
             </div>
             <div className="text-xs font-medium text-muted-foreground whitespace-nowrap justify-self-center">
-              編集
+              アクション
             </div>
           </div>
 
@@ -313,7 +313,7 @@ export default function MaterialsList({
               チェック
             </div>
             <div className="text-xs font-medium text-muted-foreground whitespace-nowrap justify-self-center">
-              編集
+              アクション
             </div>
           </div>
 

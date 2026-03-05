@@ -1,4 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\plan-adjust-calendar-panel.tsx
 "use client"
 
 import * as React from "react"
@@ -38,6 +37,7 @@ type Props = {
   restDays: Set<number>
   onPlanDaysChange?: (days: number[]) => void
   initialPlanDays?: number[]
+  onShare?: () => void
 }
 
 function iso(d: Date) {
@@ -126,7 +126,6 @@ function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
     const start = sorted[i]!
     let j = i
 
-    // ★同一lap内で unitNo が連番の間だけ伸ばす（lap跨ぎは絶対まとめない）
     while (
       j + 1 < sorted.length &&
       sorted[j + 1]!.lap === start.lap &&
@@ -154,6 +153,7 @@ function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
 
   return out
 }
+
 function planFromCounts(
   tasks: Task[],
   range: DateRange,
@@ -191,6 +191,7 @@ export default function PlanAdjustCalendar({
   restDays,
   onPlanDaysChange,
   initialPlanDays,
+  onShare,
 }: Props) {
   const ready = !!range?.from && !!range?.to && !!unitCount && !!laps && !!unitLabel
 
@@ -302,7 +303,7 @@ export default function PlanAdjustCalendar({
 
   return (
     <div className="md:ml-2 lg:mr-1 space-y-2 flex flex-col flex-1 min-h-0 h-full lg:col-span-1">
-      <div className="bg-gray-100 dark:bg-gray-300 rounded-xl">
+      <div className="bg-gray-100 dark:bg-gray-300 rounded-xl sm:flex space-y-3 sm:space-y-0 sm:gap-2 sm:justify-between sm:items-end">
         <Card className="w-fit p-0">
           <CardContent className="p-0">
             <Calendar
@@ -341,7 +342,7 @@ export default function PlanAdjustCalendar({
                   const count = plan[dayISO]?.length ?? 0
                   const isIn = isInRange(d, range)
                   const showCount = !modifiers.outside && isIn && count > 0
-                  const showRest = !modifiers.outside && isIn && !showCount // ← 0も休
+                  const showRest = !modifiers.outside && isIn && !showCount
 
                   return (
                     <CalendarDayButton day={day} modifiers={modifiers} {...props}>
@@ -366,15 +367,27 @@ export default function PlanAdjustCalendar({
             />
           </CardContent>
         </Card>
+
+        <div className="flex flex-col">
+          <Button
+            type="button"
+            variant="default"
+            className="text-xs px-3 py-2 whitespace-normal"
+            onClick={onShare}
+            disabled={!onShare}
+          >
+            計画を共有
+          </Button>
+        </div>
       </div>
 
-      <CardContent className="flex flex-col space-y-2 mb-2 p-3 border rounded-md flex-1 min-h-0 h-full">
+      <CardContent className="flex flex-col space-y-2 mb-2 p-3 border rounded-md md:flex-1 md:min-h-0 h-full">
         <div className="flex gap-2 items-center justify-between">
-          <div className="text-md font-bold flex justify-center">
+          <div className="text-sm sm:text-md font-bold flex justify-center">
             {selectedDay ? `${iso(selectedDay)} (${weekdayJP(selectedDay)})` : "-"}
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <Button
               variant="default"
               onClick={removeOneToTomorrow}

@@ -1,4 +1,4 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\actions.ts
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\actions.ts
 "use server"
 
 import { createClient } from "@/utils/supabase/server"

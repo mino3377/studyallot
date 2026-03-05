@@ -1,4 +1,4 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\new-add-primary\new-add-step-nav.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\material-editor-primary\material-editor-step-nav.tsx
 
 type Step = 1 | 2
 

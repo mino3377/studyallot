@@ -1,4 +1,4 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\new-add-primary\project-select-step.tsx
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\material-editor-primary\project-select-step.tsx
 
 "use client"
 

@@ -1,4 +1,4 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\new-add-primary\new-add-primary-panel.tsx
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\material-editor-primary\material-editor-primary-panel.tsx
 "use client"
 
 import * as React from "react"
@@ -8,7 +8,7 @@ import ProjectSelectStep, {
   type ProjectSelectStepValue,
 } from "./project-select-step"
 import MaterialRegisterStep, { MaterialRegisterValue } from "./material-register-step"
-import NewAddStepNav, { Step } from "./new-add-step-nav"
+import NewAddStepNav, { Step } from "./material-editor-step-nav"
 
 type Props = {
   currentStep: Step

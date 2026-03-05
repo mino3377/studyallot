@@ -1,4 +1,4 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\new-add-primary\material-register-step.tsx
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\material-editor-primary\material-register-step.tsx
 "use client"
 
 import * as React from "react"
@@ -84,6 +84,9 @@ export default function MaterialRegisterStep({
       <div className="flex-fit min-h-0 overflow-auto">
         <section className="rounded-xl border bg-background p-3">
           <div className="grid gap-5">
+            <div className="text-xs font-bold">
+            ※開始日・終了日・セクション数・周回数は後から変更ができません。
+          </div>
             <div className="grid gap-2">
               <Label>教材名</Label>
               <Input value={value.title} onChange={(e) => set({ title: e.target.value })} />

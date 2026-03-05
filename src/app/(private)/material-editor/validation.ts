@@ -1,4 +1,4 @@
-// src/app/(private)/new-add/validation.ts
+// src/app/(private)/material-editor/validation.ts
 
 export function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg)

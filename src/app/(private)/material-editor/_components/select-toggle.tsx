@@ -1,4 +1,4 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\select-toggle.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\select-toggle.tsx
 "use client"
 
 import * as React from "react"

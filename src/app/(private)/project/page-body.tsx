@@ -90,7 +90,7 @@ export function ProjectPageBody({
 
   const goEditMaterial = React.useCallback(
     (slug: string) => {
-      router.push(`/new-add?edit=${encodeURIComponent(slug)}`)
+      router.push(`/material-editor?edit=${encodeURIComponent(slug)}`)
     },
     [router]
   )
