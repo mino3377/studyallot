@@ -1,4 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\actions.ts
 "use server"
 
 import { createClient } from "@/utils/supabase/server"
@@ -32,7 +31,6 @@ type UpdateMaterialInput = {
   selectedProjectId?: string
   newProjectName?: string
 
-  // 旧データ欠損を許容するため optional
   title?: string
 
   startDate: string
@@ -169,13 +167,22 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
 
   if (matErr) throw new Error(matErr.message)
 
-  revalidatePath("/project")
+  // ✅ project slug を取得（redirect用）
+  const { data: proj, error: projErr } = await supabase
+    .from("projects")
+    .select("slug")
+    .eq("user_id", userId)
+    .eq("id", projectId)
+    .single()
 
-  return {
-    projectId: matInserted.project_id as number,
-    materialId: matInserted.id as number,
-    materialSlug: matInserted.slug as string,
-  }
+  if (projErr) throw new Error(projErr.message)
+
+  revalidatePath("/project")
+  redirect(
+    `/project?project=${encodeURIComponent(proj.slug)}&material=${encodeURIComponent(
+      matInserted.slug as string
+    )}`
+  )
 }
 
 export async function updateMaterialAction(input: UpdateMaterialInput) {
@@ -221,15 +228,12 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   if (exErr) throw new Error(exErr.message)
   assert(existing, "教材が見つかりません")
 
-
   assert(existing.start_date === startDate, "開始日は編集できません")
   assert(existing.end_date === endDate, "終了日は編集できません")
   assert(Number(existing.unit_count) === unitCount, "区切り数は編集できません")
   assert(Number(existing.rounds) === rounds, "周回数は編集できません")
 
-
   assert(String(existing.unit_type) === unitType, "区切りの呼び方は編集できません")
-
 
   const projectId = await resolveProjectId({
     supabase,
@@ -254,7 +258,15 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
     .eq("slug", slug)
 
   if (error) throw new Error(error.message)
+  const { data: proj, error: projErr } = await supabase
+    .from("projects")
+    .select("slug")
+    .eq("user_id", userId)
+    .eq("id", projectId)
+    .single()
+
+  if (projErr) throw new Error(projErr.message)
 
   revalidatePath("/project")
-  return { projectId }
+  redirect(`/project?project=${encodeURIComponent(proj.slug)}&material=${encodeURIComponent(slug)}`)
 }

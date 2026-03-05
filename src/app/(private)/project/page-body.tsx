@@ -1,4 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\page-body.tsx
 "use client"
 
 import * as React from "react"
@@ -13,8 +12,8 @@ import {
 import ActualRecordCalendarPanel from "./_components/actual-record-calendar-panel"
 import ProjectRecordCalendarPanel from "./_components/project-record-calendar-panel"
 import MaterialsList from "./_components/materials-list"
-import { useRouter } from "next/navigation"
-import type { MaterialVM, PopupMaterialForMaterialPage} from "@/lib/type/material"
+import { useRouter, useSearchParams } from "next/navigation"
+import type { MaterialVM, PopupMaterialForMaterialPage } from "@/lib/type/material"
 import { ProjectForProjectPage } from "./data"
 import { ProjectRenameDialog } from "./_components/project-rename-dialog"
 import { ProjectActionButton } from "./_components/project-action-button"
@@ -60,8 +59,12 @@ export function ProjectPageBody({
   deleteProjectAction: (fd: FormData) => Promise<void>
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const qsProject = searchParams.get("project") ?? ""
+  const qsMaterial = searchParams.get("material") ?? ""
+
   const [selectedSlug, setSelectedSlug] = React.useState<string>(
-    projects[0]?.slug ?? ""
+    qsProject && projects.some((p) => p.slug === qsProject) ? qsProject : (projects[0]?.slug ?? "")
   )
   const materials = selectedSlug ? materialsBySlug[selectedSlug] ?? [] : []
 
@@ -137,6 +140,55 @@ export function ProjectPageBody({
 
   const defaultUnitType: UnitType = "section"
   const defaultUnitLabel = "セクション"
+
+  // ✅ URLクエリ（project/material）を反映：保存後に該当プロジェクト＆教材を開く
+  React.useEffect(() => {
+    if (qsProject && projects.some((p) => p.slug === qsProject)) {
+      setSelectedSlug(qsProject)
+    }
+  }, [qsProject, projects])
+
+  React.useEffect(() => {
+    if (!qsMaterial) return
+
+    const pSlug =
+      (qsProject && projects.some((p) => p.slug === qsProject) ? qsProject : "") ||
+      materialToProjectSlug[qsMaterial] ||
+      ""
+
+    if (!pSlug) return
+
+    const mats = materialsBySlug[pSlug] ?? []
+    const m = mats.find((x) => x.slug === qsMaterial)
+    if (!m) return
+
+    setOpenedMaterial({
+      id: m.id,
+      slug: m.slug,
+      title: m.title,
+      projectSlug: pSlug,
+      startDate: m.startDate,
+      endDate: m.endDate,
+      totalUnits: m.totalUnits,
+      lapsTotal: m.lapsTotal,
+      planDays: m.planDays,
+      actualDays: m.actualDays,
+      unitType: m.unitType ?? defaultUnitType,
+      unitLabel: m.unitLabel ?? defaultUnitLabel,
+    })
+
+    setProjectProgressMode(false)
+    if (!isDesktop) setMobileSheetOpen(true)
+  }, [
+    qsMaterial,
+    qsProject,
+    projects,
+    materialsBySlug,
+    materialToProjectSlug,
+    defaultUnitType,
+    defaultUnitLabel,
+    isDesktop,
+  ])
 
   const ProjectPanel = (
     <ProjectRecordCalendarPanel
