@@ -1,4 +1,5 @@
 // app/(public)/terms/page.tsx
+import BackButton from "@/components/buck-button"
 import Link from "next/link"
 
 export const metadata = {
@@ -35,6 +36,7 @@ export default function TermsPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 md:px-6 py-12">
+      <BackButton fallbackHref="/" />
       <header className="space-y-2">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">利用規約</h1>
         <p className="text-sm text-muted-foreground">最終更新日：{lastUpdated}</p>

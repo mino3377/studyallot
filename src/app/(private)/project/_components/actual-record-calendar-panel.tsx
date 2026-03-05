@@ -1,4 +1,4 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\actual-record-calendar-panel.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\_components\actual-record-calendar-panel.tsx
 "use client"
 
 import * as React from "react"
@@ -15,9 +15,9 @@ import {
   isSameDay,
 } from "date-fns"
 import type { DateRange } from "react-day-picker"
-import { taskLabelRange, taskLabelSingle } from "@/components/unit-wording"
-
-type UnitType = "section" | "chapter" | "unit" | "page"
+import { taskLabelRange, taskLabelSingle } from "@/lib/unit-wording"
+import type { UnitType } from "@/lib/type/unit-type"
+import { unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
 
 type Task = {
   id: string
@@ -41,6 +41,7 @@ type Props = {
   initialActualDays?: number[]
   initialPlanDays?: number[]
   saveSectionRecordsAction: (fd: FormData) => Promise<void>
+  onActualDaysSaved?: (actualDays: number[]) => void
 }
 
 function iso(d: Date) {
@@ -176,8 +177,6 @@ function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
   return out
 }
 
-
-
 export default function ActualRecordCalendarPanel({
   title,
   range,
@@ -189,6 +188,7 @@ export default function ActualRecordCalendarPanel({
   initialActualDays = [],
   initialPlanDays = [],
   saveSectionRecordsAction,
+  onActualDaysSaved,
 }: Props) {
   const ready = !!range?.from && !!range?.to && !!unitCount && !!laps && !!unitLabel
 
@@ -245,6 +245,10 @@ export default function ActualRecordCalendarPanel({
 
   const selectedISO = selectedDay ? iso(selectedDay) : ""
 
+  const today0 = startOfDay(new Date())
+  const selected0 = selectedDay ? startOfDay(selectedDay) : null
+  const isFutureSelected = !!selected0 && selected0.getTime() > today0.getTime()
+
   const plannedToday = selectedISO ? (plan[selectedISO]?.length ?? 0) : 0
 
   const doneBeforeToday = React.useMemo(() => {
@@ -282,6 +286,7 @@ export default function ActualRecordCalendarPanel({
   const save = async () => {
     if (!ready) return
     if (dayISOs.length === 0) return
+    if (isFutureSelected) return
 
     const arr = dayISOs.map((dISO) => {
       const v = actualCountByISO[dISO] ?? 0
@@ -295,26 +300,11 @@ export default function ActualRecordCalendarPanel({
     try {
       setIsSaving(true)
       await saveSectionRecordsAction(fd)
+      onActualDaysSaved?.(arr)
     } finally {
       setIsSaving(false)
     }
   }
-
-  function unitTypeToLabel(unitType: UnitType) {
-  switch (unitType) {
-    case "section":
-      return "セクション"
-    case "chapter":
-      return "チャプター"
-    case "unit":
-      return "ユニット"
-    case "page":
-      return "ページ"
-    default:
-      return "セクション"
-  }
-}
-  
 
   if (!ready) return null
 
@@ -399,7 +389,7 @@ export default function ActualRecordCalendarPanel({
               {selectedDay ? `${iso(selectedDay)} (${weekdayJP(selectedDay)})` : "-"}
             </div>
             <div className="text-xs text-muted-foreground">
-              今日の計画: {plannedToday} {unitTypeToLabel(unitType)}
+              今日の計画: {plannedToday} {unitTypeLabel(unitType)}
             </div>
           </div>
 
@@ -412,8 +402,10 @@ export default function ActualRecordCalendarPanel({
                 min={0}
                 max={remainingFromToday}
                 value={selectedISO ? String(clampedActual) : "0"}
+                disabled={isFutureSelected}
                 onChange={(e) => {
                   if (!selectedISO) return
+                  if (isFutureSelected) return
                   const v = Number(e.target.value)
                   const next = Number.isFinite(v) ? v : 0
                   setActualCountByISO((prev) => ({
@@ -424,7 +416,7 @@ export default function ActualRecordCalendarPanel({
               />
             </div>
 
-            <Button onClick={save} disabled={isSaving}>
+            <Button onClick={save} disabled={isSaving || isFutureSelected}>
               保存
             </Button>
           </div>

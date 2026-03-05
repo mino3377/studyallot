@@ -10,7 +10,7 @@ export type SelectToggleItem = {
   label: string
 }
 
-export default function SelectToggle({
+export default function MaterialSelectToggle({
   items,
   selectedId,
   placeholder = "選択してください",
@@ -21,7 +21,7 @@ export default function SelectToggle({
   triggerHandlers,
   disabled,
 }: {
-  items: SelectToggleItem[]
+  items: readonly SelectToggleItem[]
   selectedId?: string
   placeholder?: string
   emptyMessage?: string

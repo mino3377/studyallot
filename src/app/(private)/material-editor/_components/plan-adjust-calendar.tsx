@@ -1,4 +1,4 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\new-add-primary\plan-adjust-calendar-panel.tsx
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\new-add\_components\plan-adjust-calendar-panel.tsx
 "use client"
 
 import * as React from "react"
@@ -15,8 +15,8 @@ import {
   isSameDay,
 } from "date-fns"
 import type { DateRange } from "react-day-picker"
-import type { UnitType } from "./material-register-step"
-import { taskLabelRange, taskLabelSingle } from "@/components/unit-wording"
+import type { UnitType } from "@/lib/type/unit-type"
+import { taskLabelRange, taskLabelSingle } from "@/lib/unit-wording"
 
 type Task = {
   id: string
@@ -116,21 +116,17 @@ function nextDayInRange(cur: Date, range: DateRange) {
 }
 
 function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
-  if (unitType !== "page") {
-    return tasks.map((t) => ({
-      key: t.id,
-      label: taskLabelSingle(unitType, t.unitNo, t.lap),
-    }))
-  }
-
   const out: DisplayTask[] = []
-  const sorted = [...tasks].sort((a, b) => (a.lap - b.lap) || (a.unitNo - b.unitNo))
+  const sorted = [...tasks].sort(
+    (a, b) => (a.lap - b.lap) || (a.unitNo - b.unitNo)
+  )
 
   let i = 0
   while (i < sorted.length) {
     const start = sorted[i]!
     let j = i
 
+    // ★同一lap内で unitNo が連番の間だけ伸ばす（lap跨ぎは絶対まとめない）
     while (
       j + 1 < sorted.length &&
       sorted[j + 1]!.lap === start.lap &&
@@ -140,17 +136,24 @@ function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
     }
 
     const end = sorted[j]!
-    out.push({
-      key: `${start.id}..${end.id}`,
-      label: taskLabelRange(unitType, start.unitNo, end.unitNo, start.lap),
-    })
+
+    if (start.unitNo === end.unitNo) {
+      out.push({
+        key: start.id,
+        label: taskLabelSingle(unitType, start.unitNo, start.lap),
+      })
+    } else {
+      out.push({
+        key: `${start.id}..${end.id}`,
+        label: taskLabelRange(unitType, start.unitNo, end.unitNo, start.lap),
+      })
+    }
 
     i = j + 1
   }
 
   return out
 }
-
 function planFromCounts(
   tasks: Task[],
   range: DateRange,
@@ -179,7 +182,7 @@ function planFromCounts(
   return map
 }
 
-export default function PlanAdjustCalendarPanel({
+export default function PlanAdjustCalendar({
   range,
   unitCount,
   laps,
@@ -395,7 +398,7 @@ export default function PlanAdjustCalendarPanel({
 
         <div className="flex-1 min-h-0 overflow-y-auto">
           {selectedDay && displayTasks.length === 0 ? (
-            <div className="text-sm text-muted-foreground">タスクなし（もしくは期間外）</div>
+            <div className="text-sm text-muted-foreground">タスクなし</div>
           ) : (
             <ul className="space-y-2">
               {displayTasks.map((t, idx) => (

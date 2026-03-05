@@ -1,78 +1,8 @@
 //C:\Users\chiso\nextjs\study-allot\src\lib\type\material.ts
 
+import type { UnitType } from "@/lib/type/unit-type"
+
 export type ProjectOption = { id: string; name: string }
-
-export type PlanVM = {
-  id: string
-  name: string
-  startDate: string
-  endDate: string
-  rounds: number | ""
-  isActive: boolean
-}
-
-export type MaterialEditInitial = {
-  id: string
-  project_id: string
-  title: string
-  start_date: string
-  end_date: string
-  total_units: number
-  rounds: number
-  section_titles: string[]
-  section_ids: number[]
-  plans: PlanVM[]
-}
-
-export type PlanListEditorProps = {
-  startMinDate?: string
-  startMaxDate?: string
-  endMinDate?: string
-  endMaxDate?: string
-  totalUnits: number | ""
-  plans: PlanVM[]
-  selectedPlanIndex: number
-
-  onSelectPlan: (i: number) => void
-  onAddPlan: () => void
-  onUpdatePlan: (index: number, patch: Partial<PlanVM>) => void
-  setOnlyOneActive: (indexToActive: number | null) => void
-  onDeletePlan: (index: number) => void
-}
-
-export type MaterialInfoProps = {
-  title: string
-  onChangeTitle: (v: string) => void
-  projectId: string
-  onChangeProjectId: (v: string) => void
-  projects: ProjectOption[]
-}
-
-export type CreateMaterialInput = {
-  title: string
-  total_units: number
-  project_id: string
-  section_titles: string[]
-  plans: {
-    name: string
-    start_date: string
-    end_date: string
-    rounds: number
-    is_active: boolean
-  }[]
-}
-
-export type SectionsEditorProps = {
-  totalUnits: number | ""
-  onChangeTotalUnits: (v: number | "") => void
-  sectionTitles: string[]
-  onChangeSectionTitle: (index: number, v: string) => void
-  onReorder: (fromIndex0: number, toIndex1based: number) => void
-  onBulkDelete?: (indices: number[]) => void
-  max?: number
-}
-
-export type UnitType = "section" | "chapter" | "unit" | "page"
 
 export type MaterialVM = {
   id: number | string
@@ -89,7 +19,6 @@ export type MaterialVM = {
   planDays?: number[]
   actualDays?: number[]
   unitType: UnitType
-  // unitLabel は DBにあれば使う、無ければ unitType から導出でOK
   unitLabel?: string
 }
 
@@ -98,12 +27,41 @@ export type UpdateMaterialInput = {
   projectMode: "existing" | "new"
   selectedProjectId?: string
   newProjectName?: string
-
   title: string
   startDate: string
   endDate: string
-  unitType: UnitType // ★ string から UnitType へ
+  unitType: UnitType
   unitCount: number
   rounds: number
   planDays: number[]
+}
+
+export type MaterialRow = {
+  id: number
+  slug: string
+  project_id: number
+  title: string
+  order: number | null
+  start_date: string | null
+  end_date: string | null
+  unit_type: string | null
+  unit_count: number | null
+  rounds: number | null
+  plan_days: number[] | null
+  actual_days: number[] | null
+}
+
+export type PopupMaterialForMaterialPage = {
+  id: number | string
+  slug: string
+  title: string
+  projectSlug?: string
+  startDate?: string
+  endDate?: string
+  totalUnits?: number
+  lapsTotal?: number
+  planDays?: number[]
+  actualDays?: number[]
+  unitType?: UnitType
+  unitLabel?: string
 }

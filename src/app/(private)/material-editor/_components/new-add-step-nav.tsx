@@ -61,12 +61,12 @@ export default function NewAddStepNav({
                           : "border-foreground/25",
                     ].join(" ")}
                   >
-                    {it.step /* ✓にしないで常に番号 */}
+                    {it.step }
                   </div>
 
                   <div
                     className={[
-                      "text-center transition-all",
+                      "text-center transition-all text-md",
                       isActive
                         ? "text-base font-bold"
                         : "text-sm font-semibold text-muted-foreground",

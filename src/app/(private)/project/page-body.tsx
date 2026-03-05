@@ -1,343 +1,394 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\page-body.tsx
-import ProjectMaterialsSwitcher from "@/app/(private)/project/project-materials-switcher"
-import { createClient } from "@/utils/supabase/server"
-import { redirect } from "next/navigation"
-import { getProjectPageData } from "./data"
-import { revalidatePath } from "next/cache"
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\page-body.tsx
+"use client"
 
-export default async function PageBody({ userId }: { userId: string }) {
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth?.user) redirect("/login")
+import * as React from "react"
+import ProjectSelectHeader from "@/app/(private)/project/_components/project-select-header"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import ActualRecordCalendarPanel from "./_components/actual-record-calendar-panel"
+import ProjectRecordCalendarPanel from "./_components/project-record-calendar-panel"
+import MaterialsList from "./_components/materials-list"
+import { useRouter } from "next/navigation"
+import type { MaterialVM, PopupMaterialForMaterialPage, UnitType } from "@/lib/type/material"
+import { ProjectForProjectPage } from "./data"
+import { ProjectRenameDialog } from "./_components/project-rename-dialog"
+import { ProjectActionButton } from "./_components/project-action-button"
 
-  const { projects, materialsBySlug } = await getProjectPageData(userId)
+function useIsDesktop(breakpointPx = 768) {
+  const [isDesktop, setIsDesktop] = React.useState(false)
 
-  const expandedByProjectSlug: Record<string, Record<string, null>> = Object.fromEntries(
-    (projects ?? []).map((p) => [p.slug, {} as Record<string, null>])
+  React.useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${breakpointPx}px)`)
+    const apply = () => setIsDesktop(mq.matches)
+    apply()
+
+    if (mq.addEventListener) mq.addEventListener("change", apply)
+    else mq.addListener(apply)
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", apply)
+      else mq.removeListener(apply)
+    }
+  }, [breakpointPx])
+
+  return isDesktop
+}
+
+export function ProjectPageBody({
+  projects,
+  materialsBySlug,
+  saveSectionRecordsAction,
+  updateProjectMetaAction,
+  replanDelayedPlansAction,
+  updateMaterialOrdersAction,
+  deleteMaterialAction,
+  deleteProjectAction,
+}: {
+  projects: ProjectForProjectPage[]
+  materialsBySlug: Record<string, MaterialVM[]>
+  saveSectionRecordsAction: (fd: FormData) => Promise<void>
+  updateProjectMetaAction: (fd: FormData) => Promise<void>
+  replanDelayedPlansAction: (fd: FormData) => Promise<void>
+  updateMaterialOrdersAction: (fd: FormData) => Promise<void>
+  deleteMaterialAction: (fd: FormData) => Promise<void>
+  deleteProjectAction: (fd: FormData) => Promise<void>
+}) {
+  const router = useRouter()
+  const [selectedSlug, setSelectedSlug] = React.useState<string>(
+    projects[0]?.slug ?? ""
+  )
+  const materials = selectedSlug ? materialsBySlug[selectedSlug] ?? [] : []
+
+  const selectedProject = React.useMemo(
+    () => projects.find((p) => p.slug === selectedSlug),
+    [projects, selectedSlug]
+  )
+  const selectedProjectName = selectedProject?.name ?? ""
+  const selectedProjectId = selectedProject?.id
+
+  React.useEffect(() => {
+    if (!selectedSlug && projects[0]?.slug) setSelectedSlug(projects[0].slug)
+  }, [projects, selectedSlug])
+
+  const materialToProjectSlug = React.useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const [pSlug, mats] of Object.entries(materialsBySlug ?? {})) {
+      for (const m of mats ?? []) {
+        map[m.slug] = pSlug
+      }
+    }
+    return map
+  }, [materialsBySlug])
+
+  const isDesktop = useIsDesktop(768)
+
+  const goEditMaterial = React.useCallback(
+    (slug: string) => {
+      router.push(`/new-add?edit=${encodeURIComponent(slug)}`)
+    },
+    [router]
   )
 
-  async function saveSectionRecordsAction(fd: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth?.user) redirect("/login")
+  const [mobileSheetOpen, setMobileSheetOpen] = React.useState(false)
+  const [openedMaterial, setOpenedMaterial] =
+    React.useState<PopupMaterialForMaterialPage | null>(null)
 
-    const materialId = Number(fd.get("materialId"))
-    const actualDaysJson = String(fd.get("actualDays") ?? "[]")
+  const [projectProgressMode, setProjectProgressMode] = React.useState(false)
 
-    if (!materialId || Number.isNaN(materialId)) {
-      throw new Error("Invalid materialId")
-    }
+  const toggleSelectMaterial = React.useCallback(
+    (m: PopupMaterialForMaterialPage) => {
+      const resolvedProjectSlug =
+        m.projectSlug ?? materialToProjectSlug[m.slug] ?? selectedSlug
 
-    let actualDays: number[] = []
-    try {
-      const parsed = JSON.parse(actualDaysJson)
-      if (Array.isArray(parsed)) actualDays = parsed
-    } catch { }
-
-    const safeActualDays = (actualDays ?? []).map((n) =>
-      Number.isFinite(Number(n)) ? Math.max(0, Math.floor(Number(n))) : 0
-    )
-
-    const { error } = await supabase
-      .from("materials")
-      .update({ actual_days: safeActualDays })
-      .eq("id", materialId)
-      .eq("user_id", auth.user.id)
-
-    if (error) throw new Error(error.message)
-
-    revalidatePath("/project")
-  }
-
-  async function updateProjectMetaAction(fd: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth?.user) redirect("/login")
-
-    const projectId = Number(fd.get("projectId"))
-    const projectName = String(fd.get("projectName") ?? "").trim()
-    const ordersJson = String(fd.get("orders") ?? "[]")
-
-    if (!projectId || Number.isNaN(projectId)) {
-      throw new Error("Invalid projectId")
-    }
-
-    if (projectName) {
-      const { error } = await supabase
-        .from("projects")
-        .update({ name: projectName })
-        .eq("id", projectId)
-        .eq("user_id", auth.user.id)
-
-      if (error) throw new Error(error.message)
-    }
-
-    let orders: { projectId: number; order: number }[] = []
-    try {
-      const parsed = JSON.parse(ordersJson)
-      if (Array.isArray(parsed)) orders = parsed
-    } catch { }
-
-    for (const it of orders) {
-      const pid = Number(it.projectId)
-      const order = Number(it.order)
-      if (!pid || Number.isNaN(order)) continue
-
-      const { error } = await supabase
-        .from("projects")
-        .update({ order })
-        .eq("id", pid)
-        .eq("user_id", auth.user.id)
-
-      if (error) throw new Error(error.message)
-    }
-
-    revalidatePath("/project")
-  }
-
-  async function replanDelayedPlansAction(fd: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth?.user) redirect("/login")
-
-    const projectSlug = String(fd.get("projectSlug") ?? "").trim()
-    if (!projectSlug) throw new Error("Invalid projectSlug")
-
-    const getTodayISOJST = () => {
-      const fmt = new Intl.DateTimeFormat("sv-SE", {
-        timeZone: "Asia/Tokyo",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
+      setOpenedMaterial((prev) => {
+        const nextIsSame = prev?.slug === m.slug
+        const next = nextIsSame ? null : { ...m, projectSlug: resolvedProjectSlug }
+        setProjectProgressMode(false)
+        if (!isDesktop) {
+          setMobileSheetOpen(!nextIsSame)
+        }
+        return next
       })
-      return fmt.format(new Date())
-    }
+    },
+    [materialToProjectSlug, selectedSlug, isDesktop]
+  )
 
-    const msPerDay = 24 * 60 * 60 * 1000
-    const toISO10 = (s?: string | null) => (s ?? "").slice(0, 10)
+  const toggleProjectProgress = React.useCallback(() => {
+    setOpenedMaterial(null)
 
-    const clampInt = (n: number, min: number, max: number) => {
-      if (!Number.isFinite(n)) return min
-      if (n < min) return min
-      if (n > max) return max
-      return n
-    }
+    setProjectProgressMode((prev) => {
+      const next = !prev
+      if (!isDesktop) setMobileSheetOpen(next)
+      return next
+    })
+  }, [isDesktop])
 
-    const sumPrefix = (arr: number[], endExclusive: number) => {
-      let s = 0
-      for (let i = 0; i < endExclusive; i++) {
-        const v = arr[i]
-        s += Number.isFinite(v) ? v : 0
-      }
-      return s
-    }
+  React.useEffect(() => {
+    setMobileSheetOpen(false)
+    setOpenedMaterial(null)
+    setProjectProgressMode(false)
+  }, [selectedSlug])
 
-    const padPrefixFromActual = (actual: number[], len: number) => {
-      const out: number[] = new Array(len)
-      for (let i = 0; i < len; i++) {
-        const v = actual[i]
-        out[i] = Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0
-      }
-      return out
-    }
+  const defaultUnitType: UnitType = "section"
+  const defaultUnitLabel = "セクション"
 
-    const distributeFrontLoaded = (remain: number, days: number) => {
-      const out = new Array(days).fill(0)
-      if (days <= 0) return out
+  const ProjectPanel = (
+    <ProjectRecordCalendarPanel
+      projectName={selectedProjectName}
+      materials={materials.map((m) => ({
+        slug: m.slug,
+        title: m.title,
+        startDate: m.startDate,
+        endDate: m.endDate,
+        totalUnits: m.totalUnits,
+        lapsTotal: m.lapsTotal,
+        planDays: m.planDays,
+        actualDays: m.actualDays,
+        unitType: m.unitType ?? "section",
+        unitLabel: m.unitLabel ?? "セクション",
+      }))}
+      onSelectMaterialSlug={(slug) => {
+        const m = materials.find((x) => x.slug === slug)
+        if (!m) return
+        toggleSelectMaterial({
+          id: m.id,
+          slug: m.slug,
+          title: m.title,
+          projectSlug: selectedSlug,
+          startDate: m.startDate,
+          endDate: m.endDate,
+          totalUnits: m.totalUnits,
+          lapsTotal: m.lapsTotal,
+          planDays: m.planDays,
+          actualDays: m.actualDays,
+          unitType: m.unitType ?? defaultUnitType,
+          unitLabel: m.unitLabel ?? defaultUnitLabel,
+        })
+      }}
+    />
+  )
 
-      const base = Math.floor(remain / days)
-      const extra = remain % days
+  const MaterialPanel = openedMaterial ? (
+    <div className="h-full min-h-0 flex flex-col gap-3">
+      <div className="flex-1 min-h-0">
+        <ActualRecordCalendarPanel
+          title={openedMaterial.title}
+          materialId={openedMaterial.id}
+          initialActualDays={openedMaterial.actualDays ?? []}
+          initialPlanDays={openedMaterial.planDays ?? []}
+          saveSectionRecordsAction={saveSectionRecordsAction}
+          onActualDaysSaved={(nextActualDays) => {
+            setOpenedMaterial((prev) =>
+              prev ? { ...prev, actualDays: nextActualDays } : prev
+            )
+          }}
+          range={{
+            from: openedMaterial.startDate
+              ? new Date(`${openedMaterial.startDate}T00:00:00`)
+              : undefined,
+            to: openedMaterial.endDate
+              ? new Date(`${openedMaterial.endDate}T00:00:00`)
+              : undefined,
+          }}
+          unitCount={openedMaterial.totalUnits ?? 0}
+          laps={openedMaterial.lapsTotal ?? 0}
+          unitLabel={openedMaterial.unitLabel ?? defaultUnitLabel}
+          unitType={(openedMaterial.unitType ?? defaultUnitType) as UnitType}
+        />
+      </div>
+    </div>
+  ) : null
 
-      for (let i = 0; i < days; i++) out[i] = base
-      for (let i = 0; i < extra; i++) out[i] += 1 
-      return out
-    }
+  const RightPanel = projectProgressMode ? ProjectPanel : (MaterialPanel ?? ProjectPanel)
 
-    const todayISO = getTodayISOJST()
+  const [renameOpen, setRenameOpen] = React.useState(false)
+  const [renameValue, setRenameValue] = React.useState("")
 
-    const { data: proj, error: projErr } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("user_id", auth.user.id)
-      .eq("slug", projectSlug)
-      .maybeSingle()
+  const [orderProjects, setOrderProjects] = React.useState<ProjectForProjectPage[]>([])
+  const [isDeletingProjectId, setIsDeletingProjectId] = React.useState<string | null>(null)
 
-    if (projErr) throw new Error(projErr.message)
-    if (!proj?.id) throw new Error("Project not found")
+  React.useEffect(() => {
+    setOrderProjects(projects)
+  }, [projects])
 
-    const { data: mats, error: matsErr } = await supabase
-      .from("materials")
-      .select("id, start_date, end_date, unit_count, rounds, plan_days, actual_days")
-      .eq("user_id", auth.user.id)
-      .eq("project_id", proj.id)
-
-    if (matsErr) throw new Error(matsErr.message)
-
-    for (const m of mats ?? []) {
-      const startDate = toISO10(m.start_date)
-      const endDate = toISO10(m.end_date)
-      const unitCount = Number(m.unit_count ?? 0)
-      const rounds = Number(m.rounds ?? 0)
-
-      if (!startDate || !endDate) continue
-      if (!Number.isFinite(unitCount) || !Number.isFinite(rounds)) continue
-      if (unitCount <= 0 || rounds <= 0) continue
-
-      const start = new Date(`${startDate}T00:00:00`)
-      const end = new Date(`${endDate}T00:00:00`)
-      const today = new Date(`${todayISO}T00:00:00`)
-
-      const D = Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1
-      if (!Number.isFinite(D) || D <= 0) continue
-
-      const rawIdx = Math.floor((today.getTime() - start.getTime()) / msPerDay)
-      const fixedLen = clampInt(rawIdx + 1, 0, D)
-
-      const planDays: number[] = Array.isArray(m.plan_days) ? m.plan_days : []
-      const actualDays: number[] = Array.isArray(m.actual_days) ? m.actual_days : []
-
-      const plannedCum = sumPrefix(planDays, fixedLen)
-      const actualCum = sumPrefix(actualDays, fixedLen)
-
-      if (!(plannedCum > actualCum)) continue
-
-      const totalTasks = Math.max(0, unitCount * rounds)
-
-      const fixed = padPrefixFromActual(actualDays, fixedLen)
-      const done = fixed.reduce((s, n) => s + n, 0)
-
-      const remain = Math.max(0, totalTasks - done)
-      const remainDays = D - fixedLen
-
-      const future = distributeFrontLoaded(remain, remainDays)
-      const nextPlan = [...fixed, ...future].slice(0, D)
-
-      const { error: upErr } = await supabase
-        .from("materials")
-        .update({ plan_days: nextPlan })
-        .eq("id", m.id)
-        .eq("user_id", auth.user.id)
-
-      if (upErr) throw new Error(upErr.message)
-    }
-
-    revalidatePath("/project")
+  const openRename = () => {
+    setRenameValue(selectedProjectName)
+    setOrderProjects(projects)
+    setRenameOpen(true)
   }
 
-  async function deleteMaterialAction(fd: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth?.user) redirect("/login")
+  const [isSaving, setIsSaving] = React.useState(false)
 
-    const materialId = Number(fd.get("materialId"))
-    if (!materialId || Number.isNaN(materialId)) {
-      throw new Error("Invalid materialId")
-    }
+  const saveMeta = async () => {
+    if (!selectedProjectId) return
 
-    const { error } = await supabase
-      .from("materials")
-      .delete()
-      .eq("id", materialId)
-      .eq("user_id", auth.user.id)
+    const nextName = renameValue.trim()
+    if (!nextName) return
+    if (orderProjects.length === 0) return
 
-    if (error) throw new Error(error.message)
-
-    revalidatePath("/project")
-  }
-
-  async function deleteProjectAction(fd: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth?.user) redirect("/login")
-
-    const projectId = Number(fd.get("projectId"))
-    if (!projectId || Number.isNaN(projectId)) {
-      throw new Error("Invalid projectId")
-    }
-
-    const { error: matsErr } = await supabase
-      .from("materials")
-      .delete()
-      .eq("project_id", projectId)
-      .eq("user_id", auth.user.id)
-
-    if (matsErr) throw new Error(matsErr.message)
-
-    const { error: projErr } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", projectId)
-      .eq("user_id", auth.user.id)
-
-    if (projErr) throw new Error(projErr.message)
-
-    revalidatePath("/project")
-  }
-
-  async function updateMaterialOrdersAction(fd: FormData) {
-    "use server"
-    const supabase = await createClient()
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth?.user) redirect("/login")
-
-    const projectSlug = String(fd.get("projectSlug") ?? "").trim()
-    const ordersJson = String(fd.get("orders") ?? "[]")
-
-    if (!projectSlug) throw new Error("Invalid projectSlug")
-
-    let orders: { materialId: number; order: number }[] = []
     try {
-      const parsed = JSON.parse(ordersJson)
-      if (Array.isArray(parsed)) orders = parsed
-    } catch { }
+      setIsSaving(true)
 
-    const { data: proj, error: projErr } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("user_id", auth.user.id)
-      .eq("slug", projectSlug)
-      .maybeSingle()
+      const ordersPayload = orderProjects.map((p, idx) => ({
+        projectId: Number(p.id),
+        order: idx,
+      }))
 
-    if (projErr) throw new Error(projErr.message)
-    if (!proj?.id) throw new Error("Project not found")
+      const fd = new FormData()
+      fd.set("projectId", String(selectedProjectId))
+      fd.set("projectName", nextName)
+      fd.set("orders", JSON.stringify(ordersPayload))
 
-    for (const it of orders) {
-      const mid = Number(it.materialId)
-      const order = Number(it.order)
-      if (!mid || Number.isNaN(order)) continue
-
-      const { error } = await supabase
-        .from("materials")
-        .update({ order })
-        .eq("id", mid)
-        .eq("user_id", auth.user.id)
-        .eq("project_id", proj.id)
-
-      if (error) throw new Error(error.message)
+      await updateProjectMetaAction(fd)
+      setRenameOpen(false)
+      router.refresh()
+    } finally {
+      setIsSaving(false)
     }
-
-    revalidatePath("/project")
   }
+
+  const deleteProject = React.useCallback(
+    async (projectId: number | string,) => {
+      if (!deleteProjectAction) return
+      const idStr = String(projectId)
+      try {
+        setIsDeletingProjectId(idStr)
+
+        const fd = new FormData()
+        fd.set("projectId", idStr)
+        await deleteProjectAction(fd)
+
+        setRenameOpen(false)
+        router.refresh()
+      } finally {
+        setIsDeletingProjectId(null)
+      }
+    },
+    [deleteProjectAction, router]
+  )
+
+  const deleteMaterial = React.useCallback(
+    async (materialId: number | string, materialSlug?: string) => {
+      const fd = new FormData()
+      fd.set("materialId", String(materialId))
+      await deleteMaterialAction(fd)
+
+      if (materialSlug && openedMaterial?.slug === materialSlug) {
+        setOpenedMaterial(null)
+        setProjectProgressMode(false)
+      }
+
+      router.refresh()
+    },
+    [deleteMaterialAction, router, openedMaterial?.slug]
+  )
+
+  const [isReplanning, setIsReplanning] = React.useState(false)
+
+  const replanAllDelayedInProject = async () => {
+    if (!selectedSlug) return
+    try {
+      setIsReplanning(true)
+      const fd = new FormData()
+      fd.set("projectSlug", selectedSlug)
+      await replanDelayedPlansAction(fd)
+      router.refresh()
+    } finally {
+      setIsReplanning(false)
+    }
+  }
+
+  const [confirmDeleteProject, setConfirmDeleteProject] = React.useState<{
+    id: string
+    slug: string
+    name: string
+  } | null>(null)
 
   return (
-    <div className="space-y-6 h-full min-h-0 flex flex-col">
-      <div className="flex-1 min-h-0">
-        <ProjectMaterialsSwitcher
-          projects={projects}
-          materialsBySlug={materialsBySlug}
-          expandedByProjectSlug={expandedByProjectSlug}
-          saveSectionRecordsAction={saveSectionRecordsAction}
-          updateProjectMetaAction={updateProjectMetaAction}
-          replanDelayedPlansAction={replanDelayedPlansAction}
-          updateMaterialOrdersAction={updateMaterialOrdersAction}
-          deleteMaterialAction={deleteMaterialAction}
-          deleteProjectAction={deleteProjectAction}
-        />
+    <div className="space-y-6 min-h-0 h-full flex flex-col">
+      <ProjectRenameDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        renameValue={renameValue}
+        onRenameValueChange={setRenameValue}
+        orderProjects={orderProjects}
+        setOrderProjects={setOrderProjects}
+        selectedSlug={selectedSlug}
+        isSaving={isSaving}
+        onSave={saveMeta}
+        isDeletingProjectId={isDeletingProjectId}
+        onDeleteProject={deleteProject}
+      />
+
+      {!isDesktop ? (
+        <Sheet modal={false} open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+          <SheetContent side="bottom" className="h-[80vh] p-0 rounded-t-xl">
+            <SheetHeader className="sr-only">
+              <SheetTitle>実績入力</SheetTitle>
+              <SheetDescription>教材またはプロジェクトのカレンダーを表示します。</SheetDescription>
+            </SheetHeader>
+
+            <div className="h-full p-4 overflow-y-auto">{RightPanel}</div>
+          </SheetContent>
+        </Sheet>
+      ) : null}
+
+      <div className="grid md:grid-cols-2 flex-1 min-h-0 gap-4">
+        <div className="space-y-3 col-span-1 h-full min-h-0 flex flex-col">
+          <ProjectSelectHeader projects={projects} onSelectSlug={setSelectedSlug} selectedSlug={selectedSlug} />
+
+          <ProjectActionButton
+            openRename={openRename}
+            toggleProjectProgress={toggleProjectProgress}
+            replanAllDelayedInProject={replanAllDelayedInProject}
+            isReplanning={isReplanning}
+          />
+          <div className="flex-1 min-h-0">
+            <MaterialsList
+              materials={materials}
+              projectName={selectedProjectName}
+              selectedMaterialSlug={openedMaterial?.slug ?? null}
+              onDeleteMaterial={async (m) => {
+                await deleteMaterial(m.id, m.slug)
+              }}
+              onSelectMaterial={(m) =>
+                toggleSelectMaterial({
+                  id: m.id,
+                  slug: m.slug,
+                  title: m.title,
+                  projectSlug: selectedSlug,
+                  startDate: m.startDate,
+                  endDate: m.endDate,
+                  totalUnits: m.totalUnits,
+                  lapsTotal: m.lapsTotal,
+                  planDays: m.planDays,
+                  actualDays: m.actualDays,
+                  unitType: m.unitType ?? defaultUnitType,
+                  unitLabel: m.unitLabel ?? defaultUnitLabel,
+                })
+              }
+              onEditMaterial={(m) => goEditMaterial(m.slug)}
+              onReorderMaterials={async (orders) => {
+                if (!selectedSlug) return
+                const fd = new FormData()
+                fd.set("projectSlug", selectedSlug)
+                fd.set("orders", JSON.stringify(orders))
+                await updateMaterialOrdersAction(fd)
+                router.refresh()
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="hidden md:flex md:col-span-1 min-h-0 flex-col">
+          <div className="flex-1 min-h-0">{RightPanel}</div>
+        </div>
+
       </div>
     </div>
   )

@@ -5,24 +5,24 @@ import * as React from "react"
 import type { DateRange } from "react-day-picker"
 import { format } from "date-fns"
 
-import { type Step } from "./_components/new-add-primary/new-add-step-nav"
+import { type Step } from "./_components/new-add-step-nav"
 import {
   type ProjectOption,
   type ProjectSelectStepValue,
-} from "./_components/new-add-primary/project-select-step"
+} from "./_components/project-select-step"
 import {
   type MaterialRegisterValue,
-  unitLabel,
-} from "./_components/new-add-primary/material-register-step"
+} from "./_components/material-register-step"
 
-import PlanAdjustDemo from "./_components/new-add-primary/plan-adjust"
-import NewAddPrimaryPanel from "./_components/new-add-primary/new-add-primary-panel"
+import PlanAdjustDemo from "./_components/plan-adjust-panel"
+import NewAddPrimaryPanel from "./_components/new-add-primary-panel"
 
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import PlanAdjustCalendarPanel from "./_components/new-add-primary/plan-adjust-calendar-panel"
+import PlanAdjustCalendarPanel from "./_components/plan-adjust-calendar"
 
 import { saveNewMaterialAction } from "./actions"
 import { updateMaterialAction } from "./actions"
+import { unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
 
 function fmtISODate(d?: Date) {
   if (!d) return ""
@@ -96,7 +96,7 @@ export default function NewAddPageBody({
       ? Number(materialStep.laps)
       : undefined
 
-  const unitLabelText = unitLabel(materialStep.unitType)
+const unitLabelText = unitTypeLabel(materialStep.unitType)
 
   const handleSave = async () => {
   if (isSaving) return 
@@ -158,7 +158,7 @@ export default function NewAddPageBody({
     : undefined
 
   return (
-  <main className="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 h-full min-h-0">
+  <main className="flex flex-col md:grid md:grid-cols-2 h-full min-h-0">
     <div className="flex-1 min-h-0 md:col-span-1 md:flex-none">
       <NewAddPrimaryPanel
         currentStep={currentStep}
@@ -178,7 +178,7 @@ export default function NewAddPageBody({
       />
     </div>
 
-    <div className="hidden md:flex md:col-span-1 lg:col-span-2 h-full min-h-0">
+    <div className="hidden md:flex md:col-span-1 h-full min-h-0">
       <PlanAdjustDemo
         range={range}
         unitCount={unitCountNum}

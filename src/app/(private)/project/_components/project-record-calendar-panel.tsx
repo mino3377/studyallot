@@ -1,4 +1,4 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\project-record-calendar-panel.tsx
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\_components\project-record-calendar-panel.tsx
 "use client"
 
 import * as React from "react"
@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { eachDayOfInterval, format, isAfter, isBefore, isSameDay } from "date-fns"
 import type { DateRange } from "react-day-picker"
-import { UnitType } from "@/lib/type/material"
+import type { UnitType } from "@/lib/type/unit-type"
+import { unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
 
 type MaterialLike = {
   slug: string
@@ -46,20 +47,6 @@ function isInRange(d: Date, range?: DateRange) {
 function weekdayJP(d: Date) {
   const names = ["日", "月", "火", "水", "木", "金", "土"]
   return names[d.getDay()] ?? ""
-}
-
-function unitTypeToLabel(unitType?: UnitType) {
-  switch (unitType) {
-    case "chapter":
-      return "チャプター"
-    case "unit":
-      return "ユニット"
-    case "page":
-      return "ページ"
-    case "section":
-    default:
-      return "セクション"
-  }
 }
 
 function makeAllTasks(laps: number, units: number): Task[] {
@@ -226,7 +213,7 @@ export default function ProjectRecordCalendarPanel({
           slug: m.slug,
           materialTitle: m.title,
           count: c,
-          unitLabel: m.unitLabel ?? unitTypeToLabel(m.unitType),
+          unitLabel: m.unitLabel ?? unitTypeLabel(m.unitType ?? unitType),
         })
       }
     }

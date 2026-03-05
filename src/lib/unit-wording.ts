@@ -1,33 +1,16 @@
-import { UnitType } from "@/app/(private)/new-add/_components/new-add-primary/material-register-step"
+// C:\Users\chiso\nextjs\study-allot\src\components\unit-wording.ts
 
-
-
+import type { UnitType } from "@/lib/type/unit-type"
+import { unitLabel } from "@/lib/type/unit-type"
 
 export function unitLabelByType(unitType: UnitType) {
-  switch (unitType) {
-    case "section":
-      return "セクション"
-    case "chapter":
-      return "章"
-    case "page":
-      return "ページ"
-    case "unit":
-      return "ユニット"
-    case "problem":
-      return "問題"
-    case "question":
-      return "問"
-    case "part":
-      return "パート"
-    case "lesson":
-      return "レッスン"
-  }
+  return unitLabel(unitType)
 }
 
 export function unitOrdinal(unitType: UnitType, n: number) {
   if (unitType === "chapter") return `${n}章`
   if (unitType === "page") return `${n}ページ`
-  return `${unitLabelByType(unitType)}${n}`
+  return `${unitLabel(unitType)}${n}`
 }
 
 export function taskLabelSingle(unitType: UnitType, unitNo: number, lap: number) {

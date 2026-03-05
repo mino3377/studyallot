@@ -3,10 +3,10 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import ProgressRateCard from "@/app/(private)/project/_components/progress-rate-card"
+import ProgressRateCard from "@/app/(private)/project/_components/material-progress-rate"
 import { CheckSquare, Pencil, GripVertical, Trash2 } from "lucide-react"
-import type { MaterialVM, UnitType } from "@/lib/type/material"
-import { taskLabelRange, taskLabelSingle } from "@/components/unit-wording"
+import type { MaterialVM } from "@/lib/type/material"
+import { taskLabelRange, taskLabelSingle } from "@/lib/unit-wording"
 
 import {
   AlertDialog,
@@ -26,6 +26,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
+import { UnitType, unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
 
 type Props = {
   materials: MaterialVM[]
@@ -110,13 +112,6 @@ function makeAllTasks(laps: number, units: number): Task[] {
   return out
 }
 
-function unitLabelFromType(t: UnitType): string {
-  if (t === "chapter") return "章"
-  if (t === "unit") return "ユニット"
-  if (t === "page") return "ページ"
-  return "セクション"
-}
-
 function toDisplayLabels(unitType: UnitType, tasks: Task[]) {
   if (tasks.length === 0) return []
 
@@ -156,7 +151,7 @@ function getTodayPlanCount(m: MaterialVM) {
 
 function buildTodayTaskText(m: MaterialVM) {
   const unitType: UnitType = m.unitType ?? "section"
-  const unitLabel = m.unitLabel ?? unitLabelFromType(unitType)
+const unitLabel = m.unitLabel ?? unitTypeLabel(unitType)
 
   const { count, idx, hasPlan } = getTodayPlanCount(m)
   if (!hasPlan || count <= 0) return "今日のタスクなし"
@@ -420,52 +415,58 @@ export default function MaterialsList({
                         </Button>
                       </DropdownMenuTrigger>
 
-                      <DropdownMenuContent align="end" side="bottom" sideOffset={6} className="p-1">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              disabled={!onDeleteMaterial || isDeletingId === String(m.id)} // ★追加
-                              className="gap-2 text-destructive focus:text-destructive"
-                              onSelect={(e) => {
-                                e.preventDefault()
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="text-sm">削除</span>
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-
-                          <AlertDialogContent className="z-60">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                「{m.title}」を削除すると、計画・実績データも含めて復元できません。
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => void runDelete(m)}
+                      <DropdownMenuContent
+                        align="center"
+                        side="bottom"
+                        sideOffset={6}
+                        className="p-2 w-auto min-w-0"
+                      >
+                        <div className="flex gap-2">
+                          {/* 削除 */}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem
                                 disabled={!onDeleteMaterial || isDeletingId === String(m.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                className="flex flex-col items-center justify-center px-4 py-2 text-destructive focus:text-destructive"
+                                onSelect={(e) => e.preventDefault()}
                               >
-                                削除する
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-4 w-4 mb-1" />
+                                <span className="text-xs">削除</span>
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
 
-                        {/* 編集 */}
-                        <DropdownMenuItem
-                          className="gap-2"
-                          onSelect={(e) => {
-                            e.preventDefault()
-                            onEditMaterial?.(m)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                          <span className="text-sm">編集</span>
-                        </DropdownMenuItem>
+                            <AlertDialogContent className="z-60">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  「{m.title}」を削除すると、計画・実績データも含めて復元できません。
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => void runDelete(m)}
+                                  disabled={!onDeleteMaterial || isDeletingId === String(m.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  削除する
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+
+                          {/* 編集 */}
+                          <DropdownMenuItem
+                            className="flex flex-col items-center justify-center px-4 py-2"
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              onEditMaterial?.(m)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mb-1" />
+                            <span className="text-xs">編集</span>
+                          </DropdownMenuItem>
+                        </div>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

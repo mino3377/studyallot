@@ -16,7 +16,7 @@ type ProjectForCarousel = {
   plannedPct: number
 }
 
-export default function ProjectCarousel({
+export default function ProjectSelectHeader({
   projects,
   onSelectSlug,
   selectedSlug,

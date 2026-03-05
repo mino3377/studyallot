@@ -1,13 +1,12 @@
 // C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\data.ts
+import { ProjectRow } from "@/lib/type/project"
 import {
   fetchMaterialsByProjectIds,
   fetchProjects,
-  type MaterialRow,
-  type ProjectRow,
 } from "./queries"
-import type { MaterialVM, UnitType } from "@/lib/type/material"
+import type { MaterialRow, MaterialVM, UnitType } from "@/lib/type/material"
 
-export type ProjectForCarousel = {
+export type ProjectForProjectPage = {
   id: number | string
   slug: string
   name: string
@@ -19,8 +18,9 @@ export type ProjectForCarousel = {
   plannedPct: number
 }
 
+//〇〇〇〇-〇〇-〇〇（年月日）
 function safeISO(s?: string | null) {
-  return (s ?? "").slice(0, 10)
+  return (s ?? "").slice(0, 10) 
 }
 
 function sumDays(days: number[] | null | undefined) {
@@ -60,8 +60,8 @@ function unitTypeToLabel(unitType: UnitType) {
 }
 
 function materialToVM(m: MaterialRow): MaterialVM {
-  const startDate = safeISO(m.start_date) || ""
-  const endDate = safeISO(m.end_date) || ""
+  const startDate = safeISO(m.start_date)
+  const endDate = safeISO(m.end_date)
 
   const totalUnits = Number(m.unit_count ?? 0)
   const lapsTotal = Number(m.rounds ?? 0)
@@ -125,29 +125,30 @@ function groupMaterialsByProjectSlug(
 }
 
 export async function getProjectPageData(userId: string): Promise<{
-  projects: ProjectForCarousel[]
-  materialsBySlug: Record<string, MaterialVM[]>
+  projects: ProjectForProjectPage[]
+  materialsByProjectSlug: Record<string, MaterialVM[]>
 }> {
   const projectsRaw = await fetchProjects(userId)
   const projectIds = projectsRaw.map((p) => p.id)
 
-  const matsRaw = await fetchMaterialsByProjectIds(userId, projectIds)
+  //すべての教材配列
+  const materialsRaw = await fetchMaterialsByProjectIds(userId, projectIds)
 
-  const materialsBySlug = groupMaterialsByProjectSlug(projectsRaw, matsRaw)
+  const materialsByProjectSlug = groupMaterialsByProjectSlug(projectsRaw, materialsRaw)
 
-  const projects: ProjectForCarousel[] = projectsRaw.map((p) => ({
+  const projects: ProjectForProjectPage[] = projectsRaw.map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,
-    order: Number((p as any).order ?? 0),
+    order: p.order,
     period: { from: "", to: "" },
     daysLeftLabel: "",
-    materialsTotal: (materialsBySlug[p.slug] ?? []).length,
+    materialsTotal: (materialsByProjectSlug[p.slug] ?? []).length,
     plannedPct: 0,
     actualPct: 0,
   }))
 
-  return { projects, materialsBySlug }
+  return { projects, materialsByProjectSlug }
 }
 
 export function preloadProjectPageData(userId: string) {

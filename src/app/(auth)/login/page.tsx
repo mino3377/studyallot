@@ -107,6 +107,18 @@ export default async function LoginPage({
             </details>
           </div>
 
+          <div className="rounded-md border bg-background/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+            ログインすることで
+            <Link href="/terms" className="mx-1 underline underline-offset-4 hover:text-foreground">
+              利用規約
+            </Link>
+            および
+            <Link href="/privacy" className="mx-1 underline underline-offset-4 hover:text-foreground">
+              プライバシーポリシー
+            </Link>
+            に同意したものとみなします。
+          </div>
+
           <div className="flex items-center text-sm">
             <Link href="/" className="text-muted-foreground hover:underline">
               ← トップ画面へ戻る

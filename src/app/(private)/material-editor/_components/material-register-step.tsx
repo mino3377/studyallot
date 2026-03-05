@@ -8,17 +8,9 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
-import SelectToggle, { type SelectToggleItem } from "../select-toggle"
-
-export type UnitType =
-  | "section"
-  | "chapter"
-  | "page"
-  | "unit"
-  | "problem"
-  | "question"
-  | "part"
-  | "lesson"
+import { UNIT_TYPE_ITEMS, unitLabel } from "@/lib/type/unit-type"
+import type { UnitType } from "@/lib/type/unit-type"
+import MaterialSelectToggle from "./select-toggle"
 
 export type MaterialRegisterValue = {
   title: string
@@ -34,15 +26,11 @@ type Props = {
   onChange: (next: MaterialRegisterValue) => void
   restDays: Set<number>
   onChangeRestDays: React.Dispatch<React.SetStateAction<Set<number>>>
-
-  // ✅ Step2 -> Step1 に戻す用
   onBack?: () => void
-
-  // （必要なら）詳細設定を開く
   onOpenDetails?: () => void
 
   onSave?: () => void
-  isSaving?: boolean // ★追加：保存中フラグ
+  isSaving?: boolean
   isEdit?: boolean
 }
 
@@ -53,38 +41,6 @@ function fmtYYYYMMDD(d?: Date) {
   const da = String(d.getDate()).padStart(2, "0")
   return `${y}-${m}-${da}`
 }
-
-export function unitLabel(unitType: UnitType) {
-  switch (unitType) {
-    case "section":
-      return "セクション"
-    case "chapter":
-      return "章"
-    case "page":
-      return "ページ"
-    case "unit":
-      return "ユニット"
-    case "problem":
-      return "問題"
-    case "question":
-      return "問"
-    case "part":
-      return "パート"
-    case "lesson":
-      return "レッスン"
-  }
-}
-
-const UNIT_ITEMS: SelectToggleItem[] = [
-  { id: "section", label: "セクション" },
-  { id: "chapter", label: "章" },
-  { id: "page", label: "ページ" },
-  { id: "unit", label: "ユニット" },
-  { id: "problem", label: "問題" },
-  { id: "question", label: "問" },
-  { id: "part", label: "パート" },
-  { id: "lesson", label: "レッスン" },
-]
 
 export default function MaterialRegisterStep({
   value,
@@ -124,9 +80,7 @@ export default function MaterialRegisterStep({
     : undefined
 
   return (
-    // ✅ 画面全体：上スクロール + 下固定ボタンのための土台
     <div className="flex flex-col h-full min-h-0">
-      {/* ✅ 上側：スクロール領域 */}
       <div className="flex-fit min-h-0 overflow-auto">
         <section className="rounded-xl border bg-background p-3">
           <div className="grid gap-5">
@@ -155,7 +109,6 @@ export default function MaterialRegisterStep({
                       selected={value.startDate}
                       onSelect={(d) => {
                         if (!d) return
-                        // 念のため（disabledが効いててもガード）
                         if (value.endDate && d.getTime() > value.endDate.getTime()) return
                         set({ startDate: d })
                       }}
@@ -204,8 +157,8 @@ export default function MaterialRegisterStep({
 
             <div className="grid gap-2">
               <Label>区切りの呼び方</Label>
-              <SelectToggle
-                items={UNIT_ITEMS}
+              <MaterialSelectToggle
+                items={[...UNIT_TYPE_ITEMS]}
                 selectedId={value.unitType}
                 onSelect={(id) => set({ unitType: id as UnitType })}
                 triggerHandlers={blockTrigger}

@@ -1,4 +1,6 @@
-// app/(public)/privacy/page.tsx
+// C:\Users\chiso\nextjs\study-allot\src\app\(public)\privacy\page.tsx
+
+import BackButton from "@/components/buck-button"
 
 export const metadata = {
     title: "プライバシーポリシー | StudyAllot",
@@ -42,7 +44,9 @@ export default function PrivacyPage() {
 
     return (
         <main className="mx-auto max-w-3xl px-4 md:px-6 py-12">
+             
             <header className="space-y-2">
+                <BackButton fallbackHref="/" />
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">プライバシーポリシー</h1>
                 <p className="text-sm text-muted-foreground">最終更新日：{lastUpdated}</p>
             </header>

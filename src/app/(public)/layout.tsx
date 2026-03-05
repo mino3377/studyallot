@@ -12,19 +12,22 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <>
-      <header className="sticky top-0 z-50 backdrop-blur-md supports-backdrop-filter:bg-background/60">
-        <div className="mx-auto max-w-6xl h-14 px-4 md:px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-50 px-3 backdrop-blur-md">
+        <div className="mx-auto max-w-6xl h-12 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-3 text-sm font-semibold hover:opacity-90 transition-opacity"
+            className="flex items-center gap-3 text-sm font-semibold"
             aria-label="StudyAllot ホームへ"
           >
-            <Image
-              src={studyallot_logo}
-              alt="StudyAllot"
-              className="h-4 w-4"
-              priority
-            />
+            <div className="bg-white rounded-xs">
+              <Image
+                src={studyallot_logo}
+                alt="StudyAllot"
+                className="h-4 w-4 m-1"
+                priority
+              />
+            </div>
+
             <span>StudyAllot</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -37,14 +40,12 @@ export default async function PublicLayout({ children }: { children: React.React
                 asChild
                 size="sm"
                 variant="outline"
-                
+
               >
                 <Link href="/login">ログイン</Link>
               </Button>
             )}
             <ThemeToggle />
-
-            
           </div>
         </div>
       </header>

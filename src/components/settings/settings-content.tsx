@@ -17,6 +17,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
+import { useFormStatus } from "react-dom"
 
 type Meta = {
   avatar_url?: string | null
@@ -120,9 +121,7 @@ export default function SettingsContent({ user }: { user: unknown }) {
                 <AlertDialogCancel>キャンセル</AlertDialogCancel>
 
                 <form action={logout}>
-                  <AlertDialogAction asChild>
-                    <button type="submit">ログアウト</button>
-                  </AlertDialogAction>
+                  <LogoutSubmitButton />
                 </form>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -134,5 +133,23 @@ export default function SettingsContent({ user }: { user: unknown }) {
         )}
       </div>
     </div>
+  )
+}
+
+function LogoutSubmitButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <AlertDialogAction asChild>
+      <Button
+        type="submit"
+        disabled={pending}
+        aria-disabled={pending}
+        className="w-full sm:w-auto"
+      >
+        <LogOut className="mr-2 size-4" />
+        {pending ? "ログアウト中..." : "ログアウト"}
+      </Button>
+    </AlertDialogAction>
   )
 }
