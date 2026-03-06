@@ -167,7 +167,6 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
 
   if (matErr) throw new Error(matErr.message)
 
-  // ✅ project slug を取得（redirect用）
   const { data: proj, error: projErr } = await supabase
     .from("projects")
     .select("slug")

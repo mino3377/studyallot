@@ -141,7 +141,6 @@ export function ProjectPageBody({
   const defaultUnitType: UnitType = "section"
   const defaultUnitLabel = "セクション"
 
-  // ✅ URLクエリ（project/material）を反映：保存後に該当プロジェクト＆教材を開く
   React.useEffect(() => {
     if (qsProject && projects.some((p) => p.slug === qsProject)) {
       setSelectedSlug(qsProject)
@@ -355,12 +354,6 @@ export function ProjectPageBody({
       setIsReplanning(false)
     }
   }
-
-  const [confirmDeleteProject, setConfirmDeleteProject] = React.useState<{
-    id: string
-    slug: string
-    name: string
-  } | null>(null)
 
   return (
     <div className="space-y-6 min-h-0 h-full flex flex-col">

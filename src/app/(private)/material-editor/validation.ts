@@ -4,13 +4,11 @@ export function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg)
 }
 
-// "yyyy-MM-dd" だけ許す（DBもこの形で持つ前提）
 export function toISODate(d: string) {
   assert(/^\d{4}-\d{2}-\d{2}$/.test(d), `Invalid date: ${d}`)
   return d
 }
 
-// yyyy-MM-dd は文字列比較で大小比較
 export function assertDateOrder(startISO: string, endISO: string) {
   assert(startISO <= endISO, "開始日は終了日より後にできません")
 }

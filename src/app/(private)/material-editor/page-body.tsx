@@ -1,35 +1,28 @@
+// C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\page-body.tsx
+
 "use client"
 
 import * as React from "react"
 import type { DateRange } from "react-day-picker"
-import { addDays, format } from "date-fns"
 import { useSearchParams } from "next/navigation"
-
-import { type Step } from "./_components/material-editor-step-nav"
+import { type Step } from "./_components/primary-panel/material-editor-step-nav"
 import {
   type ProjectOption,
   type ProjectSelectStepValue,
-} from "./_components/project-select-step"
-import { type MaterialRegisterValue } from "./_components/material-register-step"
+} from "./_components/primary-panel/project-select-step"
+import { type MaterialRegisterValue } from "./_components/primary-panel/material-register-step"
 
-import NewAddPrimaryPanel from "./_components/material-editor-primary-panel"
+import MaterialEditorPrimaryPanel from "./_components/primary-panel/material-editor-primary-panel"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 
-import PlanAdjustCalendarPanel from "./_components/plan-adjust-calendar"
+import PlanAdjustCalendar from "./_components/plan-adjust-calendar"
 
 import { saveNewMaterialAction, updateMaterialAction } from "./actions"
 import { unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
 
 import { createTemplateAction, fetchTemplateAction } from "./template-actions"
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { addDays, eachDayOfInterval, format } from "date-fns"
+import { PlanShareDialog } from "./_components/plan-share-dialog"
 
 function fmtISODate(d?: Date) {
   if (!d) return ""
@@ -76,6 +69,9 @@ export default function NewAddPageBody({
   const [planDays, setPlanDays] = React.useState<number[]>(
     () => (initial?.planDays && Array.isArray(initial.planDays) ? initial.planDays : [])
   )
+  const [templateInitialPlanDays, setTemplateInitialPlanDays] = React.useState<
+    number[] | undefined
+  >(undefined)
 
   const [restDays, setRestDays] = React.useState<Set<number>>(() => new Set<number>())
   const [openDetails, setOpenDetails] = React.useState(false)
@@ -104,45 +100,48 @@ export default function NewAddPageBody({
 
   const [notice, setNotice] = React.useState<string>("")
   const noticeTimerRef = React.useRef<number | null>(null)
-
   const appliedRef = React.useRef<string | null>(null)
+
+  const [isPlanManuallyChanged, setIsPlanManuallyChanged] = React.useState(false)
 
   React.useEffect(() => {
     if (!templateId) return
     if (appliedRef.current === templateId) return
     appliedRef.current = templateId
 
-      ; (async () => {
-        const t = await fetchTemplateAction(templateId)
+    ;(async () => {
+      const t = await fetchTemplateAction(templateId)
 
-        const pname = (t.projectName ?? "").trim()
-        if (pname.length > 0) {
-          const hit = projects.find((p) => p.name.trim() === pname)
-          if (hit) {
-            setStep1({ mode: "existing", selectedProjectId: String(hit.id), newProjectName: "" })
-          } else {
-            setStep1({ mode: "new", selectedProjectId: "", newProjectName: pname })
-          }
+      const pname = (t.projectName ?? "").trim()
+      if (pname.length > 0) {
+        const hit = projects.find((p) => p.name.trim() === pname)
+        if (hit) {
+          setStep1({ mode: "existing", selectedProjectId: String(hit.id), newProjectName: "" })
         } else {
-          setStep1((prev) => ({ ...prev, mode: "new", selectedProjectId: "" }))
+          setStep1({ mode: "new", selectedProjectId: "", newProjectName: pname })
         }
+      } else {
+        setStep1((prev) => ({ ...prev, mode: "new", selectedProjectId: "" }))
+      }
 
-        const today = new Date()
-        const n = Array.isArray(t.planDays) ? t.planDays.length : 0
-        const end = addDays(today, Math.max(0, n - 1))
+      const today = new Date()
+      const fetchedPlanDays = Array.isArray(t.planDays) ? t.planDays : []
+      const n = fetchedPlanDays.length
+      const end = addDays(today, Math.max(0, n - 1))
 
-        setMaterialStep({
-          title: t.title ?? "",
-          startDate: today,
-          endDate: end,
-          unitType: (t.unitType as any) ?? "section",
-          unitCount: String(t.unitCount ?? ""),
-          laps: String(t.rounds ?? ""),
-        })
+      setMaterialStep({
+        title: t.title ?? "",
+        startDate: today,
+        endDate: end,
+        unitType: (t.unitType as any) ?? "section",
+        unitCount: String(t.unitCount ?? ""),
+        laps: String(t.rounds ?? ""),
+      })
 
-        setPlanDays(Array.isArray(t.planDays) ? t.planDays : [])
-        setCurrentStep(2)
-      })()
+      setPlanDays(fetchedPlanDays)
+      setTemplateInitialPlanDays(fetchedPlanDays)
+      setCurrentStep(2)
+    })()
   }, [templateId, projects])
 
   const showNotice = (msg: string) => {
@@ -168,9 +167,6 @@ export default function NewAddPageBody({
 
     const startISO = fmtISODate(materialStep.startDate)
     const endISO = fmtISODate(materialStep.endDate)
-
-    const totalTasks =
-      (unitCountNum ?? 0) > 0 && (lapsNum ?? 0) > 0 ? unitCountNum! * lapsNum! : 0
 
     if (!startISO || !endISO) return
     if (!unitCountNum || !lapsNum) return
@@ -235,7 +231,6 @@ export default function NewAddPageBody({
       return
     }
 
-    const totalTasks = unitCountNum * lapsNum
     const s = planDays.reduce((a, b) => a + b, 0)
     if (s !== totalTasks) {
       setShareUrl(`計画合計が一致しません（計画:${s} / 総タスク:${totalTasks}）`)
@@ -248,7 +243,7 @@ export default function NewAddPageBody({
         step1.mode === "new"
           ? (step1.newProjectName ?? "").trim()
           : (projects.find((p) => String(p.id) === String(step1.selectedProjectId ?? ""))?.name ??
-            "").trim()
+              "").trim()
 
       const { publicId } = await createTemplateAction({
         projectName,
@@ -268,15 +263,36 @@ export default function NewAddPageBody({
     }
   }
 
-  const stableInitialPlanDays = isEdit
-    ? (Array.isArray(initial?.planDays) ? initial!.planDays! : [])
-    : undefined
+  const stableInitialPlanDays =
+    templateInitialPlanDays ??
+    (isEdit ? (Array.isArray(initial?.planDays) ? initial.planDays : []) : undefined)
+
+  const totalTasks =
+    unitCountNum != null && lapsNum != null && unitCountNum > 0 && lapsNum > 0
+      ? unitCountNum * lapsNum
+      : 0
+
+  const dayCount =
+    range?.from && range?.to
+      ? eachDayOfInterval({ start: range.from, end: range.to }).length
+      : 0
+
+  const hasTaskInputs = !!unitCountNum && !!lapsNum && dayCount > 0
+  const isPlanCountReady = hasTaskInputs && planDays.length === dayCount
+
+  const assignedTaskCount = isPlanCountReady
+    ? planDays.reduce((sum, n) => sum + n, 0)
+    : 0
+
+  const remainingTaskCount = isPlanCountReady
+    ? totalTasks - assignedTaskCount
+    : null
 
   return (
     <>
       <main className="flex flex-col md:grid md:grid-cols-2 h-full min-h-0">
         <div className="flex-1 min-h-0 md:col-span-1 md:flex-none">
-          <NewAddPrimaryPanel
+          <MaterialEditorPrimaryPanel
             currentStep={currentStep}
             onChangeStep={setCurrentStep}
             projects={projects}
@@ -291,12 +307,15 @@ export default function NewAddPageBody({
             onSave={handleSave}
             isEdit={isEdit}
             isSaving={isSaving}
+            isPlanManuallyChanged={isPlanManuallyChanged}
+            onManualPlanChange={() => setIsPlanManuallyChanged(true)}
+            remainingTaskCount={remainingTaskCount}
           />
         </div>
 
         <div className="hidden md:flex md:col-span-1 h-full min-h-0">
           {range?.from && range?.to && unitCountNum && lapsNum && unitLabelText ? (
-            <PlanAdjustCalendarPanel
+            <PlanAdjustCalendar
               range={range}
               unitCount={unitCountNum}
               laps={lapsNum}
@@ -306,6 +325,7 @@ export default function NewAddPageBody({
               onPlanDaysChange={setPlanDays}
               initialPlanDays={stableInitialPlanDays}
               onShare={handleShare}
+              onManualPlanChange={() => setIsPlanManuallyChanged(true)}
             />
           ) : null}
         </div>
@@ -320,7 +340,7 @@ export default function NewAddPageBody({
               <div className="h-[85vh] p-3 flex flex-col min-h-0">
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   {range?.from && range?.to && unitCountNum && lapsNum && unitLabelText ? (
-                    <PlanAdjustCalendarPanel
+                    <PlanAdjustCalendar
                       range={range}
                       unitCount={unitCountNum}
                       laps={lapsNum}
@@ -330,6 +350,7 @@ export default function NewAddPageBody({
                       onPlanDaysChange={setPlanDays}
                       initialPlanDays={stableInitialPlanDays}
                       onShare={handleShare}
+                      onManualPlanChange={() => setIsPlanManuallyChanged(true)}
                     />
                   ) : null}
                 </div>
@@ -339,33 +360,13 @@ export default function NewAddPageBody({
         </div>
       </main>
 
-      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>共有URL</DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-2">
-            <Input readOnly value={shareUrl} />
-            <Button
-              type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(shareUrl)
-                  showNotice("コピーしました")
-                } catch {
-                  showNotice("コピーに失敗しました（手動で選択してコピーしてください）")
-                }
-              }}
-            >
-              コピー
-            </Button>
-            {notice ? (
-              <div className="text-xs text-muted-foreground">{notice}</div>
-            ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PlanShareDialog
+        shareUrl={shareUrl}
+        shareOpen={shareOpen}
+        setShareOpen={setShareOpen}
+        notice={notice}
+        showNotice={showNotice}
+      />
     </>
   )
 }

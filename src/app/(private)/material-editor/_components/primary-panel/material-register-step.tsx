@@ -10,7 +10,17 @@ import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
 import { UNIT_TYPE_ITEMS, unitLabel } from "@/lib/type/unit-type"
 import type { UnitType } from "@/lib/type/unit-type"
-import MaterialSelectToggle from "./select-toggle"
+import MaterialSelectToggle from "../select-toggle"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export type MaterialRegisterValue = {
   title: string
@@ -28,10 +38,12 @@ type Props = {
   onChangeRestDays: React.Dispatch<React.SetStateAction<Set<number>>>
   onBack?: () => void
   onOpenDetails?: () => void
-
   onSave?: () => void
   isSaving?: boolean
   isEdit?: boolean
+  isPlanManuallyChanged: boolean
+  onManualPlanChange?: () => void
+  remainingTaskCount: number | null
 }
 
 function fmtYYYYMMDD(d?: Date) {
@@ -52,7 +64,20 @@ export default function MaterialRegisterStep({
   onSave,
   isSaving,
   isEdit,
+  isPlanManuallyChanged,
+  onManualPlanChange,
+  remainingTaskCount,
 }: Props) {
+
+  const uLabel = unitLabel(value.unitType)
+  const lock = !!isEdit
+  const isPlanInvalid = remainingTaskCount != null && remainingTaskCount !== 0
+  const saveDisabled = !!isSaving || isPlanInvalid
+
+
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [pendingRestDow, setPendingRestDow] = React.useState<number | null>(null)
+
   const set = (patch: Partial<MaterialRegisterValue>) => {
     onChange({ ...value, ...patch })
   }
@@ -66,18 +91,41 @@ export default function MaterialRegisterStep({
     })
   }
 
-  const uLabel = unitLabel(value.unitType)
-  const lock = !!isEdit
-
   const blockTrigger = lock
     ? {
-      onClickCapture: (e: React.MouseEvent) => e.preventDefault(),
-      onPointerDown: (e: React.PointerEvent) => e.preventDefault(),
-      onKeyDown: (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" || e.key === " ") e.preventDefault()
-      },
-    }
+        onClickCapture: (e: React.MouseEvent) => e.preventDefault(),
+        onPointerDown: (e: React.PointerEvent) => e.preventDefault(),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") e.preventDefault()
+        },
+      }
     : undefined
+
+  const handleRestClick = (dow: number) => {
+    if (lock) return
+
+    if (isPlanManuallyChanged) {
+      setPendingRestDow(dow)
+      setConfirmOpen(true)
+      return
+    }
+
+    toggleRest(dow)
+  }
+
+  const handleConfirmRestChange = () => {
+    if (pendingRestDow == null) return
+
+    toggleRest(pendingRestDow)
+    setPendingRestDow(null)
+    setConfirmOpen(false)
+    onManualPlanChange?.()
+  }
+
+  const handleCancelRestChange = () => {
+    setPendingRestDow(null)
+    setConfirmOpen(false)
+  }
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -85,8 +133,8 @@ export default function MaterialRegisterStep({
         <section className="rounded-xl border bg-background p-3">
           <div className="grid gap-5">
             <div className="text-xs font-bold">
-            ※開始日・終了日・セクション数・周回数は後から変更ができません。
-          </div>
+              ※開始日・終了日・セクション数・周回数は後から変更ができません。
+            </div>
             <div className="grid gap-2">
               <Label>教材名</Label>
               <Input value={value.title} onChange={(e) => set({ title: e.target.value })} />
@@ -203,7 +251,7 @@ export default function MaterialRegisterStep({
                       type="button"
                       variant={active ? "default" : "outline"}
                       className="h-8 px-3 inline-flex"
-                      onClick={() => toggleRest(i)}
+                      onClick={() => handleRestClick(i)}
                       disabled={lock}
                     >
                       {label}
@@ -216,7 +264,6 @@ export default function MaterialRegisterStep({
         </section>
       </div>
 
-      {/* ✅ 下側：固定フッター（保存を最下部に貼り付け） */}
       <div className="flex-1 border-t bg-background px-3 py-3">
         <div className="flex justify-between gap-2">
           <Button
@@ -240,19 +287,47 @@ export default function MaterialRegisterStep({
           </div>
         </div>
       </div>
+
+      {isPlanInvalid ? (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          {remainingTaskCount! > 0
+            ? `タスク配分が ${remainingTaskCount} 個不足しているため保存できません。`
+            : `タスク配分が ${Math.abs(remainingTaskCount!)} 個超過しているため保存できません。`}
+        </div>
+      ) : null}
+
       <Button
         type="button"
         variant="default"
         className="transition-colors w-full mt-3"
         onClick={() => {
-          if (isSaving) return
+          if (saveDisabled) return
           onSave?.()
         }}
-        disabled={!!isSaving}
+        disabled={saveDisabled}
         aria-busy={!!isSaving}
       >
         {isSaving ? "保存中..." : "保存"}
       </Button>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>休みの曜日を変更しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              計画を手動で調整済みです。休みの曜日を変更すると、現在の配分が変わる可能性があります。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelRestChange}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRestChange}>
+              変更する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

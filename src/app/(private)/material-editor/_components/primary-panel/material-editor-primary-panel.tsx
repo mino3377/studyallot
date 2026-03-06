@@ -26,9 +26,12 @@ type Props = {
   onSave?: () => Promise<void> | void
   isSaving?: boolean
   isEdit?: boolean
+  isPlanManuallyChanged: boolean
+  onManualPlanChange: () => void
+  remainingTaskCount: number | null
 }
 
-export default function NewAddPrimaryPanel({
+export default function MaterialEditorPrimaryPanel({
   currentStep,
   projects,
   step1,
@@ -43,6 +46,9 @@ export default function NewAddPrimaryPanel({
   onSave,
   isSaving,
   isEdit,
+  isPlanManuallyChanged,
+  onManualPlanChange,
+  remainingTaskCount,
 }: Props) {
   return (
     <div className="flex flex-col w-full h-full min-h-0">
@@ -74,6 +80,9 @@ export default function NewAddPrimaryPanel({
             isSaving={isSaving}
             isEdit={isEdit}
             onBack={() => onChangeStep(1)}
+            isPlanManuallyChanged={isPlanManuallyChanged}
+            onManualPlanChange={onManualPlanChange}
+            remainingTaskCount={remainingTaskCount}
           />
         )}
       </div>

@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\plan-adjust-calendar.tsx
+
 "use client"
 
 import * as React from "react"
@@ -6,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
-  addDays,
   eachDayOfInterval,
   format,
   isAfter,
@@ -38,6 +39,7 @@ type Props = {
   onPlanDaysChange?: (days: number[]) => void
   initialPlanDays?: number[]
   onShare?: () => void
+  onManualPlanChange?: () => void
 }
 
 function iso(d: Date) {
@@ -108,13 +110,6 @@ function distributeEvenly(
   return map
 }
 
-function nextDayInRange(cur: Date, range: DateRange) {
-  if (!range.from || !range.to) return null
-  const nxt = addDays(cur, 1)
-  if (isAfter(nxt, range.to)) return null
-  return nxt
-}
-
 function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
   const out: DisplayTask[] = []
   const sorted = [...tasks].sort(
@@ -174,11 +169,6 @@ function planFromCounts(
     idx += take
   }
 
-  if (idx < tasks.length && days.length > 0) {
-    const lastISO = iso(days[days.length - 1]!)
-    map[lastISO] = [...(map[lastISO] ?? []), ...tasks.slice(idx)]
-  }
-
   return map
 }
 
@@ -192,11 +182,12 @@ export default function PlanAdjustCalendar({
   onPlanDaysChange,
   initialPlanDays,
   onShare,
+  onManualPlanChange,
 }: Props) {
   const ready = !!range?.from && !!range?.to && !!unitCount && !!laps && !!unitLabel
 
   const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(range?.from)
-  const [plan, setPlan] = React.useState<Record<string, Task[]>>({})
+  const [counts, setCounts] = React.useState<number[]>([])
 
   const restKey = React.useMemo(() => Array.from(restDays).sort().join(","), [restDays])
   const initialKey = React.useMemo(() => (initialPlanDays ?? []).join("|"), [initialPlanDays])
@@ -215,9 +206,17 @@ export default function PlanAdjustCalendar({
     const hasPlan = pArr.some((n) => n > 0)
 
     const exclude = restDays.size > 0 ? restDays : new Set<number>()
-    const p = hasPlan ? planFromCounts(tasks, range, pArr) : distributeEvenly(tasks, range, exclude)
 
-    setPlan(p)
+    let nextCounts: number[] = []
+
+    if (hasPlan) {
+      nextCounts = pArr
+    } else {
+      const evenPlan = distributeEvenly(tasks, range, exclude)
+      nextCounts = daysAll.map((d) => evenPlan[iso(d)]?.length ?? 0)
+    }
+
+    setCounts(nextCounts)
     setSelectedDay(range.from)
   }, [
     ready,
@@ -233,11 +232,33 @@ export default function PlanAdjustCalendar({
 
   React.useEffect(() => {
     if (!ready) return
-    if (!range.from || !range.to) return
+    onPlanDaysChange?.(counts)
+  }, [ready, counts, onPlanDaysChange])
+
+  const totalTasks = unitCount * laps
+
+  const plan = React.useMemo(() => {
+    if (!ready) return {}
+    const tasks = makeAllTasks(laps, unitCount)
+    return planFromCounts(tasks, range, counts)
+  }, [ready, laps, unitCount, range, counts])
+
+  const countMap = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    if (!range.from || !range.to) return map
+
     const days = eachDayOfInterval({ start: range.from, end: range.to })
-    const out = days.map((d) => (plan[iso(d)]?.length ?? 0))
-    onPlanDaysChange?.(out)
-  }, [ready, plan, onPlanDaysChange, range.from?.getTime(), range.to?.getTime()])
+    for (let i = 0; i < days.length; i++) {
+      map[iso(days[i]!)] = counts[i] ?? 0
+    }
+    return map
+  }, [range, counts])
+
+  const assignedTaskCount = React.useMemo(() => {
+    return counts.reduce((sum, n) => sum + n, 0)
+  }, [counts])
+
+  const restTask = assignedTaskCount - totalTasks
 
   const selectedISO = selectedDay ? iso(selectedDay) : ""
   const selectedTasksRaw = selectedISO ? plan[selectedISO] ?? [] : []
@@ -246,54 +267,40 @@ export default function PlanAdjustCalendar({
     [unitType, selectedTasksRaw]
   )
 
+  const selectedIndex = React.useMemo(() => {
+    if (!selectedDay || !range.from || !range.to) return -1
+    const days = eachDayOfInterval({ start: range.from, end: range.to })
+    return days.findIndex((d) => isSameDay(d, selectedDay))
+  }, [selectedDay, range.from?.getTime(), range.to?.getTime()])
+
   const addOneFromTomorrow = () => {
-    if (!ready || !selectedDay) return
-    if (!isInRange(selectedDay, range)) return
+    if (!ready || selectedIndex < 0) return
 
-    const tomorrow = nextDayInRange(selectedDay, range)
-    if (!tomorrow) return
+    onManualPlanChange?.()
 
-    const todayISO = iso(selectedDay)
-    const tomISO = iso(tomorrow)
-
-    setPlan((prev) => {
-      const todayArr = [...(prev[todayISO] ?? [])]
-      const tomArr = [...(prev[tomISO] ?? [])]
-      if (tomArr.length === 0) return prev
-
-      const moved = tomArr.shift()!
-      todayArr.push(moved)
-
-      return { ...prev, [todayISO]: todayArr, [tomISO]: tomArr }
+    setCounts((prev) => {
+      const next = [...prev]
+      next[selectedIndex] = (next[selectedIndex] ?? 0) + 1
+      return next
     })
   }
 
   const removeOneToTomorrow = () => {
-    if (!ready || !selectedDay) return
-    if (!isInRange(selectedDay, range)) return
+    if (!ready || selectedIndex < 0) return
 
-    const tomorrow = nextDayInRange(selectedDay, range)
-    if (!tomorrow) return
+    onManualPlanChange?.()
 
-    const todayISO = iso(selectedDay)
-    const tomISO = iso(tomorrow)
-
-    setPlan((prev) => {
-      const todayArr = [...(prev[todayISO] ?? [])]
-      if (todayArr.length === 0) return prev
-
-      const tomArr = [...(prev[tomISO] ?? [])]
-      const moved = todayArr.pop()!
-      tomArr.unshift(moved)
-
-      return { ...prev, [todayISO]: todayArr, [tomISO]: tomArr }
+    setCounts((prev) => {
+      const next = [...prev]
+      const current = next[selectedIndex] ?? 0
+      next[selectedIndex] = Math.max(0, current - 1)
+      return next
     })
   }
 
-  const tomorrow = ready && selectedDay ? nextDayInRange(selectedDay, range) : null
-  const tomorrowCount = tomorrow ? (plan[iso(tomorrow)]?.length ?? 0) : 0
-  const canPlus = !!tomorrow && tomorrowCount > 0 && !!selectedDay && isInRange(selectedDay, range)
-  const canMinus = !!tomorrow && selectedTasksRaw.length > 0 && !!selectedDay && isInRange(selectedDay, range)
+  const canPlus = !!selectedDay && isInRange(selectedDay, range)
+  const canMinus =
+    !!selectedDay && isInRange(selectedDay, range) && (counts[selectedIndex] ?? 0) > 0
 
   const inRangeModifier = (date: Date) => isInRange(date, range)
   const isStart = (date: Date) => !!range?.from && isSameDay(date, range.from)
@@ -303,70 +310,98 @@ export default function PlanAdjustCalendar({
 
   return (
     <div className="md:ml-2 lg:mr-1 space-y-2 flex flex-col flex-1 min-h-0 h-full lg:col-span-1">
-      <div className="bg-gray-100 dark:bg-gray-300 rounded-xl sm:flex space-y-3 sm:space-y-0 sm:gap-2 sm:justify-between sm:items-end">
-        <Card className="w-fit p-0">
-          <CardContent className="p-0">
-            <Calendar
-              mode="single"
-              selected={selectedDay}
-              onSelect={setSelectedDay}
-              defaultMonth={range.from ?? new Date()}
-              numberOfMonths={1}
-              captionLayout="dropdown"
-              fixedWeeks
-              className={[
-                "[--cell-size:clamp(26px,7.2vw,38px)]",
-                "max-w-[calc(100vw-1.5rem)]",
-                "[&_button]:text-[12px]",
-                "[&_button]:leading-none",
-                "[&_button]:p-0",
-                "[&_.rdp-caption]:py-1",
-                "[&_.rdp-caption_label]:text-sm",
-                "[&_.rdp-row]:gap-0",
-                "[&_.rdp-cell]:p-0",
-              ].join(" ")}
-              modifiers={{
-                inStudyRange: inRangeModifier,
-                rangeStart: isStart,
-                rangeEnd: isEnd,
-              }}
-              modifiersClassNames={{
-                inStudyRange: "bg-primary/10",
-                rangeStart: "bg-primary/20 rounded-l-md",
-                rangeEnd: "bg-primary/20 rounded-r-md",
-              }}
-              components={{
-                DayButton: ({ children, modifiers, day, ...props }) => {
-                  const d = day.date
-                  const dayISO = iso(d)
-                  const count = plan[dayISO]?.length ?? 0
-                  const isIn = isInRange(d, range)
-                  const showCount = !modifiers.outside && isIn && count > 0
-                  const showRest = !modifiers.outside && isIn && !showCount
+      <div className="rounded-xl sm:flex space-y-3 sm:space-y-0 sm:gap-2 sm:justify-between sm:items-end">
 
-                  return (
-                    <CalendarDayButton day={day} modifiers={modifiers} {...props}>
-                      {children}
-                      {!modifiers.outside && (
-                        <div className="mt-0.5 flex items-center justify-center">
-                          {showCount ? (
-                            <span className="text-[11px] font-semibold leading-none">
-                              {circledNumber(count)}
-                            </span>
-                          ) : showRest ? (
-                            <span className="text-[10px] text-muted-foreground leading-none">休</span>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground leading-none">&nbsp;</span>
-                          )}
-                        </div>
-                      )}
-                    </CalendarDayButton>
-                  )
-                },
-              }}
-            />
-          </CardContent>
-        </Card>
+
+        <div className="flex items-end gap-1">
+          <Card className="w-fit p-0">
+            <CardContent className="p-0">
+              <Calendar
+                mode="single"
+                selected={selectedDay}
+                onSelect={setSelectedDay}
+                defaultMonth={range.from ?? new Date()}
+                numberOfMonths={1}
+                captionLayout="dropdown"
+                fixedWeeks
+                className={[
+                  "[--cell-size:clamp(26px,7.2vw,38px)]",
+                  "max-w-[calc(100vw-1.5rem)]",
+                  "[&_button]:text-[12px]",
+                  "[&_button]:leading-none",
+                  "[&_button]:p-0",
+                  "[&_.rdp-caption]:py-1",
+                  "[&_.rdp-caption_label]:text-sm",
+                  "[&_.rdp-row]:gap-0",
+                  "[&_.rdp-cell]:p-0",
+                ].join(" ")}
+                modifiers={{
+                  inStudyRange: inRangeModifier,
+                  rangeStart: isStart,
+                  rangeEnd: isEnd,
+                }}
+                modifiersClassNames={{
+                  inStudyRange: "bg-primary/10",
+                  rangeStart: "bg-primary/20 rounded-l-md",
+                  rangeEnd: "bg-primary/20 rounded-r-md",
+                }}
+                components={{
+                  DayButton: ({ children, modifiers, day, ...props }) => {
+                    const d = day.date
+                    const dayISO = iso(d)
+                    const count = countMap[dayISO] ?? 0
+                    const isIn = isInRange(d, range)
+                    const showCount = !modifiers.outside && isIn && count > 0
+                    const showRest = !modifiers.outside && isIn && !showCount
+
+                    return (
+                      <CalendarDayButton day={day} modifiers={modifiers} {...props}>
+                        {children}
+                        {!modifiers.outside && (
+                          <div className="mt-0.5 flex items-center justify-center">
+                            {showCount ? (
+                              <span className="text-[11px] font-semibold leading-none">
+                                {circledNumber(count)}
+                              </span>
+                            ) : showRest ? (
+                              <span className="text-[10px] text-muted-foreground leading-none">休</span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground leading-none">&nbsp;</span>
+                            )}
+                          </div>
+                        )}
+                      </CalendarDayButton>
+                    )
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="rounded-md border p-2 text-sm bg-background inline-flex flex-col">
+            <div className="text-xs text-muted-foreground">残りタスク</div>
+            <div
+              className={
+                restTask === 0
+                  ? "text-lg font-bold  pl-2"
+                  : restTask > 0
+                    ? "text-lg font-bold text-amber-600  pl-2"
+                    : "text-lg font-bold text-destructive pl-2"
+              }
+            >{restTask > 0
+              ? <span>+</span>
+              : null}
+              {restTask}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {restTask === 0
+                ? "ちょうど配分済み"
+                : restTask < 0
+                  ? `個不足しています`
+                  : `個超過しています`}
+            </div>
+          </div>
+        </div>
 
         <div className="flex flex-col">
           <Button

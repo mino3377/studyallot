@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\template-actions.ts
+
 "use server"
 
 import { createClient } from "@/utils/supabase/server"
@@ -44,7 +46,7 @@ export async function fetchTemplateAction(publicId: string) {
   const { data, error } = await supabase
     .from("templates")
     .select("public_id, project_name, title, unit_type, unit_count, rounds, plan_days")
-    .eq("public_id", publicId) // ✅ bigintのidじゃなく public_id で検索
+    .eq("public_id", publicId)
     .single()
 
   if (error) throw new Error(error.message)
