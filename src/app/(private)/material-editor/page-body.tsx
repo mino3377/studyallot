@@ -1,5 +1,3 @@
-// C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\page-body.tsx
-
 "use client"
 
 import * as React from "react"
@@ -23,6 +21,9 @@ import { unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
 import { createTemplateAction, fetchTemplateAction } from "./template-actions"
 import { addDays, eachDayOfInterval, format } from "date-fns"
 import { PlanShareDialog } from "./_components/plan-share-dialog"
+import { Card, CardContent } from "@/components/ui/card"
+import { NotebookPen } from "lucide-react"
+import { unitLabelByType } from "@/lib/unit-wording"
 
 function fmtISODate(d?: Date) {
   if (!d) return ""
@@ -41,7 +42,7 @@ export default function NewAddPageBody({
     startDate?: string
     endDate?: string
     unitType?: any
-    unitCount?: number
+    unitCount: number
     laps?: number
     planDays?: number[]
   }
@@ -76,6 +77,7 @@ export default function NewAddPageBody({
   const [restDays, setRestDays] = React.useState<Set<number>>(() => new Set<number>())
   const [openDetails, setOpenDetails] = React.useState(false)
   const [isSaving, setIsSaving] = React.useState(false)
+  const [saveValidationMessage, setSaveValidationMessage] = React.useState("")
 
   const [currentStep, setCurrentStep] = React.useState<Step>(() => (isEdit ? 2 : 1))
   const goStep2 = () => setCurrentStep(2)
@@ -85,13 +87,15 @@ export default function NewAddPageBody({
       ? { from: materialStep.startDate, to: materialStep.endDate }
       : undefined
 
+  const rawUnitCount = Number(materialStep.unitCount)
   const unitCountNum =
-    materialStep.unitCount && Number(materialStep.unitCount) > 0
-      ? Number(materialStep.unitCount)
+    materialStep.unitCount !== "" && Number.isInteger(rawUnitCount) && rawUnitCount > 0
+      ? rawUnitCount
       : undefined
 
+  const rawLaps = Number(materialStep.laps)
   const lapsNum =
-    materialStep.laps && Number(materialStep.laps) > 0 ? Number(materialStep.laps) : undefined
+    materialStep.laps !== "" && Number.isInteger(rawLaps) && rawLaps > 0 ? rawLaps : undefined
 
   const unitLabelText = unitTypeLabel(materialStep.unitType)
 
@@ -162,22 +166,103 @@ export default function NewAddPageBody({
     }
   }, [])
 
-  const handleSave = async () => {
-    if (isSaving) return
+  React.useEffect(() => {
+    if (saveValidationMessage) {
+      setSaveValidationMessage("")
+    }
+  }, [step1, materialStep, planDays])
+
+  const stableInitialPlanDays =
+    templateInitialPlanDays ??
+    (isEdit ? (Array.isArray(initial?.planDays) ? initial.planDays : []) : undefined)
+
+  const totalTasks =
+    unitCountNum != null && lapsNum != null && unitCountNum > 0 && lapsNum > 0
+      ? unitCountNum * lapsNum
+      : 0
+
+  const dayCount =
+    range?.from && range?.to
+      ? eachDayOfInterval({ start: range.from, end: range.to }).length
+      : 0
+
+  const hasTaskInputs = !!unitCountNum && !!lapsNum && dayCount > 0
+  const isPlanCountReady = hasTaskInputs && planDays.length === dayCount
+
+  const assignedTaskCount = isPlanCountReady ? planDays.reduce((sum, n) => sum + n, 0) : 0
+
+  const remainingTaskCount = isPlanCountReady ? totalTasks - assignedTaskCount : null
+
+  const getSaveValidationMessage = () => {
+    if (step1.mode === "existing" && !String(step1.selectedProjectId ?? "").trim()) {
+      return "プロジェクトを選択してください。"
+    }
+
+    if (step1.mode === "new" && !String(step1.newProjectName ?? "").trim()) {
+      return "プロジェクト名を入力してください。"
+    }
+
+    if (!materialStep.title.trim()) {
+      return "教材名を入力してください。"
+    }
 
     const startISO = fmtISODate(materialStep.startDate)
     const endISO = fmtISODate(materialStep.endDate)
 
-    if (!startISO || !endISO) return
-    if (!unitCountNum || !lapsNum) return
-    if (!materialStep.title.trim()) return
-    if (!planDays.length) return
+    if (!startISO || !endISO) {
+      return "開始日と終了日を入力してください。"
+    }
 
-    const s = planDays.reduce((a, b) => a + b, 0)
-    if (s !== totalTasks) return
+    if (!unitCountNum) {
+      return `${unitLabelText}数を入力してください。`
+    }
+
+    if (!lapsNum) {
+      return "周回数を入力してください。"
+    }
+
+    if (unitCountNum >= 1000) {
+      return `${unitLabelText}数は1000未満にしてください。`
+    }
+
+    if (lapsNum >= 1000) {
+      return "周回数は1000未満にしてください。"
+    }
+
+    if (!planDays.length || !isPlanCountReady) {
+      return "カレンダーでタスク配分を完了してください。"
+    }
+
+    const sumPlanDays = planDays.reduce((a, b) => a + b, 0)
+
+    if (remainingTaskCount != null && remainingTaskCount !== 0) {
+      return remainingTaskCount > 0
+        ? `タスク配分が ${remainingTaskCount} 個不足しています。`
+        : `タスク配分が ${Math.abs(remainingTaskCount)} 個超過しています。`
+    }
+
+    if (sumPlanDays !== totalTasks) {
+      return `タスク配分合計が一致していません。（計画:${sumPlanDays} / 総タスク:${totalTasks}）`
+    }
+
+    return ""
+  }
+
+  const handleSave = async () => {
+    if (isSaving) return
+
+    const validationMessage = getSaveValidationMessage()
+    if (validationMessage) {
+      setSaveValidationMessage(validationMessage)
+      return
+    }
+
+    const startISO = fmtISODate(materialStep.startDate)
+    const endISO = fmtISODate(materialStep.endDate)
 
     try {
       setIsSaving(true)
+      setSaveValidationMessage("")
 
       if (isEdit) {
         await updateMaterialAction({
@@ -189,8 +274,8 @@ export default function NewAddPageBody({
           startDate: startISO,
           endDate: endISO,
           unitType: materialStep.unitType,
-          unitCount: unitCountNum,
-          rounds: lapsNum,
+          unitCount: unitCountNum!,
+          rounds: lapsNum!,
           planDays,
         })
         return
@@ -204,11 +289,13 @@ export default function NewAddPageBody({
         startDate: startISO,
         endDate: endISO,
         unitType: materialStep.unitType,
-        unitCount: unitCountNum,
-        rounds: lapsNum,
+        unitCount: unitCountNum!,
+        rounds: lapsNum!,
         planDays,
         actualDays: Array.from({ length: planDays.length }, () => 0),
       })
+    } catch (e: any) {
+      setSaveValidationMessage(e?.message ?? "保存に失敗しました。")
     } finally {
       setIsSaving(false)
     }
@@ -263,31 +350,6 @@ export default function NewAddPageBody({
     }
   }
 
-  const stableInitialPlanDays =
-    templateInitialPlanDays ??
-    (isEdit ? (Array.isArray(initial?.planDays) ? initial.planDays : []) : undefined)
-
-  const totalTasks =
-    unitCountNum != null && lapsNum != null && unitCountNum > 0 && lapsNum > 0
-      ? unitCountNum * lapsNum
-      : 0
-
-  const dayCount =
-    range?.from && range?.to
-      ? eachDayOfInterval({ start: range.from, end: range.to }).length
-      : 0
-
-  const hasTaskInputs = !!unitCountNum && !!lapsNum && dayCount > 0
-  const isPlanCountReady = hasTaskInputs && planDays.length === dayCount
-
-  const assignedTaskCount = isPlanCountReady
-    ? planDays.reduce((sum, n) => sum + n, 0)
-    : 0
-
-  const remainingTaskCount = isPlanCountReady
-    ? totalTasks - assignedTaskCount
-    : null
-
   return (
     <>
       <main className="flex flex-col md:grid md:grid-cols-2 h-full min-h-0">
@@ -310,6 +372,8 @@ export default function NewAddPageBody({
             isPlanManuallyChanged={isPlanManuallyChanged}
             onManualPlanChange={() => setIsPlanManuallyChanged(true)}
             remainingTaskCount={remainingTaskCount}
+            saveValidationMessage={saveValidationMessage}
+            onClearSaveValidationMessage={() => setSaveValidationMessage("")}
           />
         </div>
 
@@ -327,7 +391,14 @@ export default function NewAddPageBody({
               onShare={handleShare}
               onManualPlanChange={() => setIsPlanManuallyChanged(true)}
             />
-          ) : null}
+          ) : (
+            <Card className="w-full m-3 p-12 flex items-center">
+              <CardContent className="p-0 gap-2 text-sm text-muted-foreground flex justify-center items-center">
+                <NotebookPen />
+                教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unitType)}数 / 周回数」を入力してください。
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="md:hidden">
@@ -337,7 +408,7 @@ export default function NewAddPageBody({
                 <SheetTitle>計画調整</SheetTitle>
               </SheetHeader>
 
-              <div className="h-[85vh] p-3 flex flex-col min-h-0">
+              <div className="h-full p-3 flex flex-col min-h-0">
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   {range?.from && range?.to && unitCountNum && lapsNum && unitLabelText ? (
                     <PlanAdjustCalendar
@@ -352,7 +423,14 @@ export default function NewAddPageBody({
                       onShare={handleShare}
                       onManualPlanChange={() => setIsPlanManuallyChanged(true)}
                     />
-                  ) : null}
+                  ) : (
+                    <Card className="w-full m-3 p-12 flex items-center">
+                      <CardContent className="p-0 gap-2 text-sm text-muted-foreground flex justify-center items-center">
+                        <NotebookPen />
+                        教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unitType)}数 / 周回数」を入力してください。
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </div>
             </SheetContent>

@@ -1,4 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\material-editor-primary\material-editor-primary-panel.tsx
 "use client"
 
 import * as React from "react"
@@ -29,6 +28,8 @@ type Props = {
   isPlanManuallyChanged: boolean
   onManualPlanChange: () => void
   remainingTaskCount: number | null
+  saveValidationMessage: string
+  onClearSaveValidationMessage?: () => void
 }
 
 export default function MaterialEditorPrimaryPanel({
@@ -49,6 +50,8 @@ export default function MaterialEditorPrimaryPanel({
   isPlanManuallyChanged,
   onManualPlanChange,
   remainingTaskCount,
+  saveValidationMessage,
+  onClearSaveValidationMessage,
 }: Props) {
   return (
     <div className="flex flex-col w-full h-full min-h-0">
@@ -61,6 +64,7 @@ export default function MaterialEditorPrimaryPanel({
           }}
         />
       </div>
+
       <div className="flex-1 min-h-0 rounded-xl">
         {currentStep === 1 ? (
           <ProjectSelectStep
@@ -83,6 +87,8 @@ export default function MaterialEditorPrimaryPanel({
             isPlanManuallyChanged={isPlanManuallyChanged}
             onManualPlanChange={onManualPlanChange}
             remainingTaskCount={remainingTaskCount}
+            saveValidationMessage={saveValidationMessage}
+            onClearSaveValidationMessage={onClearSaveValidationMessage}
           />
         )}
       </div>

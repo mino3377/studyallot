@@ -63,6 +63,14 @@ function sum(arr: number[]) {
   return s
 }
 
+function toPositiveIntUnder1000(value: unknown, fieldLabel: string) {
+  const n = Number(value)
+  assert(Number.isInteger(n), `${fieldLabel} は整数で入力してください`)
+  assert(n > 0, `${fieldLabel} は1以上にしてください`)
+  assert(n < 1000, `${fieldLabel} は1000未満にしてください`)
+  return n
+}
+
 async function resolveProjectId(args: {
   supabase: Awaited<ReturnType<typeof createClient>>
   userId: string
@@ -74,7 +82,18 @@ async function resolveProjectId(args: {
 
   if (projectMode === "existing") {
     const pid = Number((args.selectedProjectId ?? "").trim())
-    assert(Number.isFinite(pid) && pid > 0, "selectedProjectId が不正です")
+    assert(Number.isInteger(pid) && pid > 0, "selectedProjectId が不正です")
+
+    const { data: project, error } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("id", pid)
+      .single()
+
+    if (error) throw new Error(error.message)
+    assert(project, "選択されたプロジェクトが見つかりません")
+
     return pid
   }
 
@@ -113,14 +132,15 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
   const unitType = (input.unitType ?? "").trim()
   assert(unitType.length > 0, "unitType が空です")
 
-  const unitCount = Number(input.unitCount)
-  const rounds = Number(input.rounds)
-  assert(Number.isFinite(unitCount) && unitCount > 0, "unitCount が不正です")
-  assert(Number.isFinite(rounds) && rounds > 0, "rounds が不正です")
+  const unitCount = toPositiveIntUnder1000(input.unitCount, "区切り数")
+  const rounds = toPositiveIntUnder1000(input.rounds, "周回数")
 
   const planDays = Array.isArray(input.planDays) ? input.planDays.map(Number) : []
   assert(planDays.length > 0, "planDays が空です")
-  assert(planDays.every((n) => Number.isFinite(n) && n >= 0), "planDays に不正な値があります")
+  assert(
+    planDays.every((n) => Number.isInteger(n) && n >= 0),
+    "planDays に不正な値があります"
+  )
 
   const expectedLen = daysBetweenInclusive(startDate, endDate)
   assert(expectedLen > 0, "日付範囲が不正です")
@@ -128,7 +148,10 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
 
   const totalTasks = unitCount * rounds
   const plannedSum = sum(planDays)
-  assert(plannedSum === totalTasks, "planDays の合計が 総タスク数（セクション数×周回数）と一致しません")
+  assert(
+    plannedSum === totalTasks,
+    "planDays の合計が 総タスク数（セクション数×周回数）と一致しません"
+  )
 
   const actualDays =
     input.actualDays && Array.isArray(input.actualDays) && input.actualDays.length > 0
@@ -136,7 +159,10 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
       : Array.from({ length: expectedLen }, () => 0)
 
   assert(actualDays.length === expectedLen, "actualDays の長さが日付範囲と一致しません")
-  assert(actualDays.every((n) => Number.isFinite(n) && n >= 0), "actualDays に不正な値があります")
+  assert(
+    actualDays.every((n) => Number.isInteger(n) && n >= 0),
+    "actualDays に不正な値があります"
+  )
   assert(sum(actualDays) <= totalTasks, "actualDays の合計が総タスク数を超えています")
 
   const projectId = await resolveProjectId({
@@ -201,14 +227,15 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   const unitType = (input.unitType ?? "").trim()
   assert(unitType.length > 0, "unitType が空です")
 
-  const unitCount = Number(input.unitCount)
-  const rounds = Number(input.rounds)
-  assert(Number.isFinite(unitCount) && unitCount > 0, "unitCount が不正です")
-  assert(Number.isFinite(rounds) && rounds > 0, "rounds が不正です")
+  const unitCount = toPositiveIntUnder1000(input.unitCount, "区切り数")
+  const rounds = toPositiveIntUnder1000(input.rounds, "周回数")
 
   const planDays = Array.isArray(input.planDays) ? input.planDays.map(Number) : []
   assert(planDays.length > 0, "planDays が空です")
-  assert(planDays.every((n) => Number.isFinite(n) && n >= 0), "planDays に不正な値があります")
+  assert(
+    planDays.every((n) => Number.isInteger(n) && n >= 0),
+    "planDays に不正な値があります"
+  )
 
   const expectedLen = daysBetweenInclusive(startDate, endDate)
   assert(expectedLen > 0, "日付範囲が不正です")
@@ -231,7 +258,6 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   assert(existing.end_date === endDate, "終了日は編集できません")
   assert(Number(existing.unit_count) === unitCount, "区切り数は編集できません")
   assert(Number(existing.rounds) === rounds, "周回数は編集できません")
-
   assert(String(existing.unit_type) === unitType, "区切りの呼び方は編集できません")
 
   const projectId = await resolveProjectId({
@@ -257,6 +283,7 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
     .eq("slug", slug)
 
   if (error) throw new Error(error.message)
+
   const { data: proj, error: projErr } = await supabase
     .from("projects")
     .select("slug")

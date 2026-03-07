@@ -1,4 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\material-editor-primary\material-register-step.tsx
 "use client"
 
 import * as React from "react"
@@ -44,6 +43,8 @@ type Props = {
   isPlanManuallyChanged: boolean
   onManualPlanChange?: () => void
   remainingTaskCount: number | null
+  saveValidationMessage: string
+  onClearSaveValidationMessage?: () => void
 }
 
 function fmtYYYYMMDD(d?: Date) {
@@ -67,13 +68,12 @@ export default function MaterialRegisterStep({
   isPlanManuallyChanged,
   onManualPlanChange,
   remainingTaskCount,
+  saveValidationMessage,
+  onClearSaveValidationMessage,
 }: Props) {
-
   const uLabel = unitLabel(value.unitType)
   const lock = !!isEdit
-  const isPlanInvalid = remainingTaskCount != null && remainingTaskCount !== 0
-  const saveDisabled = !!isSaving || isPlanInvalid
-
+  const saveDisabled = !!isSaving
 
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [pendingRestDow, setPendingRestDow] = React.useState<number | null>(null)
@@ -135,6 +135,7 @@ export default function MaterialRegisterStep({
             <div className="text-xs font-bold">
               ※開始日・終了日・セクション数・周回数は後から変更ができません。
             </div>
+
             <div className="grid gap-2">
               <Label>教材名</Label>
               <Input value={value.title} onChange={(e) => set({ title: e.target.value })} />
@@ -222,6 +223,8 @@ export default function MaterialRegisterStep({
                 <Input
                   type="number"
                   min={1}
+                  max={999}
+                  step={1}
                   value={value.unitCount}
                   onChange={(e) => set({ unitCount: e.target.value })}
                   disabled={lock}
@@ -233,6 +236,8 @@ export default function MaterialRegisterStep({
                 <Input
                   type="number"
                   min={1}
+                  max={999}
+                  step={1}
                   value={value.laps}
                   onChange={(e) => set({ laps: e.target.value })}
                   disabled={lock}
@@ -288,12 +293,14 @@ export default function MaterialRegisterStep({
         </div>
       </div>
 
-      {isPlanInvalid ? (
-        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          {remainingTaskCount! > 0
-            ? `タスク配分が ${remainingTaskCount} 個不足しているため保存できません。`
-            : `タスク配分が ${Math.abs(remainingTaskCount!)} 個超過しているため保存できません。`}
-        </div>
+      {saveValidationMessage ? (
+        <button
+          type="button"
+          onClick={onClearSaveValidationMessage}
+          className="mt-3 w-full rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs text-amber-700"
+        >
+          {saveValidationMessage}
+        </button>
       ) : null}
 
       <Button

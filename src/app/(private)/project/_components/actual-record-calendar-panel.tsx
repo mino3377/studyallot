@@ -381,7 +381,7 @@ export default function ActualRecordCalendarPanel({
         </Card>
       </div>
 
-      <CardContent className="flex flex-col space-y-2 mb-2 p-3 border rounded-md flex-1 min-h-0 h-full">
+      <CardContent className="flex flex-col space-y-2 p-3 border rounded-md flex-1 min-h-0 h-full">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">{title ?? "実績入力"}</div>

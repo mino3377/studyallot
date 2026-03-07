@@ -33,7 +33,7 @@ function NavIcon({
 
 function SideNav() {
   return (
-    <div className="hidden sm:flex w-12 mt-12 backdrop-blur-md items-center pl-1 pt-5 gap-5 flex-col">
+    <div className="hidden lg:flex w-12 mt-12 backdrop-blur-md items-center pl-1 pt-5 gap-5 flex-col">
       <NavIcon href="/project">
         <LayoutDashboard className="h-5 w-5" />
       </NavIcon>
@@ -51,7 +51,7 @@ function SideNav() {
 
 function MobileNav() {
   return (
-    <footer className="flex justify-around items-center sm:hidden h-12">
+    <footer className="flex justify-around items-center lg:hidden h-12 z-50 fixed bottom-0 w-full">
       <NavIcon href="/project">
         <LayoutDashboard className="h-5 w-5" />
       </NavIcon>
@@ -75,7 +75,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 h-full">
         <SideNav />
 
-        <main className="flex-1 min-h-0 p-2 md:px-6 mt-12 overflow-y-auto">
+        <main className="flex-1 min-h-0 p-2 md:px-6 mt-12 mb-12 lg:mb-0 overflow-y-auto">
           {children}
         </main>
       </div>

@@ -1,5 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\plan-adjust-calendar.tsx
-
 "use client"
 
 import * as React from "react"
@@ -16,7 +14,8 @@ import {
 } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import type { UnitType } from "@/lib/type/unit-type"
-import { taskLabelRange, taskLabelSingle } from "@/lib/unit-wording"
+import { taskLabelRange, taskLabelSingle} from "@/lib/unit-wording"
+import { Share } from "lucide-react"
 
 type Task = {
   id: string
@@ -306,117 +305,120 @@ export default function PlanAdjustCalendar({
   const isStart = (date: Date) => !!range?.from && isSameDay(date, range.from)
   const isEnd = (date: Date) => !!range?.to && isSameDay(date, range.to)
 
-  if (!ready) return null
-
   return (
     <div className="md:ml-2 lg:mr-1 space-y-2 flex flex-col flex-1 min-h-0 h-full lg:col-span-1">
-      <div className="rounded-xl sm:flex space-y-3 sm:space-y-0 sm:gap-2 sm:justify-between sm:items-end">
+      <div className="rounded-xl sm:flex space-y-3 sm:space-y-0 sm:gap-2 lg:justify-between sm:items-end">
+
+        <div className="flex flex-col space-y-2 w-full">
+          <div className="flex-col text-xs bg-background inline-flex items-start gap-2 font-bold">
 
 
-        <div className="flex items-end gap-1">
-          <Card className="w-fit p-0">
-            <CardContent className="p-0">
-              <Calendar
-                mode="single"
-                selected={selectedDay}
-                onSelect={setSelectedDay}
-                defaultMonth={range.from ?? new Date()}
-                numberOfMonths={1}
-                captionLayout="dropdown"
-                fixedWeeks
-                className={[
-                  "[--cell-size:clamp(26px,7.2vw,38px)]",
-                  "max-w-[calc(100vw-1.5rem)]",
-                  "[&_button]:text-[12px]",
-                  "[&_button]:leading-none",
-                  "[&_button]:p-0",
-                  "[&_.rdp-caption]:py-1",
-                  "[&_.rdp-caption_label]:text-sm",
-                  "[&_.rdp-row]:gap-0",
-                  "[&_.rdp-cell]:p-0",
-                ].join(" ")}
-                modifiers={{
-                  inStudyRange: inRangeModifier,
-                  rangeStart: isStart,
-                  rangeEnd: isEnd,
-                }}
-                modifiersClassNames={{
-                  inStudyRange: "bg-primary/10",
-                  rangeStart: "bg-primary/20 rounded-l-md",
-                  rangeEnd: "bg-primary/20 rounded-r-md",
-                }}
-                components={{
-                  DayButton: ({ children, modifiers, day, ...props }) => {
-                    const d = day.date
-                    const dayISO = iso(d)
-                    const count = countMap[dayISO] ?? 0
-                    const isIn = isInRange(d, range)
-                    const showCount = !modifiers.outside && isIn && count > 0
-                    const showRest = !modifiers.outside && isIn && !showCount
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 whitespace-nomal w-full justify-center">
+                <div className="text-muted-foreground">タスク数 :</div>
+                <div
+                  className={
+                    restTask > 0
+                      ? " text-sm text-amber-600 "
+                      : "text-sm text-destructive"
+                  }
+                >{restTask > 0
+                  ? <span>+</span>
+                  : null}
+                  {restTask}
+                </div>
+                <div>
+                  {restTask === 0 ? <div></div> : restTask > 0
+                    ? <div>超過しています</div>
+                    : <div>少ないです</div>}
+                </div>
+              </div>
+              <Card className="w-fit p-0">
+                <CardContent className="p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDay}
+                    onSelect={setSelectedDay}
+                    defaultMonth={range.from ?? new Date()}
+                    numberOfMonths={1}
+                    captionLayout="dropdown"
+                    fixedWeeks
+                    className={[
+                      "[--cell-size:clamp(26px,7.2vw,38px)]",
+                      "max-w-[calc(100vw-1.5rem)]",
+                      "[&_button]:text-[12px]",
+                      "[&_button]:leading-none",
+                      "[&_button]:p-0",
+                      "[&_.rdp-caption]:py-1",
+                      "[&_.rdp-caption_label]:text-sm",
+                      "[&_.rdp-row]:gap-0",
+                      "[&_.rdp-cell]:p-0",
+                    ].join(" ")}
+                    modifiers={{
+                      inStudyRange: inRangeModifier,
+                      rangeStart: isStart,
+                      rangeEnd: isEnd,
+                    }}
+                    modifiersClassNames={{
+                      inStudyRange: "bg-primary/10",
+                      rangeStart: "bg-primary/20 rounded-l-md",
+                      rangeEnd: "bg-primary/20 rounded-r-md",
+                    }}
+                    components={{
+                      DayButton: ({ children, modifiers, day, ...props }) => {
+                        const d = day.date
+                        const dayISO = iso(d)
+                        const count = countMap[dayISO] ?? 0
+                        const isIn = isInRange(d, range)
+                        const showCount = !modifiers.outside && isIn && count > 0
+                        const showRest = !modifiers.outside && isIn && !showCount
 
-                    return (
-                      <CalendarDayButton day={day} modifiers={modifiers} {...props}>
-                        {children}
-                        {!modifiers.outside && (
-                          <div className="mt-0.5 flex items-center justify-center">
-                            {showCount ? (
-                              <span className="text-[11px] font-semibold leading-none">
-                                {circledNumber(count)}
-                              </span>
-                            ) : showRest ? (
-                              <span className="text-[10px] text-muted-foreground leading-none">休</span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground leading-none">&nbsp;</span>
+                        return (
+                          <CalendarDayButton day={day} modifiers={modifiers} {...props}>
+                            {children}
+                            {!modifiers.outside && (
+                              <div className="mt-0.5 flex items-center justify-center">
+                                {showCount ? (
+                                  <span className="text-[11px] font-semibold leading-none">
+                                    {circledNumber(count)}
+                                  </span>
+                                ) : showRest ? (
+                                  <span className="text-[10px] text-muted-foreground leading-none">休</span>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground leading-none">&nbsp;</span>
+                                )}
+                              </div>
                             )}
-                          </div>
-                        )}
-                      </CalendarDayButton>
-                    )
-                  },
-                }}
-              />
-            </CardContent>
-          </Card>
+                          </CalendarDayButton>
+                        )
+                      },
+                    }}
+                  />
+                </CardContent>
+              </Card>
+              <div className="flex flex-col w-full">
+                <Button
+                  type="button"
+                  variant="default"
+                  className="text-xs px-3 py-2 whitespace-normal rounded-full"
+                  onClick={onShare}
+                  disabled={!onShare}
+                >
+                  <Share />
+                  計画を共有
 
-          <div className="rounded-md border p-2 text-sm bg-background inline-flex flex-col">
-            <div className="text-xs text-muted-foreground">残りタスク</div>
-            <div
-              className={
-                restTask === 0
-                  ? "text-lg font-bold  pl-2"
-                  : restTask > 0
-                    ? "text-lg font-bold text-amber-600  pl-2"
-                    : "text-lg font-bold text-destructive pl-2"
-              }
-            >{restTask > 0
-              ? <span>+</span>
-              : null}
-              {restTask}
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              {restTask === 0
-                ? "ちょうど配分済み"
-                : restTask < 0
-                  ? `個不足しています`
-                  : `個超過しています`}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-col">
-          <Button
-            type="button"
-            variant="default"
-            className="text-xs px-3 py-2 whitespace-normal"
-            onClick={onShare}
-            disabled={!onShare}
-          >
-            計画を共有
-          </Button>
+
+
+
         </div>
       </div>
 
-      <CardContent className="flex flex-col space-y-2 mb-2 p-3 border rounded-md md:flex-1 md:min-h-0 h-full">
+      <CardContent className="flex flex-col space-y-2 p-3 border rounded-md md:flex-1 md:min-h-0 h-full">
         <div className="flex gap-2 items-center justify-between">
           <div className="text-sm sm:text-md font-bold flex justify-center">
             {selectedDay ? `${iso(selectedDay)} (${weekdayJP(selectedDay)})` : "-"}
@@ -457,7 +459,7 @@ export default function PlanAdjustCalendar({
                   <div className="text-sm">
                     <span
                       className="inline-flex items-center justify-center 
-                        min-w-[18px] h-[18px] px-1 
+                        min-w-18px h-18px px-1 
                         rounded-full border text-[11px] font-semibold leading-none"
                     >
                       {idx + 1}
@@ -470,6 +472,7 @@ export default function PlanAdjustCalendar({
           )}
         </div>
       </CardContent>
+
     </div>
   )
 }

@@ -22,7 +22,7 @@ export default function SettingsSheetClient({ user }: { user: unknown }) {
 
             <SheetContent
                 side="right"
-                className="p-4 w-60 flex flex-col mt-12 rounded-l-md h-[calc(100vh-3rem)]"
+                className="p-4 w-60 flex flex-col mt-12 rounded-l-md max-h-[calc(100dvh-3rem)]"
             >
                 <SheetHeader>
                     <SheetTitle>設定</SheetTitle>
