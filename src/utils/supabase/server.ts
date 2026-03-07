@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\utils\supabase\server.ts
+
 import "server-only"
 
 import { createServerClient } from "@supabase/ssr";

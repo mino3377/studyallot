@@ -8,12 +8,26 @@ export const metadata = { title: "New Material | studyallot" }
 export default async function NewAddPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ edit?: string }> | { edit?: string }
+  searchParams?: Promise<{ edit?: string; template?: string }> | { edit?: string; template?: string }
 }) {
-  const sp = (searchParams instanceof Promise) ? await searchParams : (searchParams ?? {})
+  const sp = searchParams instanceof Promise ? await searchParams : (searchParams ?? {})
+
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    const qs = new URLSearchParams()
+    if (sp.edit) qs.set("edit", sp.edit)
+    if (sp.template) qs.set("template", sp.template)
+
+    const next = qs.toString()
+      ? `/material-editor?${qs.toString()}`
+      : "/material-editor"
+
+    redirect(`/login?next=${encodeURIComponent(next)}`)
+  }
 
   const { data: projectsRaw, error: projectsErr } = await supabase
     .from("projects")
