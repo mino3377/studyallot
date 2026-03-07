@@ -11,16 +11,16 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string; error?: string }>
 }) {
+  const sp = await searchParams
+  const next = sp?.next ?? "/project"
+  const error = sp?.error
+
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (user) redirect("/project")
-
-  const sp = await searchParams
-  const next = sp?.next ?? "/project"
-  const error = sp?.error
+  if (user) redirect(next)
 
   return (
     <main className="relative min-h-[calc(100dvh)] flex items-center justify-center px-4">
@@ -45,7 +45,6 @@ export default async function LoginPage({
             </div>
           )}
 
-          {/* Google ログイン */}
           <form className="space-y-4">
             <input type="hidden" name="next" value={next} />
             <Button
