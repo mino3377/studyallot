@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\primary-panel\material-register-step.tsx
+
 "use client"
 
 import * as React from "react"

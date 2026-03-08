@@ -62,10 +62,28 @@ export function ProjectPageBody({
   const searchParams = useSearchParams()
   const qsProject = searchParams.get("project") ?? ""
   const qsMaterial = searchParams.get("material") ?? ""
+  const qsView = searchParams.get("view") ?? ""
 
-  const [selectedSlug, setSelectedSlug] = React.useState<string>(
-    qsProject && projects.some((p) => p.slug === qsProject) ? qsProject : (projects[0]?.slug ?? "")
-  )
+  const replaceQuery = React.useCallback(
+  (patch: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    for (const [key, value] of Object.entries(patch)) {
+      if (!value) params.delete(key)
+      else params.set(key, value)
+    }
+
+    const next = `/project?${params.toString()}`
+    window.history.replaceState(null, "", next)
+  },
+  [searchParams]
+)
+
+  const selectedSlug =
+    qsProject && projects.some((p) => p.slug === qsProject)
+      ? qsProject
+      : (projects[0]?.slug ?? "")
+
   const materials = selectedSlug ? materialsBySlug[selectedSlug] ?? [] : []
 
   const selectedProject = React.useMemo(
@@ -74,10 +92,6 @@ export function ProjectPageBody({
   )
   const selectedProjectName = selectedProject?.name ?? ""
   const selectedProjectId = selectedProject?.id
-
-  React.useEffect(() => {
-    if (!selectedSlug && projects[0]?.slug) setSelectedSlug(projects[0].slug)
-  }, [projects, selectedSlug])
 
   const materialToProjectSlug = React.useMemo(() => {
     const map: Record<string, string> = {}
@@ -99,69 +113,25 @@ export function ProjectPageBody({
   )
 
   const [mobileSheetOpen, setMobileSheetOpen] = React.useState(false)
-  const [openedMaterial, setOpenedMaterial] =
-    React.useState<PopupMaterialForMaterialPage | null>(null)
-
-  const [projectProgressMode, setProjectProgressMode] = React.useState(false)
-
-  const toggleSelectMaterial = React.useCallback(
-    (m: PopupMaterialForMaterialPage) => {
-      const resolvedProjectSlug =
-        m.projectSlug ?? materialToProjectSlug[m.slug] ?? selectedSlug
-
-      setOpenedMaterial((prev) => {
-        const nextIsSame = prev?.slug === m.slug
-        const next = nextIsSame ? null : { ...m, projectSlug: resolvedProjectSlug }
-        setProjectProgressMode(false)
-        if (!isDesktop) {
-          setMobileSheetOpen(!nextIsSame)
-        }
-        return next
-      })
-    },
-    [materialToProjectSlug, selectedSlug, isDesktop]
-  )
-
-  const toggleProjectProgress = React.useCallback(() => {
-    setOpenedMaterial(null)
-
-    setProjectProgressMode((prev) => {
-      const next = !prev
-      if (!isDesktop) setMobileSheetOpen(next)
-      return next
-    })
-  }, [isDesktop])
-
-  React.useEffect(() => {
-    setMobileSheetOpen(false)
-    setOpenedMaterial(null)
-    setProjectProgressMode(false)
-  }, [selectedSlug])
 
   const defaultUnitType: UnitType = "section"
   const defaultUnitLabel = "セクション"
 
-  React.useEffect(() => {
-    if (qsProject && projects.some((p) => p.slug === qsProject)) {
-      setSelectedSlug(qsProject)
-    }
-  }, [qsProject, projects])
-
-  React.useEffect(() => {
-    if (!qsMaterial) return
+  const openedMaterial = React.useMemo<PopupMaterialForMaterialPage | null>(() => {
+    if (!qsMaterial) return null
 
     const pSlug =
       (qsProject && projects.some((p) => p.slug === qsProject) ? qsProject : "") ||
       materialToProjectSlug[qsMaterial] ||
       ""
 
-    if (!pSlug) return
+    if (!pSlug) return null
 
     const mats = materialsBySlug[pSlug] ?? []
     const m = mats.find((x) => x.slug === qsMaterial)
-    if (!m) return
+    if (!m) return null
 
-    setOpenedMaterial({
+    return {
       id: m.id,
       slug: m.slug,
       title: m.title,
@@ -174,20 +144,53 @@ export function ProjectPageBody({
       actualDays: m.actualDays,
       unitType: m.unitType ?? defaultUnitType,
       unitLabel: m.unitLabel ?? defaultUnitLabel,
-    })
-
-    setProjectProgressMode(false)
-    if (!isDesktop) setMobileSheetOpen(true)
+    }
   }, [
     qsMaterial,
     qsProject,
     projects,
     materialsBySlug,
     materialToProjectSlug,
-    defaultUnitType,
-    defaultUnitLabel,
-    isDesktop,
   ])
+
+  const projectProgressMode = qsView === "project"
+
+  const toggleSelectMaterial = React.useCallback(
+    (m: PopupMaterialForMaterialPage) => {
+      const resolvedProjectSlug =
+        m.projectSlug ?? materialToProjectSlug[m.slug] ?? selectedSlug
+
+      const nextIsSame = qsMaterial === m.slug
+
+      replaceQuery({
+        project: resolvedProjectSlug,
+        material: nextIsSame ? null : m.slug,
+        view: nextIsSame ? null : "material",
+      })
+
+      if (!isDesktop) {
+        setMobileSheetOpen(!nextIsSame)
+      }
+    },
+    [materialToProjectSlug, selectedSlug, qsMaterial, replaceQuery, isDesktop]
+  )
+
+  const toggleProjectProgress = React.useCallback(() => {
+    const next = !projectProgressMode
+
+    replaceQuery({
+      project: selectedSlug || null,
+      material: null,
+      view: next ? "project" : null,
+    })
+
+    if (!isDesktop) setMobileSheetOpen(next)
+  }, [projectProgressMode, replaceQuery, selectedSlug, isDesktop])
+
+  React.useEffect(() => {
+    if (isDesktop) return
+    setMobileSheetOpen(!!qsMaterial || qsView === "project")
+  }, [isDesktop, qsMaterial, qsView])
 
   const ProjectPanel = (
     <ProjectRecordCalendarPanel
@@ -234,10 +237,8 @@ export function ProjectPageBody({
           initialActualDays={openedMaterial.actualDays ?? []}
           initialPlanDays={openedMaterial.planDays ?? []}
           saveSectionRecordsAction={saveSectionRecordsAction}
-          onActualDaysSaved={(nextActualDays) => {
-            setOpenedMaterial((prev) =>
-              prev ? { ...prev, actualDays: nextActualDays } : prev
-            )
+          onActualDaysSaved={() => {
+            router.refresh()
           }}
           range={{
             from: openedMaterial.startDate
@@ -305,7 +306,7 @@ export function ProjectPageBody({
   }
 
   const deleteProject = React.useCallback(
-    async (projectId: number | string,) => {
+    async (projectId: number | string) => {
       if (!deleteProjectAction) return
       const idStr = String(projectId)
       try {
@@ -316,12 +317,21 @@ export function ProjectPageBody({
         await deleteProjectAction(fd)
 
         setRenameOpen(false)
+
+        if (selectedProjectId && String(selectedProjectId) === idStr) {
+          replaceQuery({
+            project: null,
+            material: null,
+            view: null,
+          })
+        }
+
         router.refresh()
       } finally {
         setIsDeletingProjectId(null)
       }
     },
-    [deleteProjectAction, router]
+    [deleteProjectAction, router, selectedProjectId, replaceQuery]
   )
 
   const deleteMaterial = React.useCallback(
@@ -330,14 +340,16 @@ export function ProjectPageBody({
       fd.set("materialId", String(materialId))
       await deleteMaterialAction(fd)
 
-      if (materialSlug && openedMaterial?.slug === materialSlug) {
-        setOpenedMaterial(null)
-        setProjectProgressMode(false)
+      if (materialSlug && qsMaterial === materialSlug) {
+        replaceQuery({
+          material: null,
+          view: null,
+        })
       }
 
       router.refresh()
     },
-    [deleteMaterialAction, router, openedMaterial?.slug]
+    [deleteMaterialAction, router, qsMaterial, replaceQuery]
   )
 
   const [isReplanning, setIsReplanning] = React.useState(false)
@@ -386,7 +398,17 @@ export function ProjectPageBody({
 
       <div className="grid md:grid-cols-2 flex-1 min-h-0 gap-4">
         <div className="space-y-3 col-span-1 h-full min-h-0 flex flex-col">
-          <ProjectSelectHeader projects={projects} onSelectSlug={setSelectedSlug} selectedSlug={selectedSlug} />
+          <ProjectSelectHeader
+            projects={projects}
+            onSelectSlug={(slug) => {
+              replaceQuery({
+                project: slug,
+                material: null,
+                view: null,
+              })
+            }}
+            selectedSlug={selectedSlug}
+          />
 
           <ProjectActionButton
             openRename={openRename}
@@ -434,7 +456,6 @@ export function ProjectPageBody({
         <div className="hidden md:flex md:col-span-1 min-h-0 flex-col">
           <div className="flex-1 min-h-0">{RightPanel}</div>
         </div>
-
       </div>
     </div>
   )

@@ -161,7 +161,7 @@ export async function replanDelayedPlansAction(fd: FormData) {
     const { data } = await supabase.auth.getUser()
     if (!data?.user) redirect("/login")
 
-    const projectSlug = String(fd.get("projectSlug") ?? "").trim()
+    const projectSlug = fd.get("projectSlug") ?? "".trim()
     if (!projectSlug) throw new Error("Invalid projectSlug")
 
     const getTodayISOJST = () => {

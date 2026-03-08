@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\page-body.tsx
+
 "use client"
 
 import * as React from "react"
@@ -24,6 +26,7 @@ import { PlanShareDialog } from "./_components/plan-share-dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { NotebookPen } from "lucide-react"
 import { unitLabelByType } from "@/lib/unit-wording"
+import { isRedirectError } from "next/dist/client/components/redirect-error"
 
 function fmtISODate(d?: Date) {
   if (!d) return ""
@@ -294,8 +297,14 @@ export default function NewAddPageBody({
         planDays,
         actualDays: Array.from({ length: planDays.length }, () => 0),
       })
-    } catch (e: any) {
-      setSaveValidationMessage(e?.message ?? "保存に失敗しました。")
+    } catch (e: unknown) {
+      if (isRedirectError(e)) {
+        throw e
+      }
+
+      setSaveValidationMessage(
+        e instanceof Error ? e.message : "保存に失敗しました。"
+      )
     } finally {
       setIsSaving(false)
     }
