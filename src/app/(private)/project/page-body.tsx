@@ -1,7 +1,16 @@
+// src/app/(private)/project/page-body.tsx
 "use client"
 
 import * as React from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+
 import ProjectSelectHeader from "@/app/(private)/project/_components/project-select-header"
+import ActualRecordCalendarPanel from "./_components/actual-record-calendar-panel"
+import ProjectRecordCalendarPanel from "./_components/project-record-calendar-panel"
+import MaterialsList from "./_components/materials-list"
+import { ProjectRenameDialog } from "./_components/project-rename-dialog"
+import { ProjectActionButton } from "./_components/project-action-button"
+
 import {
   Sheet,
   SheetContent,
@@ -9,34 +18,55 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import ActualRecordCalendarPanel from "./_components/actual-record-calendar-panel"
-import ProjectRecordCalendarPanel from "./_components/project-record-calendar-panel"
-import MaterialsList from "./_components/materials-list"
-import { useRouter, useSearchParams } from "next/navigation"
+
 import type { MaterialVM, PopupMaterialForMaterialPage } from "@/lib/type/material"
-import { ProjectForProjectPage } from "./data"
-import { ProjectRenameDialog } from "./_components/project-rename-dialog"
-import { ProjectActionButton } from "./_components/project-action-button"
-import { UnitType } from "@/lib/type/unit-type"
+import type { UnitType } from "@/lib/type/unit-type"
+import type { ProjectForProjectPage } from "./data"
 
-function useIsDesktop(breakpointPx = 768) {
-  const [isDesktop, setIsDesktop] = React.useState(false)
+type Props = {
+  projects: ProjectForProjectPage[]
+  materialsBySlug: Record<string, MaterialVM[]>
+  saveSectionRecordsAction: (fd: FormData) => Promise<void>
+  updateProjectMetaAction: (fd: FormData) => Promise<void>
+  replanDelayedPlansAction: (fd: FormData) => Promise<void>
+  updateMaterialOrdersAction: (fd: FormData) => Promise<void>
+  deleteMaterialAction: (fd: FormData) => Promise<void>
+  deleteProjectAction: (fd: FormData) => Promise<void>
+}
 
-  React.useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${breakpointPx}px)`)
-    const apply = () => setIsDesktop(mq.matches)
-    apply()
+function makePopupMaterial(
+  material: MaterialVM,
+  projectSlug: string
+): PopupMaterialForMaterialPage {
+  return {
+    id: material.id,
+    slug: material.slug,
+    title: material.title,
+    projectSlug,
+    startDate: material.startDate,
+    endDate: material.endDate,
+    totalUnits: material.totalUnits,
+    lapsTotal: material.lapsTotal,
+    planDays: material.planDays,
+    actualDays: material.actualDays,
+    unitType: material.unitType,
+    unitLabel: material.unitLabel,
+  }
+}
 
-    if (mq.addEventListener) mq.addEventListener("change", apply)
-    else mq.addListener(apply)
-
-    return () => {
-      if (mq.removeEventListener) mq.removeEventListener("change", apply)
-      else mq.removeListener(apply)
-    }
-  }, [breakpointPx])
-
-  return isDesktop
+function makeProjectPanelMaterial(material: MaterialVM) {
+  return {
+    slug: material.slug,
+    title: material.title,
+    startDate: material.startDate,
+    endDate: material.endDate,
+    totalUnits: material.totalUnits,
+    lapsTotal: material.lapsTotal,
+    planDays: material.planDays,
+    actualDays: material.actualDays,
+    unitType: material.unitType ?? null,
+    unitLabel: material.unitLabel ?? null,
+  }
 }
 
 export function ProjectPageBody({
@@ -48,198 +78,218 @@ export function ProjectPageBody({
   updateMaterialOrdersAction,
   deleteMaterialAction,
   deleteProjectAction,
-}: {
-  projects: ProjectForProjectPage[]
-  materialsBySlug: Record<string, MaterialVM[]>
-  saveSectionRecordsAction: (fd: FormData) => Promise<void>
-  updateProjectMetaAction: (fd: FormData) => Promise<void>
-  replanDelayedPlansAction: (fd: FormData) => Promise<void>
-  updateMaterialOrdersAction: (fd: FormData) => Promise<void>
-  deleteMaterialAction: (fd: FormData) => Promise<void>
-  deleteProjectAction: (fd: FormData) => Promise<void>
-}) {
+}: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const qsProject = searchParams.get("project") ?? ""
-  const qsMaterial = searchParams.get("material") ?? ""
-  const qsView = searchParams.get("view") ?? ""
 
-  const replaceQuery = React.useCallback(
-  (patch: Record<string, string | null>) => {
+  const projectSlugFromUrl = searchParams.get("project") ?? ""
+  const materialSlugFromUrl = searchParams.get("material") ?? ""
+  const viewMode = searchParams.get("view") ?? ""
+
+  function replaceQuery(values: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString())
 
-    for (const [key, value] of Object.entries(patch)) {
-      if (!value) params.delete(key)
-      else params.set(key, value)
+    for (const key in values) {
+      const value = values[key]
+      if (value) params.set(key, value)
+      else params.delete(key)
     }
 
-    const next = `/project?${params.toString()}`
-    window.history.replaceState(null, "", next)
-  },
-  [searchParams]
-)
+    window.history.replaceState(null, "", `/project?${params.toString()}`)
+  }
 
-  const selectedSlug =
-    qsProject && projects.some((p) => p.slug === qsProject)
-      ? qsProject
-      : (projects[0]?.slug ?? "")
+  let selectedProjectSlug = ""
+  if (projects.some((project) => project.slug === projectSlugFromUrl)) {
+    selectedProjectSlug = projectSlugFromUrl
+  } else {
+    selectedProjectSlug = projects[0]?.slug ?? ""
+  }
 
-  const materials = selectedSlug ? materialsBySlug[selectedSlug] ?? [] : []
+  const selectedProject =
+    projects.find((project) => project.slug === selectedProjectSlug) ?? null
 
-  const selectedProject = React.useMemo(
-    () => projects.find((p) => p.slug === selectedSlug),
-    [projects, selectedSlug]
-  )
   const selectedProjectName = selectedProject?.name ?? ""
-  const selectedProjectId = selectedProject?.id
+  const selectedProjectId = selectedProject?.id ?? null
+  const materials = materialsBySlug[selectedProjectSlug] ?? []
 
-  const materialToProjectSlug = React.useMemo(() => {
-    const map: Record<string, string> = {}
-    for (const [pSlug, mats] of Object.entries(materialsBySlug ?? {})) {
-      for (const m of mats ?? []) {
-        map[m.slug] = pSlug
+  let openedMaterial: PopupMaterialForMaterialPage | null = null
+
+  if (materialSlugFromUrl) {
+    let materialProjectSlug = projectSlugFromUrl
+
+    if (!materialProjectSlug) {
+      for (const projectSlug in materialsBySlug) {
+        const found = materialsBySlug[projectSlug]?.find(
+          (material) => material.slug === materialSlugFromUrl
+        )
+        if (found) {
+          materialProjectSlug = projectSlug
+          break
+        }
       }
     }
-    return map
-  }, [materialsBySlug])
 
-  const isDesktop = useIsDesktop(768)
+    if (materialProjectSlug) {
+      const foundMaterial = materialsBySlug[materialProjectSlug]?.find(
+        (material) => material.slug === materialSlugFromUrl
+      )
 
-  const goEditMaterial = React.useCallback(
-    (slug: string) => {
-      router.push(`/material-editor?edit=${encodeURIComponent(slug)}`)
-    },
-    [router]
-  )
-
-  const [mobileSheetOpen, setMobileSheetOpen] = React.useState(false)
-
-  const defaultUnitType: UnitType = "section"
-  const defaultUnitLabel = "セクション"
-
-  const openedMaterial = React.useMemo<PopupMaterialForMaterialPage | null>(() => {
-    if (!qsMaterial) return null
-
-    const pSlug =
-      (qsProject && projects.some((p) => p.slug === qsProject) ? qsProject : "") ||
-      materialToProjectSlug[qsMaterial] ||
-      ""
-
-    if (!pSlug) return null
-
-    const mats = materialsBySlug[pSlug] ?? []
-    const m = mats.find((x) => x.slug === qsMaterial)
-    if (!m) return null
-
-    return {
-      id: m.id,
-      slug: m.slug,
-      title: m.title,
-      projectSlug: pSlug,
-      startDate: m.startDate,
-      endDate: m.endDate,
-      totalUnits: m.totalUnits,
-      lapsTotal: m.lapsTotal,
-      planDays: m.planDays,
-      actualDays: m.actualDays,
-      unitType: m.unitType ?? defaultUnitType,
-      unitLabel: m.unitLabel ?? defaultUnitLabel,
-    }
-  }, [
-    qsMaterial,
-    qsProject,
-    projects,
-    materialsBySlug,
-    materialToProjectSlug,
-  ])
-
-  const projectProgressMode = qsView === "project"
-
-  const toggleSelectMaterial = React.useCallback(
-    (m: PopupMaterialForMaterialPage) => {
-      const resolvedProjectSlug =
-        m.projectSlug ?? materialToProjectSlug[m.slug] ?? selectedSlug
-
-      const nextIsSame = qsMaterial === m.slug
-
-      replaceQuery({
-        project: resolvedProjectSlug,
-        material: nextIsSame ? null : m.slug,
-        view: nextIsSame ? null : "material",
-      })
-
-      if (!isDesktop) {
-        setMobileSheetOpen(!nextIsSame)
+      if (foundMaterial) {
+        openedMaterial = makePopupMaterial(foundMaterial, materialProjectSlug)
       }
-    },
-    [materialToProjectSlug, selectedSlug, qsMaterial, replaceQuery, isDesktop]
-  )
+    }
+  }
 
-  const toggleProjectProgress = React.useCallback(() => {
-    const next = !projectProgressMode
+  const isProjectView = viewMode === "project"
+  const mobileSheetOpen = !!openedMaterial || isProjectView
+
+  const [renameOpen, setRenameOpen] = React.useState(false)
+  const [renameValue, setRenameValue] = React.useState("")
+  const [projectOrder, setProjectOrder] = React.useState<ProjectForProjectPage[]>([])
+  const [deletingProjectId, setDeletingProjectId] = React.useState<string | null>(null)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [isReplanning, setIsReplanning] = React.useState(false)
+
+  function openRename() {
+    setRenameValue(selectedProjectName)
+    setProjectOrder(projects)
+    setRenameOpen(true)
+  }
+
+  function goEditMaterial(slug: string) {
+    router.push(`/material-editor?edit=${encodeURIComponent(slug)}`)
+  }
+
+  function selectMaterial(material: PopupMaterialForMaterialPage) {
+    const nextIsSame = materialSlugFromUrl === material.slug
 
     replaceQuery({
-      project: selectedSlug || null,
-      material: null,
-      view: next ? "project" : null,
+      project: material.projectSlug,
+      material: nextIsSame ? null : material.slug,
+      view: nextIsSame ? null : "material",
     })
+  }
 
-    if (!isDesktop) setMobileSheetOpen(next)
-  }, [projectProgressMode, replaceQuery, selectedSlug, isDesktop])
+  function openProjectProgress() {
+    const nextIsProjectView = !isProjectView
 
-  React.useEffect(() => {
-    if (isDesktop) return
-    setMobileSheetOpen(!!qsMaterial || qsView === "project")
-  }, [isDesktop, qsMaterial, qsView])
+    replaceQuery({
+      project: selectedProjectSlug || null,
+      material: null,
+      view: nextIsProjectView ? "project" : null,
+    })
+  }
 
-  const ProjectPanel = (
+  async function saveMeta() {
+    if (!selectedProjectId) return
+
+    const nextName = renameValue.trim()
+    if (!nextName) return
+    if (projectOrder.length === 0) return
+
+    try {
+      setIsSaving(true)
+
+      const fd = new FormData()
+      fd.set("projectId", String(selectedProjectId))
+      fd.set("projectName", nextName)
+      fd.set(
+        "orders",
+        JSON.stringify(
+          projectOrder.map((project, index) => ({
+            projectId: Number(project.id),
+            order: index,
+          }))
+        )
+      )
+
+      await updateProjectMetaAction(fd)
+      setRenameOpen(false)
+      router.refresh()
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function deleteProject(projectId: number | string) {
+    const id = String(projectId)
+
+    try {
+      setDeletingProjectId(id)
+
+      const fd = new FormData()
+      fd.set("projectId", id)
+      await deleteProjectAction(fd)
+
+      setRenameOpen(false)
+
+      if (String(selectedProjectId) === id) {
+        replaceQuery({
+          project: null,
+          material: null,
+          view: null,
+        })
+      }
+
+      router.refresh()
+    } finally {
+      setDeletingProjectId(null)
+    }
+  }
+
+  async function deleteMaterial(materialId: number | string, materialSlug?: string) {
+    const fd = new FormData()
+    fd.set("materialId", String(materialId))
+    await deleteMaterialAction(fd)
+
+    if (materialSlug && materialSlugFromUrl === materialSlug) {
+      replaceQuery({
+        material: null,
+        view: null,
+      })
+    }
+
+    router.refresh()
+  }
+
+  async function replanAllDelayedInProject() {
+    if (!selectedProjectSlug) return
+
+    try {
+      setIsReplanning(true)
+
+      const fd = new FormData()
+      fd.set("projectSlug", selectedProjectSlug)
+      await replanDelayedPlansAction(fd)
+
+      router.refresh()
+    } finally {
+      setIsReplanning(false)
+    }
+  }
+
+  const projectPanel = (
     <ProjectRecordCalendarPanel
       projectName={selectedProjectName}
-      materials={materials.map((m) => ({
-        slug: m.slug,
-        title: m.title,
-        startDate: m.startDate,
-        endDate: m.endDate,
-        totalUnits: m.totalUnits,
-        lapsTotal: m.lapsTotal,
-        planDays: m.planDays,
-        actualDays: m.actualDays,
-        unitType: m.unitType ?? "section",
-        unitLabel: m.unitLabel ?? "セクション",
-      }))}
+      materials={materials.map(makeProjectPanelMaterial)}
       onSelectMaterialSlug={(slug) => {
-        const m = materials.find((x) => x.slug === slug)
-        if (!m) return
-        toggleSelectMaterial({
-          id: m.id,
-          slug: m.slug,
-          title: m.title,
-          projectSlug: selectedSlug,
-          startDate: m.startDate,
-          endDate: m.endDate,
-          totalUnits: m.totalUnits,
-          lapsTotal: m.lapsTotal,
-          planDays: m.planDays,
-          actualDays: m.actualDays,
-          unitType: m.unitType ?? defaultUnitType,
-          unitLabel: m.unitLabel ?? defaultUnitLabel,
-        })
+        const material = materials.find((item) => item.slug === slug)
+        if (!material) return
+        selectMaterial(makePopupMaterial(material, selectedProjectSlug))
       }}
     />
   )
 
-  const MaterialPanel = openedMaterial ? (
-    <div className="h-full min-h-0 flex flex-col gap-3">
-      <div className="flex-1 min-h-0">
+  const materialPanel = openedMaterial ? (
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="min-h-0 flex-1">
         <ActualRecordCalendarPanel
           title={openedMaterial.title}
           materialId={openedMaterial.id}
           initialActualDays={openedMaterial.actualDays ?? []}
           initialPlanDays={openedMaterial.planDays ?? []}
           saveSectionRecordsAction={saveSectionRecordsAction}
-          onActualDaysSaved={() => {
-            router.refresh()
-          }}
+          onActualDaysSaved={() => router.refresh()}
           range={{
             from: openedMaterial.startDate
               ? new Date(`${openedMaterial.startDate}T00:00:00`)
@@ -250,156 +300,62 @@ export function ProjectPageBody({
           }}
           unitCount={openedMaterial.totalUnits ?? 0}
           laps={openedMaterial.lapsTotal ?? 0}
-          unitLabel={openedMaterial.unitLabel ?? defaultUnitLabel}
-          unitType={(openedMaterial.unitType ?? defaultUnitType) as UnitType}
+          unitLabel={openedMaterial.unitLabel ?? "セクション"}
+          unitType={(openedMaterial.unitType ?? "section") as UnitType}
         />
       </div>
     </div>
   ) : null
 
-  const RightPanel = projectProgressMode ? ProjectPanel : (MaterialPanel ?? ProjectPanel)
-
-  const [renameOpen, setRenameOpen] = React.useState(false)
-  const [renameValue, setRenameValue] = React.useState("")
-
-  const [orderProjects, setOrderProjects] = React.useState<ProjectForProjectPage[]>([])
-  const [isDeletingProjectId, setIsDeletingProjectId] = React.useState<string | null>(null)
-
-  React.useEffect(() => {
-    setOrderProjects(projects)
-  }, [projects])
-
-  const openRename = () => {
-    setRenameValue(selectedProjectName)
-    setOrderProjects(projects)
-    setRenameOpen(true)
-  }
-
-  const [isSaving, setIsSaving] = React.useState(false)
-
-  const saveMeta = async () => {
-    if (!selectedProjectId) return
-
-    const nextName = renameValue.trim()
-    if (!nextName) return
-    if (orderProjects.length === 0) return
-
-    try {
-      setIsSaving(true)
-
-      const ordersPayload = orderProjects.map((p, idx) => ({
-        projectId: Number(p.id),
-        order: idx,
-      }))
-
-      const fd = new FormData()
-      fd.set("projectId", String(selectedProjectId))
-      fd.set("projectName", nextName)
-      fd.set("orders", JSON.stringify(ordersPayload))
-
-      await updateProjectMetaAction(fd)
-      setRenameOpen(false)
-      router.refresh()
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const deleteProject = React.useCallback(
-    async (projectId: number | string) => {
-      if (!deleteProjectAction) return
-      const idStr = String(projectId)
-      try {
-        setIsDeletingProjectId(idStr)
-
-        const fd = new FormData()
-        fd.set("projectId", idStr)
-        await deleteProjectAction(fd)
-
-        setRenameOpen(false)
-
-        if (selectedProjectId && String(selectedProjectId) === idStr) {
-          replaceQuery({
-            project: null,
-            material: null,
-            view: null,
-          })
-        }
-
-        router.refresh()
-      } finally {
-        setIsDeletingProjectId(null)
-      }
-    },
-    [deleteProjectAction, router, selectedProjectId, replaceQuery]
-  )
-
-  const deleteMaterial = React.useCallback(
-    async (materialId: number | string, materialSlug?: string) => {
-      const fd = new FormData()
-      fd.set("materialId", String(materialId))
-      await deleteMaterialAction(fd)
-
-      if (materialSlug && qsMaterial === materialSlug) {
-        replaceQuery({
-          material: null,
-          view: null,
-        })
-      }
-
-      router.refresh()
-    },
-    [deleteMaterialAction, router, qsMaterial, replaceQuery]
-  )
-
-  const [isReplanning, setIsReplanning] = React.useState(false)
-
-  const replanAllDelayedInProject = async () => {
-    if (!selectedSlug) return
-    try {
-      setIsReplanning(true)
-      const fd = new FormData()
-      fd.set("projectSlug", selectedSlug)
-      await replanDelayedPlansAction(fd)
-      router.refresh()
-    } finally {
-      setIsReplanning(false)
-    }
-  }
+  const rightPanel = isProjectView ? projectPanel : (materialPanel ?? projectPanel)
 
   return (
-    <div className="space-y-6 min-h-0 h-full flex flex-col">
+    <div className="flex h-full min-h-0 flex-col space-y-6">
       <ProjectRenameDialog
         open={renameOpen}
         onOpenChange={setRenameOpen}
         renameValue={renameValue}
         onRenameValueChange={setRenameValue}
-        orderProjects={orderProjects}
-        setOrderProjects={setOrderProjects}
-        selectedSlug={selectedSlug}
+        orderProjects={projectOrder}
+        setOrderProjects={setProjectOrder}
+        selectedSlug={selectedProjectSlug}
         isSaving={isSaving}
         onSave={saveMeta}
-        isDeletingProjectId={isDeletingProjectId}
+        isDeletingProjectId={deletingProjectId}
         onDeleteProject={deleteProject}
       />
 
-      {!isDesktop ? (
-        <Sheet modal={false} open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-          <SheetContent side="bottom" className="h-[80vh] p-0 rounded-t-xl">
+      <div className="md:hidden">
+        <Sheet
+          modal={false}
+          open={mobileSheetOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              replaceQuery({
+                material: null,
+                view: null,
+              })
+            }
+          }}
+        >
+          <SheetContent side="bottom" className="h-[80vh] rounded-t-xl p-0">
             <SheetHeader className="sr-only">
               <SheetTitle>実績入力</SheetTitle>
-              <SheetDescription>教材またはプロジェクトのカレンダーを表示します。</SheetDescription>
+              <SheetDescription>
+                教材またはプロジェクトのカレンダーを表示します。
+              </SheetDescription>
             </SheetHeader>
 
-            <div className="h-full p-4 overflow-y-auto">{RightPanel}</div>
+            <div className="h-full overflow-y-auto p-4">{rightPanel}</div>
           </SheetContent>
         </Sheet>
-      ) : null}
+      </div>
 
-      <div className="grid md:grid-cols-2 flex-1 min-h-0 gap-4">
-        <div className="space-y-3 col-span-1 h-full min-h-0 flex flex-col">
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-2">
+        <div className="col-span-1 flex h-full min-h-0 flex-col space-y-3">
           <ProjectSelectHeader
             projects={projects}
+            selectedSlug={selectedProjectSlug}
             onSelectSlug={(slug) => {
               replaceQuery({
                 project: slug,
@@ -407,54 +363,41 @@ export function ProjectPageBody({
                 view: null,
               })
             }}
-            selectedSlug={selectedSlug}
           />
 
           <ProjectActionButton
             openRename={openRename}
-            toggleProjectProgress={toggleProjectProgress}
+            toggleProjectProgress={openProjectProgress}
             replanAllDelayedInProject={replanAllDelayedInProject}
             isReplanning={isReplanning}
           />
-          <div className="flex-1 min-h-0">
+
+          <div className="min-h-0 flex-1">
             <MaterialsList
               materials={materials}
               projectName={selectedProjectName}
               selectedMaterialSlug={openedMaterial?.slug ?? null}
-              onDeleteMaterial={async (m) => {
-                await deleteMaterial(m.id, m.slug)
-              }}
-              onSelectMaterial={(m) =>
-                toggleSelectMaterial({
-                  id: m.id,
-                  slug: m.slug,
-                  title: m.title,
-                  projectSlug: selectedSlug,
-                  startDate: m.startDate,
-                  endDate: m.endDate,
-                  totalUnits: m.totalUnits,
-                  lapsTotal: m.lapsTotal,
-                  planDays: m.planDays,
-                  actualDays: m.actualDays,
-                  unitType: m.unitType ?? defaultUnitType,
-                  unitLabel: m.unitLabel ?? defaultUnitLabel,
-                })
+              onDeleteMaterial={(material) => deleteMaterial(material.id, material.slug)}
+              onSelectMaterial={(material) =>
+                selectMaterial(makePopupMaterial(material, selectedProjectSlug))
               }
-              onEditMaterial={(m) => goEditMaterial(m.slug)}
+              onEditMaterial={(material) => goEditMaterial(material.slug)}
               onReorderMaterials={async (orders) => {
-                if (!selectedSlug) return
+                if (!selectedProjectSlug) return
+
                 const fd = new FormData()
-                fd.set("projectSlug", selectedSlug)
+                fd.set("projectSlug", selectedProjectSlug)
                 fd.set("orders", JSON.stringify(orders))
                 await updateMaterialOrdersAction(fd)
+
                 router.refresh()
               }}
             />
           </div>
         </div>
 
-        <div className="hidden md:flex md:col-span-1 min-h-0 flex-col">
-          <div className="flex-1 min-h-0">{RightPanel}</div>
+        <div className="hidden min-h-0 flex-col md:flex">
+          <div className="min-h-0 flex-1">{rightPanel}</div>
         </div>
       </div>
     </div>
