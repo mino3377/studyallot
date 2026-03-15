@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\page-body.tsx
+
 "use client"
 
 import * as React from "react"
@@ -62,6 +64,8 @@ export function ProjectPageBody({
   const projectSlugFromUrl = searchParams.get("project") ?? ""
   const materialSlugFromUrl = searchParams.get("material") ?? ""
   const viewMode = searchParams.get("view") ?? ""
+
+  const effectiveProjectSlug = projectSlugFromUrl || projects[0]?.slug || ""
 
   //　プロジェクト、マテリアル、ビューのオブジェクトを引数に受け取る
   function replaceQuery(urlobject: Record<string, string | undefined>) {
