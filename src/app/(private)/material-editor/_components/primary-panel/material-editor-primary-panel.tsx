@@ -1,19 +1,26 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\primary-panel\material-editor-primary-panel.tsx
+
 "use client"
 
 import * as React from "react"
 
 import ProjectSelectStep, {
-  type ProjectOption,
-  type ProjectSelectStepValue,
 } from "./project-select-step"
-import MaterialRegisterStep, { MaterialRegisterValue } from "./material-register-step"
+import MaterialRegisterStep, {
+} from "./material-register-step"
 import NewAddStepNav, { Step } from "./material-editor-step-nav"
+import type {
+  MaterialRegisterValue,
+  ProjectOption,
+  UpdateMaterialInput,
+} from "@/lib/type/material_type"
+import { ProjectRow } from "@/lib/type/project_type"
 
 type Props = {
   currentStep: Step
-  projects: ProjectOption[]
-  step1: ProjectSelectStepValue
-  onChangeStep1: (v: ProjectSelectStepValue) => void
+  projects: ProjectRow[]
+  step1: UpdateMaterialInput
+  onChangeStep1: (v: UpdateMaterialInput) => void
   onChangeStep: (s: Step) => void
   onNext: () => void
   materialStep: MaterialRegisterValue
@@ -21,7 +28,6 @@ type Props = {
   restDays: Set<number>
   onChangeRestDays: React.Dispatch<React.SetStateAction<Set<number>>>
   onOpenDetails?: () => void
-
   onSave?: () => Promise<void> | void
   isSaving?: boolean
   isEdit?: boolean

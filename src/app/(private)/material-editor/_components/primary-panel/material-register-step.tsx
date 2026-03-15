@@ -9,9 +9,11 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
-import { UNIT_TYPE_ITEMS, unitLabel } from "@/lib/type/unit-type"
-import type { unit_type } from "@/lib/type/unit-type"
-import MaterialSelectToggle from "../select-toggle"
+import {
+  UNIT_TYPE_ITEMS,
+  unitLabel,
+  type unit_type,
+} from "@/lib/type/unit-type"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,15 +24,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import UnitTypeSelectToggle from "../unit-type-select-toggle"
+import {
+  MaterialBaseSchema,
+  MaterialDateRangeSchema,
+} from "@/lib/validators/material"
+import { MaterialRegisterValue } from "@/lib/type/material_type"
 
-export type MaterialRegisterValue = {
-  title: string
-  start_date?: Date
-  end_date?: Date
-  unit_type: unit_type
-  unit_count: string
-  rounds: string
-}
+
 
 type Props = {
   value: MaterialRegisterValue
@@ -48,6 +49,15 @@ type Props = {
   saveValidationMessage: string
   onClearSaveValidationMessage?: () => void
 }
+
+type FieldErrors = Partial<{
+  title: string
+  start_date: string
+  end_date: string
+  unit_type: string
+  unit_count: string
+  rounds: string
+}>
 
 function fmtYYYYMMDD(d?: Date) {
   if (!d) return ""
@@ -69,7 +79,6 @@ export default function MaterialRegisterStep({
   isEdit,
   isPlanManuallyChanged,
   onManualPlanChange,
-  remainingTaskCount,
   saveValidationMessage,
   onClearSaveValidationMessage,
 }: Props) {
@@ -79,9 +88,69 @@ export default function MaterialRegisterStep({
 
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [pendingRestDow, setPendingRestDow] = React.useState<number | null>(null)
+  const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({})
 
   const set = (patch: Partial<MaterialRegisterValue>) => {
     onChange({ ...value, ...patch })
+  }
+
+  const setFieldError = (key: keyof FieldErrors, message?: string) => {
+    setFieldErrors((prev) => ({
+      ...prev,
+      [key]: message ?? "",
+    }))
+  }
+
+  const validateTitle = (title: string) => {
+    const result = MaterialBaseSchema.shape.title.safeParse(title)
+    setFieldError("title", result.success ? "" : result.error.issues[0]?.message)
+  }
+
+  const validateUnitType = (nextUnitType: unit_type) => {
+    const result = MaterialBaseSchema.shape.unit_type.safeParse(nextUnitType)
+    setFieldError("unit_type", result.success ? "" : result.error.issues[0]?.message)
+  }
+
+  const validateUnitCount = (unit_count: number) => {
+    const parsedValue = Number(unit_count)
+    const result = MaterialBaseSchema.shape.unit_count.safeParse(parsedValue)
+    setFieldError("unit_count", result.success ? "" : result.error.issues[0]?.message)
+  }
+
+  const validateRounds = (rounds: number) => {
+    const parsedValue = Number(rounds)
+    const result = MaterialBaseSchema.shape.rounds.safeParse(parsedValue)
+    setFieldError("rounds", result.success ? "" : result.error.issues[0]?.message)
+  }
+
+  const validateDateRange = (start_date?: Date, end_date?: Date) => {
+    const startResult = MaterialBaseSchema.shape.start_date.safeParse(start_date)
+    const endResult = MaterialBaseSchema.shape.end_date.safeParse(end_date)
+
+    setFieldError(
+      "start_date",
+      startResult.success ? "" : startResult.error.issues[0]?.message
+    )
+
+    if (!endResult.success) {
+      setFieldError("end_date", endResult.error.issues[0]?.message)
+      return
+    }
+
+    if (!startResult.success) {
+      setFieldError("end_date", "")
+      return
+    }
+
+    const rangeResult = MaterialDateRangeSchema.safeParse({
+      start_date,
+      end_date,
+    })
+
+    setFieldError(
+      "end_date",
+      rangeResult.success ? "" : rangeResult.error.issues[0]?.message
+    )
   }
 
   const toggleRest = (dow: number) => {
@@ -92,16 +161,6 @@ export default function MaterialRegisterStep({
       return next
     })
   }
-
-  const blockTrigger = lock
-    ? {
-        onClickCapture: (e: React.MouseEvent) => e.preventDefault(),
-        onPointerDown: (e: React.PointerEvent) => e.preventDefault(),
-        onKeyDown: (e: React.KeyboardEvent) => {
-          if (e.key === "Enter" || e.key === " ") e.preventDefault()
-        },
-      }
-    : undefined
 
   const handleRestClick = (dow: number) => {
     if (lock) return
@@ -139,8 +198,19 @@ export default function MaterialRegisterStep({
             </div>
 
             <div className="grid gap-2">
-              <Label>教材名</Label>
-              <Input value={value.title} onChange={(e) => set({ title: e.target.value })} />
+              <Label htmlFor="title">教材名</Label>
+              <Input
+                id="title"
+                value={value.title}
+                onChange={(e) => {
+                  const nextTitle = e.target.value
+                  set({ title: nextTitle })
+                  validateTitle(nextTitle)
+                }}
+              />
+              {fieldErrors.title ? (
+                <p className="text-xs text-destructive">{fieldErrors.title}</p>
+              ) : null}
             </div>
 
             <div className="grid gap-3 grid-cols-2">
@@ -165,6 +235,7 @@ export default function MaterialRegisterStep({
                         if (!d) return
                         if (value.end_date && d.getTime() > value.end_date.getTime()) return
                         set({ start_date: d })
+                        validateDateRange(d, value.end_date)
                       }}
                       disabled={(date) => {
                         if (lock) return true
@@ -174,6 +245,9 @@ export default function MaterialRegisterStep({
                     />
                   </PopoverContent>
                 </Popover>
+                {fieldErrors.start_date ? (
+                  <p className="text-xs text-destructive">{fieldErrors.start_date}</p>
+                ) : null}
               </div>
 
               <div className="grid gap-2">
@@ -197,6 +271,7 @@ export default function MaterialRegisterStep({
                         if (!d) return
                         if (value.start_date && d.getTime() < value.start_date.getTime()) return
                         set({ end_date: d })
+                        validateDateRange(value.start_date, d)
                       }}
                       disabled={(date) => {
                         if (lock) return true
@@ -206,17 +281,27 @@ export default function MaterialRegisterStep({
                     />
                   </PopoverContent>
                 </Popover>
+                {fieldErrors.end_date ? (
+                  <p className="text-xs text-destructive">{fieldErrors.end_date}</p>
+                ) : null}
               </div>
             </div>
 
             <div className="grid gap-2">
               <Label>区切りの呼び方</Label>
-              <MaterialSelectToggle
-                items={[...UNIT_TYPE_ITEMS]}
+              <UnitTypeSelectToggle
+                items={UNIT_TYPE_ITEMS}
                 selectedId={value.unit_type}
-                onSelect={(id) => set({ unit_type: id as unit_type })}
-                triggerHandlers={blockTrigger}
+                onSelect={(id) => {
+                  const nextUnitType = id as unit_type
+                  set({ unit_type: nextUnitType })
+                  validateUnitType(nextUnitType)
+                }}
+                disabled={lock}
               />
+              {fieldErrors.unit_type ? (
+                <p className="text-xs text-destructive">{fieldErrors.unit_type}</p>
+              ) : null}
             </div>
 
             <div className="grid gap-3 grid-cols-2">
@@ -228,9 +313,16 @@ export default function MaterialRegisterStep({
                   max={999}
                   step={1}
                   value={value.unit_count}
-                  onChange={(e) => set({ unit_count: e.target.value })}
+                  onChange={(e) => {
+                    const nextUnitCount = Number(e.target.value)
+                    set({ unit_count: nextUnitCount })
+                    validateUnitCount(nextUnitCount)
+                  }}
                   disabled={lock}
                 />
+                {fieldErrors.unit_count ? (
+                  <p className="text-xs text-destructive">{fieldErrors.unit_count}</p>
+                ) : null}
               </div>
 
               <div className="grid gap-2">
@@ -241,9 +333,16 @@ export default function MaterialRegisterStep({
                   max={999}
                   step={1}
                   value={value.rounds}
-                  onChange={(e) => set({ rounds: e.target.value })}
+                  onChange={(e) => {
+                    const nextRounds = Number(e.target.value)
+                    set({ rounds: nextRounds })
+                    validateRounds(nextRounds)
+                  }}
                   disabled={lock}
                 />
+                {fieldErrors.rounds ? (
+                  <p className="text-xs text-destructive">{fieldErrors.rounds}</p>
+                ) : null}
               </div>
             </div>
 

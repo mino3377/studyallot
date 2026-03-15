@@ -94,8 +94,8 @@ function getTaskLabel(unit_type: unit_type, index: number, unit_count: number) {
 function buildTodayTaskText(m: MaterialVM) {
   const idx = getTodayIndex(m)
   const planDays = toSafeCounts(m.plan_days)
-  const unit_count = Number(m.unit_count ?? 0)
-  const rounds = Number(m.rounds ?? 0)
+  const unit_count = m.unit_count
+  const rounds =m.rounds
   const totalTasks = unit_count * rounds
   const unit_type: unit_type = m.unit_type
 

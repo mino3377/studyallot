@@ -46,7 +46,7 @@ export function buildPlanMapFromDays(
 //日付とその日のタスク数のオブジェクトを返す
 export function buildCountMapFromDays(
   range: DateRange,
-  actual_days: number[]
+  actual_days: number[] | undefined
 ): Record<string, number> {
   const from = range.from
   const to = range.to
@@ -57,7 +57,7 @@ export function buildCountMapFromDays(
 
   for (let i = 0; i < days.length; i++) {
     const d = iso(days[i])
-    const v = actual_days[i]
+    const v = actual_days ? actual_days[i] : 0
     out[d] = v
   }
 

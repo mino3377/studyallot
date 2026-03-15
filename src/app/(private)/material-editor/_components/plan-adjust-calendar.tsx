@@ -1,3 +1,5 @@
+//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\plan-adjust-calendar.tsx
+
 "use client"
 
 import * as React from "react"
@@ -7,15 +9,14 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
   eachDayOfInterval,
-  format,
   isAfter,
   isBefore,
   isSameDay,
 } from "date-fns"
-import type { DateRange } from "react-day-picker"
 import type { unit_type } from "@/lib/type/unit-type"
-import { taskLabelRange, taskLabelSingle} from "@/lib/unit-wording"
+import { taskLabelRange, taskLabelSingle } from "@/lib/unit-wording"
 import { Share } from "lucide-react"
+import { iso } from "@/lib/date/date"
 
 type Task = {
   id: string
@@ -29,7 +30,7 @@ type DisplayTask = {
 }
 
 type Props = {
-  range: DateRange
+  range: Record<string, string>
   unit_count: number
   rounds: number
   unitLabel: string
@@ -41,13 +42,15 @@ type Props = {
   onManualPlanChange?: () => void
 }
 
-function iso(d: Date) {
-  return format(d, "yyyy-MM-dd")
+function toDate(value?: string) {
+  return value ? new Date(value) : undefined
 }
 
-function isInRange(d: Date, range?: DateRange) {
-  if (!range?.from || !range?.to) return false
-  return !isBefore(d, range.from) && !isAfter(d, range.to)
+function isInRange(d: Date, range?: Record<string, string>) {
+  const from = toDate(range?.from)
+  const to = toDate(range?.to)
+  if (!from || !to) return false
+  return !isBefore(d, from) && !isAfter(d, to)
 }
 
 function circledNumber(n: number) {
@@ -70,39 +73,40 @@ function makeAllTasks(laps: number, units: number): Task[] {
   return out
 }
 
-function listTargetDays(range: DateRange, excludeWeekdays: Set<number>) {
-  if (!range.from || !range.to) return []
-  return eachDayOfInterval({ start: range.from, end: range.to }).filter(
-    (d) => !excludeWeekdays.has(d.getDay())
-  )
+function getAllDays(range: Record<string, string>) {
+  const from = toDate(range.from)
+  const to = toDate(range.to)
+  if (!from || !to) return []
+  return eachDayOfInterval({ start: from, end: to })
+}
+
+function listTargetDays(range: Record<string, string>, excludeWeekdays: Set<number>) {
+  return getAllDays(range).filter((d) => !excludeWeekdays.has(d.getDay()))
 }
 
 function distributeEvenly(
   tasks: Task[],
-  range: DateRange,
+  range: Record<string, string>,
   excludeWeekdays: Set<number>
 ): Record<string, Task[]> {
   const days = listTargetDays(range, excludeWeekdays)
   const map: Record<string, Task[]> = {}
 
-  if (range.from && range.to) {
-    for (const d of eachDayOfInterval({ start: range.from, end: range.to })) {
-      map[iso(d)] = []
-    }
+  for (const d of getAllDays(range)) {
+    map[iso(d)] = []
   }
 
   if (days.length === 0) return map
 
   const base = Math.floor(tasks.length / days.length)
   let rem = tasks.length % days.length
-
   let idx = 0
+
   for (const d of days) {
     const take = base + (rem > 0 ? 1 : 0)
-    rem = Math.max(0, rem - 1)
+    if (rem > 0) rem -= 1
 
-    const dayISO = iso(d)
-    map[dayISO] = tasks.slice(idx, idx + take)
+    map[iso(d)] = tasks.slice(idx, idx + take)
     idx += take
   }
 
@@ -112,7 +116,7 @@ function distributeEvenly(
 function toDisplayTasks(unit_type: unit_type, tasks: Task[]): DisplayTask[] {
   const out: DisplayTask[] = []
   const sorted = [...tasks].sort(
-    (a, b) => (a.lap - b.lap) || (a.unitNo - b.unitNo)
+    (a, b) => a.lap - b.lap || a.unitNo - b.unitNo
   )
 
   let i = 0
@@ -150,21 +154,20 @@ function toDisplayTasks(unit_type: unit_type, tasks: Task[]): DisplayTask[] {
 
 function planFromCounts(
   tasks: Task[],
-  range: DateRange,
+  range: Record<string, string>,
   counts: number[]
 ): Record<string, Task[]> {
   const map: Record<string, Task[]> = {}
-  if (!range.from || !range.to) return map
+  const days = getAllDays(range)
 
-  const days = eachDayOfInterval({ start: range.from, end: range.to })
-  for (const d of days) map[iso(d)] = []
+  for (const d of days) {
+    map[iso(d)] = []
+  }
 
   let idx = 0
   for (let i = 0; i < days.length; i++) {
-    const takeRaw = counts[i]
-    const take = Number.isFinite(takeRaw) ? Math.max(0, Math.floor(takeRaw)) : 0
-    const dayISO = iso(days[i]!)
-    map[dayISO] = tasks.slice(idx, idx + take)
+    const take = counts[i] ?? 0
+    map[iso(days[i]!)] = tasks.slice(idx, idx + take)
     idx += take
   }
 
@@ -183,50 +186,47 @@ export default function PlanAdjustCalendar({
   onShare,
   onManualPlanChange,
 }: Props) {
-  const ready = !!range?.from && !!range?.to && !!unit_count && !!rounds && !!unitLabel
+  const rangeFrom = toDate(range?.from)
+  const rangeTo = toDate(range?.to)
+  const ready = !!rangeFrom && !!rangeTo && !!unit_count && !!rounds && !!unitLabel
 
-  const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(range?.from)
+  const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(rangeFrom)
   const [counts, setCounts] = React.useState<number[]>([])
 
   const restKey = React.useMemo(() => Array.from(restDays).sort().join(","), [restDays])
   const initialKey = React.useMemo(() => (initialPlanDays ?? []).join("|"), [initialPlanDays])
 
   React.useEffect(() => {
-    if (!ready) return
+    if (!ready || !rangeFrom) return
+
     const tasks = makeAllTasks(rounds, unit_count)
-
-    const daysAll = eachDayOfInterval({ start: range.from!, end: range.to! })
-    const N = daysAll.length
-
-    const pArr = Array.from({ length: N }, (_, i) => {
-      const v = initialPlanDays?.[i]
-      return Number.isFinite(v) ? Math.max(0, Math.floor(v as number)) : 0
-    })
-    const hasPlan = pArr.some((n) => n > 0)
-
+    const daysAll = getAllDays(range)
     const exclude = restDays.size > 0 ? restDays : new Set<number>()
 
-    let nextCounts: number[] = []
+    let nextCounts: number[]
 
-    if (hasPlan) {
-      nextCounts = pArr
+    if (initialPlanDays && initialPlanDays.some((n) => n > 0)) {
+      nextCounts = daysAll.map((_, i) => initialPlanDays[i] ?? 0)
     } else {
       const evenPlan = distributeEvenly(tasks, range, exclude)
       nextCounts = daysAll.map((d) => evenPlan[iso(d)]?.length ?? 0)
     }
 
     setCounts(nextCounts)
-    setSelectedDay(range.from)
+    setSelectedDay(rangeFrom)
   }, [
     ready,
     rounds,
     unit_count,
     unitLabel,
     unit_type,
-    range?.from?.getTime(),
-    range?.to?.getTime(),
+    range.from,
+    range.to,
+    rangeFrom,
     restKey,
     initialKey,
+    initialPlanDays,
+    restDays,
   ])
 
   React.useEffect(() => {
@@ -238,17 +238,13 @@ export default function PlanAdjustCalendar({
 
   const plan = React.useMemo(() => {
     if (!ready) return {}
-    const tasks = makeAllTasks(rounds, unit_count)
-    return planFromCounts(tasks, range, counts)
+    return planFromCounts(makeAllTasks(rounds, unit_count), range, counts)
   }, [ready, rounds, unit_count, range, counts])
 
   const countMap = React.useMemo(() => {
     const map: Record<string, number> = {}
-    if (!range.from || !range.to) return map
-
-    const days = eachDayOfInterval({ start: range.from, end: range.to })
-    for (let i = 0; i < days.length; i++) {
-      map[iso(days[i]!)] = counts[i] ?? 0
+    for (const [i, d] of getAllDays(range).entries()) {
+      map[iso(d)] = counts[i] ?? 0
     }
     return map
   }, [range, counts])
@@ -259,18 +255,18 @@ export default function PlanAdjustCalendar({
 
   const restTask = assignedTaskCount - totalTasks
 
-  const selectedISO = selectedDay ? iso(selectedDay) : ""
-  const selectedTasksRaw = selectedISO ? plan[selectedISO] ?? [] : []
+  const selectedDayKey = selectedDay ? iso(selectedDay) : ""
+  const selectedTasksRaw = selectedDayKey ? plan[selectedDayKey] ?? [] : []
   const displayTasks = React.useMemo(
     () => toDisplayTasks(unit_type, selectedTasksRaw),
     [unit_type, selectedTasksRaw]
   )
 
   const selectedIndex = React.useMemo(() => {
-    if (!selectedDay || !range.from || !range.to) return -1
-    const days = eachDayOfInterval({ start: range.from, end: range.to })
+    const days = getAllDays(range)
+    if (!selectedDay) return -1
     return days.findIndex((d) => isSameDay(d, selectedDay))
-  }, [selectedDay, range.from?.getTime(), range.to?.getTime()])
+  }, [selectedDay, range.from, range.to])
 
   const addOneFromTomorrow = () => {
     if (!ready || selectedIndex < 0) return
@@ -291,8 +287,7 @@ export default function PlanAdjustCalendar({
 
     setCounts((prev) => {
       const next = [...prev]
-      const current = next[selectedIndex] ?? 0
-      next[selectedIndex] = Math.max(0, current - 1)
+      next[selectedIndex] = Math.max(0, (next[selectedIndex] ?? 0) - 1)
       return next
     })
   }
@@ -302,17 +297,14 @@ export default function PlanAdjustCalendar({
     !!selectedDay && isInRange(selectedDay, range) && (counts[selectedIndex] ?? 0) > 0
 
   const inRangeModifier = (date: Date) => isInRange(date, range)
-  const isStart = (date: Date) => !!range?.from && isSameDay(date, range.from)
-  const isEnd = (date: Date) => !!range?.to && isSameDay(date, range.to)
+  const isStart = (date: Date) => !!rangeFrom && isSameDay(date, rangeFrom)
+  const isEnd = (date: Date) => !!rangeTo && isSameDay(date, rangeTo)
 
   return (
     <div className="md:ml-2 lg:mr-1 space-y-2 flex flex-col flex-1 min-h-0 h-full lg:col-span-1">
       <div className="rounded-xl sm:flex space-y-3 sm:space-y-0 sm:gap-2 lg:justify-between sm:items-end">
-
         <div className="flex flex-col space-y-2 w-full">
           <div className="flex-col text-xs bg-background inline-flex items-start gap-2 font-bold">
-
-
             <div className="space-y-2">
               <div className="flex items-center gap-2 whitespace-nomal w-full justify-center">
                 <div className="text-muted-foreground">タスク数 :</div>
@@ -322,24 +314,22 @@ export default function PlanAdjustCalendar({
                       ? " text-sm text-amber-600 "
                       : "text-sm text-destructive"
                   }
-                >{restTask > 0
-                  ? <span>+</span>
-                  : null}
+                >
+                  {restTask > 0 ? <span>+</span> : null}
                   {restTask}
                 </div>
                 <div>
-                  {restTask === 0 ? <div></div> : restTask > 0
-                    ? <div>超過しています</div>
-                    : <div>少ないです</div>}
+                  {restTask === 0 ? <div></div> : restTask > 0 ? <div>超過しています</div> : <div>少ないです</div>}
                 </div>
               </div>
+
               <Card className="w-fit p-0">
                 <CardContent className="p-0">
                   <Calendar
                     mode="single"
                     selected={selectedDay}
                     onSelect={setSelectedDay}
-                    defaultMonth={range.from ?? new Date()}
+                    defaultMonth={rangeFrom ?? new Date()}
                     numberOfMonths={1}
                     captionLayout="dropdown"
                     fixedWeeks
@@ -367,8 +357,8 @@ export default function PlanAdjustCalendar({
                     components={{
                       DayButton: ({ children, modifiers, day, ...props }) => {
                         const d = day.date
-                        const dayISO = iso(d)
-                        const count = countMap[dayISO] ?? 0
+                        const dayKey = iso(d)
+                        const count = countMap[dayKey] ?? 0
                         const isIn = isInRange(d, range)
                         const showCount = !modifiers.outside && isIn && count > 0
                         const showRest = !modifiers.outside && isIn && !showCount
@@ -396,6 +386,7 @@ export default function PlanAdjustCalendar({
                   />
                 </CardContent>
               </Card>
+
               <div className="flex flex-col w-full">
                 <Button
                   type="button"
@@ -406,15 +397,10 @@ export default function PlanAdjustCalendar({
                 >
                   <Share />
                   計画を共有
-
                 </Button>
               </div>
             </div>
           </div>
-
-
-
-
         </div>
       </div>
 
@@ -472,7 +458,6 @@ export default function PlanAdjustCalendar({
           )}
         </div>
       </CardContent>
-
     </div>
   )
 }

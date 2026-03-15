@@ -1,18 +1,10 @@
 // src/app/(private)/material-editor/queries.ts
 import "server-only"
 import { createClient } from "@/utils/supabase/server"
+import { ProjectRow } from "@/lib/type/project_type"
+import { MaterialRow } from "@/lib/type/material_type"
 
-export type ProjectRow = {
-  id: number
-  name: string
-}
-
-export type ProjectOption = {
-  id: string
-  name: string
-}
-
-export async function fetchProjectOptions(userId: string): Promise<ProjectOption[]> {
+export async function fetchProjectOptions(userId: string): Promise<ProjectRow[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("projects")
@@ -23,7 +15,21 @@ export async function fetchProjectOptions(userId: string): Promise<ProjectOption
   if (error) throw new Error(error.message)
 
   return (data ?? []).map((p: ProjectRow) => ({
-    id: String(p.id),
+    id: p.id,
     name: p.name,
   }))
+}
+
+export async function fetchSelectedMaterial(userID: string, editSlug: string): Promise<MaterialRow> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("materials")
+    .select("*")
+    .eq("user_id", userID)
+    .eq("slug", editSlug)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+
+  return data
 }

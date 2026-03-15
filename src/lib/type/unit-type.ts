@@ -11,6 +11,17 @@ export const UNIT_TYPE_ITEMS = [
   { id: "lesson", label: "レッスン" },
 ] as const
 
+export const UNIT_TYPE_IDS = [
+  "section",
+  "chapter",
+  "page",
+  "unit",
+  "problem",
+  "question",
+  "part",
+  "lesson",
+] as const
+
 export type unit_type = (typeof UNIT_TYPE_ITEMS)[number]["id"]
 
 export function unitLabel(unit_type: unit_type): string {

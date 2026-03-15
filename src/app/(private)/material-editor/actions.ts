@@ -6,13 +6,13 @@ import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { makePublicId } from "@/lib/slug"
-import { assertDateOrder } from "./validation"
+import { MaterialSchema } from "@/lib/validators/material"
 
 type ProjectMode = "existing" | "new"
 
 export type SaveNewMaterialInput = {
   projectMode: ProjectMode
-  selectedProjectId?: string
+  selectedProjectId?: number
   newProjectName?: string
 
   title: string
@@ -30,7 +30,7 @@ export type SaveNewMaterialInput = {
 type UpdateMaterialInput = {
   slug: string
   projectMode: ProjectMode
-  selectedProjectId?: string
+  selectedProjectId?: number
   newProjectName?: string
 
   title?: string
@@ -47,60 +47,39 @@ function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg)
 }
 
-function toISODate(d: string) {
-  assert(/^\d{4}-\d{2}-\d{2}$/.test(d), `Invalid date: ${d}`)
-  return d
-}
-
-function daysBetweenInclusive(startISO: string, endISO: string) {
-  const s = new Date(`${startISO}T00:00:00Z`)
-  const e = new Date(`${endISO}T00:00:00Z`)
-  const diff = Math.floor((e.getTime() - s.getTime()) / (24 * 60 * 60 * 1000))
-  return diff + 1
-}
-
 function sum(arr: number[]) {
   let s = 0
   for (const n of arr) s += n
   return s
 }
 
-function toPositiveIntUnder1000(value: unknown, fieldLabel: string) {
-  const n = Number(value)
-  assert(Number.isInteger(n), `${fieldLabel} は整数で入力してください`)
-  assert(n > 0, `${fieldLabel} は1以上にしてください`)
-  assert(n < 1000, `${fieldLabel} は1000未満にしてください`)
-  return n
-}
-
 async function resolveProjectId(args: {
   supabase: Awaited<ReturnType<typeof createClient>>
   userId: string
   projectMode: ProjectMode
-  selectedProjectId?: string
+  selectedProjectId?: number
   newProjectName?: string
 }) {
   const { supabase, userId, projectMode } = args
 
   if (projectMode === "existing") {
-    const pid = Number((args.selectedProjectId ?? "").trim())
-    assert(Number.isInteger(pid) && pid > 0, "selectedProjectId が不正です")
+    assert(args.selectedProjectId != null, "プロジェクトを選択してください")
 
     const { data: project, error } = await supabase
       .from("projects")
       .select("id")
       .eq("user_id", userId)
-      .eq("id", pid)
+      .eq("id", args.selectedProjectId)
       .single()
 
     if (error) throw new Error(error.message)
     assert(project, "選択されたプロジェクトが見つかりません")
 
-    return pid
+    return args.selectedProjectId
   }
 
   const name = (args.newProjectName ?? "").trim()
-  assert(name.length > 0, "newProjectName が空です")
+  assert(name, "新しいプロジェクト名を入力してください")
 
   const { data: inserted, error } = await supabase
     .from("projects")
@@ -116,6 +95,37 @@ async function resolveProjectId(args: {
   return inserted.id as number
 }
 
+function parseMaterial(input: {
+  title: string
+  start_date: string
+  end_date: string
+  unit_type: string
+  unit_count: number
+  rounds: number
+}) {
+  const parsed = MaterialSchema.safeParse({
+    title: (input.title ?? "").trim(),
+    start_date: input.start_date ? new Date(input.start_date) : undefined,
+    end_date: input.end_date ? new Date(input.end_date) : undefined,
+    unit_type: input.unit_type,
+    unit_count: input.unit_count,
+    rounds: input.rounds,
+  })
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "入力内容が不正です")
+  }
+
+  return {
+    title: parsed.data.title,
+    start_date: input.start_date,
+    end_date: input.end_date,
+    unit_type: parsed.data.unit_type,
+    unit_count: parsed.data.unit_count,
+    rounds: parsed.data.rounds,
+  }
+}
+
 export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
@@ -123,49 +133,22 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
 
   const userId = auth.user.id
 
-  const title = (input.title ?? "").trim()
-  assert(title.length > 0, "教材名が空です")
+  const parsed = parseMaterial({
+    title: input.title,
+    start_date: input.start_date,
+    end_date: input.end_date,
+    unit_type: input.unit_type,
+    unit_count: input.unit_count,
+    rounds: input.rounds,
+  })
 
-  const start_date = toISODate((input.start_date ?? "").trim())
-  const end_date = toISODate((input.end_date ?? "").trim())
-
-  assertDateOrder(start_date, end_date)
-
-  const unit_type = (input.unit_type ?? "").trim()
-  assert(unit_type.length > 0, "unit_type が空です")
-
-  const unit_count = toPositiveIntUnder1000(input.unit_count, "区切り数")
-  const rounds = toPositiveIntUnder1000(input.rounds, "周回数")
-
-  const planDays = Array.isArray(input.planDays) ? input.planDays.map(Number) : []
+  const planDays = Array.isArray(input.planDays) ? input.planDays : []
   assert(planDays.length > 0, "planDays が空です")
-  assert(
-    planDays.every((n) => Number.isInteger(n) && n >= 0),
-    "planDays に不正な値があります"
-  )
-
-  const expectedLen = daysBetweenInclusive(start_date, end_date)
-  assert(expectedLen > 0, "日付範囲が不正です")
-  assert(planDays.length === expectedLen, "planDays の長さが日付範囲と一致しません")
-
-  const totalTasks = unit_count * rounds
-  const plannedSum = sum(planDays)
-  assert(
-    plannedSum === totalTasks,
-    "planDays の合計が 総タスク数（セクション数×周回数）と一致しません"
-  )
 
   const actualDays =
-    input.actualDays && Array.isArray(input.actualDays) && input.actualDays.length > 0
-      ? input.actualDays.map(Number)
-      : Array.from({ length: expectedLen }, () => 0)
-
-  assert(actualDays.length === expectedLen, "actualDays の長さが日付範囲と一致しません")
-  assert(
-    actualDays.every((n) => Number.isInteger(n) && n >= 0),
-    "actualDays に不正な値があります"
-  )
-  assert(sum(actualDays) <= totalTasks, "actualDays の合計が総タスク数を超えています")
+    input.actualDays && input.actualDays.length > 0
+      ? input.actualDays
+      : Array.from({ length: planDays.length }, () => 0)
 
   const projectId = await resolveProjectId({
     supabase,
@@ -181,12 +164,12 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
       user_id: userId,
       project_id: projectId,
       slug: makePublicId("m"),
-      title,
-      start_date: start_date,
-      end_date: end_date,
-      unit_type: unit_type,
-      unit_count: unit_count,
-      rounds,
+      title: parsed.title,
+      start_date: parsed.start_date,
+      end_date: parsed.end_date,
+      unit_type: parsed.unit_type,
+      unit_count: parsed.unit_count,
+      rounds: parsed.rounds,
       plan_days: planDays,
       actual_days: actualDays,
     })
@@ -222,29 +205,17 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   const slug = (input.slug ?? "").trim()
   assert(slug.length > 0, "slug が空です")
 
-  const start_date = toISODate((input.start_date ?? "").trim())
-  const end_date = toISODate((input.end_date ?? "").trim())
-  assertDateOrder(start_date, end_date)
+  const parsed = parseMaterial({
+    title: input.title ?? "",
+    start_date: input.start_date,
+    end_date: input.end_date,
+    unit_type: input.unit_type,
+    unit_count: input.unit_count,
+    rounds: input.rounds,
+  })
 
-  const unit_type = (input.unit_type ?? "").trim()
-  assert(unit_type.length > 0, "unit_type が空です")
-
-  const unit_count = toPositiveIntUnder1000(input.unit_count, "区切り数")
-  const rounds = toPositiveIntUnder1000(input.rounds, "周回数")
-
-  const planDays = Array.isArray(input.planDays) ? input.planDays.map(Number) : []
+  const planDays = Array.isArray(input.planDays) ? input.planDays : []
   assert(planDays.length > 0, "planDays が空です")
-  assert(
-    planDays.every((n) => Number.isInteger(n) && n >= 0),
-    "planDays に不正な値があります"
-  )
-
-  const expectedLen = daysBetweenInclusive(start_date, end_date)
-  assert(expectedLen > 0, "日付範囲が不正です")
-  assert(planDays.length === expectedLen, "planDays の長さが日付範囲と一致しません")
-
-  const totalTasks = unit_count * rounds
-  assert(sum(planDays) === totalTasks, "planDays の合計が総タスク数と一致しません")
 
   const { data: existing, error: exErr } = await supabase
     .from("materials")
@@ -256,11 +227,11 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   if (exErr) throw new Error(exErr.message)
   assert(existing, "教材が見つかりません")
 
-  assert(existing.start_date === start_date, "開始日は編集できません")
-  assert(existing.end_date === end_date, "終了日は編集できません")
-  assert(Number(existing.unit_count) === unit_count, "区切り数は編集できません")
-  assert(Number(existing.rounds) === rounds, "周回数は編集できません")
-  assert(String(existing.unit_type) === unit_type, "区切りの呼び方は編集できません")
+  assert(existing.start_date === parsed.start_date, "開始日は編集できません")
+  assert(existing.end_date === parsed.end_date, "終了日は編集できません")
+  assert(Number(existing.unit_count) === parsed.unit_count, "区切り数は編集できません")
+  assert(Number(existing.rounds) === parsed.rounds, "周回数は編集できません")
+  assert(String(existing.unit_type) === parsed.unit_type, "区切りの呼び方は編集できません")
 
   const projectId = await resolveProjectId({
     supabase,

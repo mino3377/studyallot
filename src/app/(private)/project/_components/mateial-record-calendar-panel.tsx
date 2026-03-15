@@ -22,8 +22,6 @@ import {
   type ProjectTask as Task,
 } from "../_lib/task-map"
 
-
-
 type DisplayTask = {
   key: string
   label: string
@@ -35,7 +33,7 @@ type Props = {
   unit_count: number
   rounds: number
   unit_type: unit_type
-  material_id: number
+  material_id: number | undefined
   initialActualDays?: number[]
   initialPlanDays?: number[]
   saveSectionRecordsAction: (fd: FormData) => Promise<void>

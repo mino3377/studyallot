@@ -1,4 +1,3 @@
-// src/app/(private)/project/page-body.tsx
 "use client"
 
 import * as React from "react"
@@ -20,7 +19,6 @@ import {
 } from "@/components/ui/sheet"
 
 import type { MaterialRow, MaterialVM } from "@/lib/type/material_type"
-import type { unit_type } from "@/lib/type/unit-type"
 import { deleteMaterialAction, deleteProjectAction, replanDelayedPlansAction, saveSectionRecordsAction, updateMaterialOrdersAction, updateProjectMetaAction } from "./action"
 import { ProjectDetails } from "@/lib/type/project_type"
 
@@ -29,21 +27,25 @@ type Props = {
   materialsByProjectSlug: Record<string, MaterialVM[]>
 }
 
+type MaterialInfo = MaterialRow & {
+  project_slug: string
+}
+
 function makeMaterialinfo(
   material: MaterialVM,
   project_slug: string
-) {
+): MaterialInfo {
   return {
-    id: material.id,
+    id: Number(material.id),
     slug: material.slug,
     title: material.title,
     order: material.order,
-    project_id: material.id,
+    project_id: Number(material.project_id),
     project_slug: project_slug,
     start_date: material.start_date,
     end_date: material.end_date,
-    unit_count: material.unit_count,
-    rounds: material.rounds,
+    unit_count: Number(material.unit_count),
+    rounds: Number(material.rounds),
     plan_days: material.plan_days,
     actual_days: material.actual_days,
     unit_type: material.unit_type,
@@ -61,9 +63,8 @@ export function ProjectPageBody({
   const materialSlugFromUrl = searchParams.get("material") ?? ""
   const viewMode = searchParams.get("view") ?? ""
 
-
   //　プロジェクト、マテリアル、ビューのオブジェクトを引数に受け取る
-  function replaceQuery(urlobject: Record<string, string | null>) {
+  function replaceQuery(urlobject: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString())
 
     for (const key in urlobject) {
@@ -77,14 +78,13 @@ export function ProjectPageBody({
 
   // URLで選択されたプロジェクトの情報を取得
   const selectedProject =
-    projects.find((project) => project.slug === projectSlugFromUrl)
-
+    projects.find((project) => project.slug === projectSlugFromUrl) ?? null
 
   const selectedProjectName = selectedProject?.name ?? ""
   const selectedProjectId = selectedProject?.id ?? null
   const materialsInSelectedProject = materialsByProjectSlug[projectSlugFromUrl] ?? []
 
-  let openedMaterial: MaterialRow | null = null
+  let openedMaterial: MaterialInfo | null = null
 
   if (materialSlugFromUrl) {
     let ProjectSlugInUrl = projectSlugFromUrl
@@ -92,7 +92,7 @@ export function ProjectPageBody({
     // プロジェクトスラッグがなくてマテリアルスラッグがURLクエリにあるなら逆算でプロジェクトスラッグを取得
     if (!ProjectSlugInUrl) {
       for (const projectSlug in materialsByProjectSlug) {
-        const foundMaterial = materialsByProjectSlug[projectSlug].find(
+        const foundMaterial = (materialsByProjectSlug[projectSlug] ?? []).find(
           (material) => material.slug === materialSlugFromUrl
         )
         //教材のオブジェクトがあったらそこで終了
@@ -105,7 +105,7 @@ export function ProjectPageBody({
 
     //ユーザーがクエリをいじって教材のクエリも存在しないケースがあるのでiｆが必要👇
     if (ProjectSlugInUrl) {
-      const foundMaterial = materialsByProjectSlug[ProjectSlugInUrl].find(
+      const foundMaterial = (materialsByProjectSlug[ProjectSlugInUrl] ?? []).find(
         (material) => material.slug === materialSlugFromUrl
       )
 
@@ -144,9 +144,9 @@ export function ProjectPageBody({
     if (projects.length === 0) return
 
     replaceQuery({
-      project: projects[0]?.slug ?? null,
-      material: null,
-      view: null,
+      project: projects[0]?.slug ?? undefined,
+      material: undefined,
+      view: undefined,
     })
   }, [projectSlugFromUrl, projects])
 
@@ -160,13 +160,13 @@ export function ProjectPageBody({
     router.push(`/material-editor?edit=${slug}`)
   }
 
-  function selectMaterial(material: MaterialRow & { project_slug: string }) {
+  function selectMaterial(material: MaterialInfo) {
     const nextIsSame = materialSlugFromUrl === material.slug
 
     replaceQuery({
       project: material.project_slug,
-      material: nextIsSame ? null : material.slug,
-      view: nextIsSame ? null : "material",
+      material: nextIsSame ? undefined : material.slug,
+      view: nextIsSame ? undefined : "material",
     })
   }
 
@@ -174,14 +174,14 @@ export function ProjectPageBody({
     const nextIsProjectView = !isProjectView
 
     replaceQuery({
-      project: projectSlugFromUrl || null,
-      material: null,
-      view: nextIsProjectView ? "project" : null,
+      project: projectSlugFromUrl || undefined,
+      material: undefined,
+      view: nextIsProjectView ? "project" : undefined,
     })
   }
 
   async function saveMeta() {
-    if (!selectedProjectId) return
+    if (selectedProjectId === null) return
 
     const nextName = renameValue.trim()
     if (!nextName) return
@@ -225,9 +225,9 @@ export function ProjectPageBody({
 
       if (String(selectedProjectId) === id) {
         replaceQuery({
-          project: null,
-          material: null,
-          view: null,
+          project: undefined,
+          material: undefined,
+          view: undefined,
         })
       }
 
@@ -237,15 +237,15 @@ export function ProjectPageBody({
     }
   }
 
-  async function deleteMaterial(material_id: number, material_slug?: string) {
+  async function deleteMaterial(material_id: number | undefined, material_slug?: string) {
     const fd = new FormData()
     fd.set("materialId", String(material_id))
     await deleteMaterialAction(fd)
 
     if (material_slug && materialSlugFromUrl === material_slug) {
       replaceQuery({
-        material: null,
-        view: null,
+        material: undefined,
+        view: undefined,
       })
     }
 
@@ -314,8 +314,8 @@ export function ProjectPageBody({
             onSelectSlug={(slug) => {
               replaceQuery({
                 project: slug,
-                material: null,
-                view: null,
+                material: undefined,
+                view: undefined,
               })
             }}
           />
@@ -379,8 +379,8 @@ export function ProjectPageBody({
             onOpenChange={(open) => {
               if (!open) {
                 replaceQuery({
-                  material: null,
-                  view: null,
+                  material: undefined,
+                  view: undefined,
                 })
               }
             }}

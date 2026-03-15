@@ -12,7 +12,7 @@ export default function ProjectSelectHeader({
   selectedSlug,
 }: {
   projects: ProjectRow[]
-  onSelectSlug: (slug: string) => void
+  onSelectSlug: (slug: string | undefined) => void
   selectedSlug?: string
 }) {
   const [open, setOpen] = useState(false)

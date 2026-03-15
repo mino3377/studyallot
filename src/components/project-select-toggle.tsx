@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Check } from "lucide-react"
 
 export type SelectToggleItem = {
-  id: string
+  id: string | undefined
   label: string
 }
 
@@ -21,7 +21,7 @@ export default function ProjectSelectToggle({
   placeholder?: string
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSelect: (id: string) => void
+  onSelect: (id: string | undefined) => void
 }) {
   const emptyMessage = "プロジェクトがありません"
 

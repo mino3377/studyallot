@@ -1,107 +1,57 @@
 // src/lib/validators/material.ts
-import { z } from "zod";
+import { z } from "zod"
+import { UNIT_TYPE_IDS } from "../type/unit-type"
 
-const emptyToNull = (v: unknown) =>
-  typeof v === "string" && v.trim() === "" ? null : v;
+export const MaterialBaseSchema = z.object({
+  title: z
+    .string()
+    .min(1, "教材名は1文字以上入力してください")
+    .max(50, "教材名は50文字以内にしてください"),
 
-const isoDate = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD 形式で入力してください");
+  start_date: z.date({
+    error: "開始日を選択してください",
+  }),
 
-export function isISODateString(s: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s);
-}
+  end_date: z.date({
+    error: "終了日を選択してください",
+  }),
 
-export function isOverlapByISODate(
-  aStart: string,
-  aEnd: string,
-  bStart: string,
-  bEnd: string
-): boolean {
-  if (
-    !isISODateString(aStart) ||
-    !isISODateString(aEnd) ||
-    !isISODateString(bStart) ||
-    !isISODateString(bEnd)
-  ) {
-    return false;
-  }
-  const nonOverlap = aEnd < bStart || bEnd < aStart;
-  return !nonOverlap;
-}
+  unit_type: z.enum(UNIT_TYPE_IDS, {
+    error: () => ({ message: "区切りの呼び方を選択してください" }),
+  }),
 
-export const PlanSchema = z
+  unit_count: z
+    .number({
+      error: "区切り数を入力してください",
+    })
+    .int("区切り数は整数で入力してください")
+    .min(1, "区切り数は1以上にしてください")
+    .max(999, "区切り数は999以下にしてください"),
+
+  rounds: z
+    .number({
+      error: "周回数を入力してください",
+
+    })
+    .int("周回数は整数で入力してください")
+    .min(1, "周回数は1以上にしてください")
+    .max(999, "周回数は999以下にしてください"),
+})
+
+export const MaterialDateRangeSchema = z
   .object({
-    name: z.string().min(1),
-    start_date: isoDate,
-    end_date: isoDate,
-    rounds: z.number().int().positive().max(100),
-    is_active: z.boolean().optional().default(false),
+    start_date: MaterialBaseSchema.shape.start_date,
+    end_date: MaterialBaseSchema.shape.end_date,
   })
-  .refine((v) => v.start_date <= v.end_date, {
-    path: ["start_date"],
-    message: "start_date は end_date 以前にしてください",
-  });
-
-export function assertNoOverlap(
-  plans: Array<{
-    name: string;
-    start_date: string;
-    end_date: string;
-    rounds: number;
-    is_active?: boolean;
-  }>
-) {
-  const arr = [...plans].sort((a, b) =>
-    a.start_date.localeCompare(b.start_date)
-  );
-  for (let i = 0; i < arr.length; i++) {
-    for (let j = i + 1; j < arr.length; j++) {
-      if (
-        isOverlapByISODate(
-          arr[i].start_date,
-          arr[i].end_date,
-          arr[j].start_date,
-          arr[j].end_date
-        )
-      ) {
-        throw new Error(
-          `プラン「${arr[i].name}」と「${arr[j].name}」の期間が重複しています。`
-        );
-      }
-    }
-  }
-}
-
-export function assertExactlyOneActive(
-  plans: Array<{ is_active?: boolean }>
-) {
-  const count = plans.filter((p) => !!p.is_active).length;
-  if (count !== 1) {
-    throw new Error("アクティブなプランはちょうど1つにしてください。");
-  }
-}
-
-export const CreateMaterialPayload = z.object({
-  title: z.string().min(1),
-  total_units: z.number().int().positive().max(200),
-
-  project_id: z.coerce.number().int().positive(),
-  section_titles: z.array(z.string()).optional(),
-  plans: z.array(PlanSchema).min(1),
-});
-
-export const EditMaterialPayload = z
-  .object({
-    title: z.string().min(1),
-    start_date: isoDate,
-    end_date: isoDate,
-    total_units: z.number().int().positive().max(200),
-    rounds: z.number().int().positive().max(100),
-    project_id: z.coerce.number().int().positive(),
-    section_titles: z.array(z.string()).optional(),
+  .refine((data) => data.start_date.getTime() <= data.end_date.getTime(), {
+    message: "終了日は開始日以後にしてください",
+    path: ["end_date"],
   })
-  .refine((v) => v.start_date <= v.end_date, {
-    path: ["start_date"],
-    message: "start_date は end_date 以前にしてください",
-  });
+
+export const MaterialSchema = MaterialBaseSchema.refine(
+  (data) => data.start_date.getTime() <= data.end_date.getTime(),
+  {
+    message: "終了日は開始日以後にしてください",
+    path: ["end_date"],
+  }
+)

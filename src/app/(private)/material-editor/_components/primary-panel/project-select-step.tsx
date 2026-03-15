@@ -5,41 +5,32 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import ProjectSelectToggle, { type SelectToggleItem } from "@/components/project-select-toggle"
-
-export type ProjectOption = {
-  id: string
-  name: string
-}
-
-export type ProjectSelectStepValue = {
-  mode: "existing" | "new"
-  selectedProjectId?: string
-  newProjectName?: string
-}
+import type { UpdateMaterialInput } from "@/lib/type/material_type"
+import { ProjectRow } from "@/lib/type/project_type"
 
 type Props = {
-  projects?: ProjectOption[]
-  value?: ProjectSelectStepValue
-  onChange?: (next: ProjectSelectStepValue) => void
+  projects?: ProjectRow[]
+  value?: UpdateMaterialInput
+  onChange?: (next: UpdateMaterialInput) => void
   onNext?: () => void
 }
 
 export default function ProjectSelectStep({
   projects = [],
-  value = { mode: "existing", selectedProjectId: "", newProjectName: "" },
+  value = { projectMode: "existing", selectedProjectId: undefined, newProjectName: "" },
   onChange,
   onNext,
 }: Props) {
   const [open, setOpen] = React.useState(false)
 
   const hasProjects = projects.length > 0
-  const mode: "existing" | "new" = hasProjects ? value.mode : "new"
+  const mode: "existing" | "new" = hasProjects ? value.projectMode : "new"
 
   React.useEffect(() => {
     if (!hasProjects) {
       onChange?.({
-        mode: "new",
-        selectedProjectId: "",
+        projectMode: "new",
+        selectedProjectId: undefined,
         newProjectName: value.newProjectName ?? "",
       })
     }
@@ -53,24 +44,24 @@ export default function ProjectSelectStep({
 
   const newNameTrim = (value.newProjectName ?? "").trim()
   const canNext =
-    (mode === "existing" && !!(value.selectedProjectId ?? "").trim()) ||
+    (mode === "existing" && value.selectedProjectId != null) ||
     (mode === "new" && newNameTrim.length > 0)
 
   const switchToExisting = () => {
     if (!hasProjects) return
-    if (value.mode === "existing") return
+    if (value.projectMode === "existing") return
     onChange?.({
-      mode: "existing",
-      selectedProjectId: value.selectedProjectId ?? "",
+      projectMode: "existing",
+      selectedProjectId: value.selectedProjectId,
       newProjectName: "",
     })
   }
 
   const switchToNew = () => {
-    if (value.mode === "new") return
+    if (value.projectMode === "new") return
     onChange?.({
-      mode: "new",
-      selectedProjectId: "",
+      projectMode: "new",
+      selectedProjectId: undefined,
       newProjectName: value.newProjectName ?? "",
     })
   }
@@ -105,8 +96,8 @@ export default function ProjectSelectStep({
               <ProjectSelectToggle
                 items={items}
                 selectedId={
-                  mode === "existing" && (value.selectedProjectId ?? "").trim()
-                    ? (value.selectedProjectId ?? "").trim()
+                  mode === "existing" && value.selectedProjectId != null
+                    ? String(value.selectedProjectId)
                     : undefined
                 }
                 placeholder="プロジェクトを選択"
@@ -117,8 +108,8 @@ export default function ProjectSelectStep({
                 }}
                 onSelect={(id) => {
                   onChange?.({
-                    mode: "existing",
-                    selectedProjectId: String(id),
+                    projectMode: "existing",
+                    selectedProjectId: Number(id),
                     newProjectName: "",
                   })
                 }}
@@ -157,8 +148,8 @@ export default function ProjectSelectStep({
               }}
               onChange={(e) =>
                 onChange?.({
-                  mode: "new",
-                  selectedProjectId: "",
+                  projectMode: "new",
+                  selectedProjectId: undefined,
                   newProjectName: e.target.value,
                 })
               }

@@ -1,27 +1,25 @@
-// src/app/(private)/material-editor/page.tsx
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import NewAddPageBody from "./page-body"
-import { unit_type } from "@/lib/type/unit-type"
+import MaterialEditorPageBody from "./page-body"
+import type { MaterialRow, ProjectOption } from "@/lib/type/material_type"
+import { fetchProjectOptions, fetchSelectedMaterial } from "./queries"
 
-export const metadata = { title: "New Material | studyallot" }
+export const metadata = { title: "Material Editor | studyallot" }
 
-export default async function NewAddPage({
+export default async function MaterialEditorPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ edit?: string; template?: string }> | { edit?: string; template?: string }
+  searchParams?: { edit?: string; template?: string }
 }) {
-  const sp = searchParams instanceof Promise ? await searchParams : (searchParams ?? {})
-
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
+
+  //ログインしていなければクエリの情報をnextで受け渡して失わないように
   if (!user) {
     const qs = new URLSearchParams()
-    if (sp.edit) qs.set("edit", sp.edit)
-    if (sp.template) qs.set("template", sp.template)
+    if (searchParams?.edit) qs.set("edit", searchParams.edit)
+    if (searchParams?.template) qs.set("template", searchParams.template)
 
     const next = qs.toString()
       ? `/material-editor?${qs.toString()}`
@@ -30,59 +28,36 @@ export default async function NewAddPage({
     redirect(`/login?next=${encodeURIComponent(next)}`)
   }
 
-  const { data: projectsRaw, error: projectsErr } = await supabase
-    .from("projects")
-    .select("id,name")
-    .eq("user_id", user.id)
-    .order("order", { ascending: true })
 
-  if (projectsErr) throw new Error(projectsErr.message)
+  //テンプレート、新規モードの場合
+  const ProjectsRow = await fetchProjectOptions(user.id)
 
-  const projects = (projectsRaw ?? []).map((p) => ({
-    id: String(p.id),
-    name: p.name as string,
-  }))
-
-  const editSlug = sp.edit?.trim()
+  const editSlug = searchParams?.edit?.trim()
   if (!editSlug) {
-    return <NewAddPageBody projects={projects} />
+    return <MaterialEditorPageBody projects={ProjectsRow} />
   }
 
-  const { data: mat, error: matErr } = await supabase
-    .from("materials")
-    .select(`
-      id,
-      slug,
-      title,
-      start_date,
-      end_date,
-      unit_type,
-      unit_count,
-      rounds,
-      project_id,
-      plan_days
-    `)
-    .eq("user_id", user.id)
-    .eq("slug", editSlug)
-    .maybeSingle()
+  //編集モードの場合
 
-  if (matErr) throw new Error(matErr.message)
-  if (!mat) redirect("/project")
+  const selectedMaterial = await fetchSelectedMaterial(user.id, editSlug)
 
-  return (
-    <NewAddPageBody
-      projects={projects}
-      initial={{
-        edit_slug: mat.slug as string,
-        project_id: String(mat.project_id),
-        title: mat.title as string,
-        start_date: mat.start_date as string,
-        end_date: mat.end_date as string,
-        unit_type: mat.unit_type as unit_type,
-        unit_count: Number(mat.unit_count),
-        rounds: Number(mat.rounds),
-        plan_days: (mat.plan_days as number[]) ?? [],
-      }}
-    />
-  )
+  if (!selectedMaterial) redirect("/project")
+
+  const initial: MaterialRow & { edit_slug: string } = {
+    id: selectedMaterial.id,
+    slug: selectedMaterial.slug,
+    project_id: selectedMaterial.project_id,
+    title: selectedMaterial.title,
+    order: selectedMaterial.order,
+    start_date: selectedMaterial.start_date,
+    end_date: selectedMaterial.end_date,
+    unit_type: selectedMaterial.unit_type,
+    unit_count: selectedMaterial.unit_count,
+    rounds: selectedMaterial.rounds,
+    plan_days: selectedMaterial.plan_days,
+    actual_days: selectedMaterial.actual_days,
+    edit_slug: selectedMaterial.slug,
+  }
+
+  return <MaterialEditorPageBody projects={ProjectsRow} initial={initial} />
 }

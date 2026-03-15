@@ -234,8 +234,8 @@ export async function replanDelayedPlansAction(fd: FormData) {
     for (const m of mats ?? []) {
         const start_date = toISO10(m.start_date)
         const end_date = toISO10(m.end_date)
-        const unit_count = Number(m.unit_count ?? 0)
-        const rounds = Number(m.rounds ?? 0)
+        const unit_count = m.unit_count
+        const rounds = m.rounds
 
         if (!start_date || !end_date) continue
         if (!Number.isFinite(unit_count) || !Number.isFinite(rounds)) continue

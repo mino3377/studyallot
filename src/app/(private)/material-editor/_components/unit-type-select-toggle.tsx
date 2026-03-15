@@ -4,27 +4,16 @@
 import * as React from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check } from "lucide-react"
+import { unit_type, UNIT_TYPE_ITEMS, unitLabel } from "@/lib/type/unit-type"
 
 export type SelectToggleItem = {
   id: string
   label: string
 }
 
-export default function MaterialSelectToggle({
-  items,
-  selectedId,
-  placeholder = "選択してください",
-  emptyMessage = "選択肢がありません",
-  open,
-  onOpenChange,
-  onSelect,
-  triggerHandlers,
-  disabled,
-}: {
+type Props = {
   items: readonly SelectToggleItem[]
-  selectedId?: string
-  placeholder?: string
-  emptyMessage?: string
+  selectedId: unit_type
   open?: boolean
   onOpenChange?: (open: boolean) => void
   onSelect?: (id: string) => void
@@ -37,7 +26,17 @@ export default function MaterialSelectToggle({
     onPointerCancel?: React.PointerEventHandler<HTMLDivElement>
   }
   disabled?: boolean
-}) {
+}
+
+export default function UnitTypeSelectToggle({
+  selectedId,
+  open,
+  onOpenChange,
+  onSelect,
+  disabled,
+}:
+  Props
+) {
   const [internalOpen, setInternalOpen] = React.useState(false)
   const isControlled = typeof open === "boolean"
   const actualOpen = isControlled ? open : internalOpen
@@ -48,15 +47,6 @@ export default function MaterialSelectToggle({
     onOpenChange?.(v)
   }
 
-  const selectedLabel =
-    selectedId ? items.find((x) => x.id === selectedId)?.label : undefined
-
-  if (items.length === 0) {
-    return <div className="text-sm text-muted-foreground">{emptyMessage}</div>
-  }
-
-  const isPlaceholder = !selectedLabel
-
   return (
     <Popover open={disabled ? false : actualOpen} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -64,32 +54,8 @@ export default function MaterialSelectToggle({
           role="button"
           tabIndex={disabled ? -1 : 0}
           aria-disabled={disabled ? true : undefined}
-          onKeyDown={(e) => {
-            if (disabled) return
-            if (e.key === "Enter" || e.key === " ") setOpen(!actualOpen)
-            triggerHandlers?.onKeyDown?.(e)
-          }}
-          onClickCapture={(e) => {
-            if (disabled) {
-              e.preventDefault()
-              e.stopPropagation()
-              return
-            }
-            triggerHandlers?.onClickCapture?.(e)
-          }}
-          onPointerDown={(e) => {
-            if (disabled) {
-              e.preventDefault()
-              e.stopPropagation()
-              return
-            }
-            triggerHandlers?.onPointerDown?.(e)
-          }}
-          onPointerMove={disabled ? undefined : triggerHandlers?.onPointerMove}
-          onPointerUp={disabled ? undefined : triggerHandlers?.onPointerUp}
-          onPointerCancel={disabled ? undefined : triggerHandlers?.onPointerCancel}
           className={[
-            "p-3 border rounded-sm transition-all duration-200",
+            "p-3 border rounded-sm transition-all duration-200 font-semibold",
             disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow",
             "bg-card hover:bg-muted/20",
           ].join(" ")}
@@ -98,17 +64,9 @@ export default function MaterialSelectToggle({
             setOpen(!actualOpen)
           }}
         >
-          <div className="space-y-1">
-            <div
-              className={[
-                "flex items-center text-base font-medium",
-                isPlaceholder ? "text-muted-foreground font-medium" : "",
-              ].join(" ")}
-            >
-              {selectedLabel ?? placeholder}
-            </div>
-          </div>
+          {unitLabel(selectedId) ?? "選択してください"}
         </div>
+
       </PopoverTrigger>
 
       <PopoverContent
@@ -118,7 +76,7 @@ export default function MaterialSelectToggle({
       >
         <div className="max-h-[55vh] overflow-auto">
           <div className="space-y-1">
-            {items.map((it) => {
+            {UNIT_TYPE_ITEMS.map((it) => {
               const active = selectedId === it.id
               return (
                 <button
@@ -131,9 +89,9 @@ export default function MaterialSelectToggle({
                     setOpen(false)
                   }}
                   className={[
-                    "w-full flex items-center justify-between rounded-md px-2 py-2 text-left text-sm transition-colors",
+                    "w-full flex items-center justify-between rounded-md px-2 py-2 text-left text-sm transition-colors font-semibold",
                     disabled ? "opacity-60 cursor-not-allowed" : "",
-                    active ? "bg-emerald-500/15" : "hover:bg-muted",
+                    active ? "bg-muted" : "hover:bg-muted",
                   ].join(" ")}
                 >
                   <span className="min-w-0 truncate">{it.label}</span>

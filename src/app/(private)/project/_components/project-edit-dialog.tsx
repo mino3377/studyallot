@@ -18,7 +18,7 @@ import { Trash2 } from "lucide-react"
 import { ProjectDetails } from "@/lib/type/project_type"
 import { Label } from "@/components/ui/label"
 
-type ConfirmDelete = { id: number; slug: string; name: string } | null
+type ConfirmDelete = { id: number; slug: string | undefined; name: string } | null
 
 type Props = {
   open: boolean

@@ -1,8 +1,8 @@
 export type ProjectRow = {
   id: number
-  slug: string
+  slug?: string
   name: string
-  order: number
+  order?: number
 }
 
 export type ProjectDetails = ProjectRow & {

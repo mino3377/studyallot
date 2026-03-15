@@ -53,12 +53,12 @@ export async function fetchTemplateAction(publicId: string) {
   if (error) throw new Error(error.message)
 
   return {
-    publicId: data.public_id as string,
-    projectName: (data.project_name ?? "") as string,
-    title: data.title as string,
-    unit_type: data.unit_type as unit_type,
-    unit_count: Number(data.unit_count),
-    rounds: Number(data.rounds),
-    planDays: (data.plan_days ?? []) as number[],
+    publicId: data.public_id,
+    projectName: data.project_name,
+    title: data.title,
+    unit_type: data.unit_type,
+    unit_count:data.unit_count,
+    rounds:data.rounds,
+    planDays: data.plan_days,
   }
 }
