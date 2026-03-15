@@ -1,33 +1,21 @@
 // C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\data.ts
-import { ProjectRow } from "@/lib/type/project"
+import {ProjectDetails, ProjectRow } from "@/lib/type/project_type"
 import {
   fetchMaterialsByProjectIds,
   fetchProjects,
 } from "./queries"
-import type { MaterialRow, MaterialVM } from "@/lib/type/material"
-import { UnitType } from "@/lib/type/unit-type"
-
-export type ProjectForProjectPage = {
-  id: number | string
-  slug: string
-  name: string
-  order: number
-  period: { from: string; to: string }
-  daysLeftLabel: string
-  materialsTotal: number
-  actualPct: number
-  plannedPct: number
-}
+import type { MaterialRow, MaterialVM } from "@/lib/type/material_type"
 
 //〇〇〇〇-〇〇-〇〇（年月日）
 function safeISO(s?: string | null) {
-  return (s ?? "").slice(0, 10) 
+  return (s ?? "").slice(0, 10)
 }
 
 function sumDays(days: number[] | null | undefined) {
   if (!days || days.length === 0) return 0
   let s = 0
-  for (const n of days) s += Number.isFinite(n) ? n : 0
+  for (const tasknum of days) s += isFinite(tasknum) ? tasknum : 0
+  if (s === 0 || s < 0) return 1
   return s
 }
 
@@ -38,64 +26,42 @@ function clampPct100(n: number) {
   return n
 }
 
-function normalizeUnitType(v: unknown): UnitType {
-  const s = String(v ?? "").trim().toLowerCase()
-  if (s === "chapter") return "chapter"
-  if (s === "unit") return "unit"
-  if (s === "page") return "page"
-  return "section"
-}
-
-function unitTypeToLabel(unitType: UnitType) {
-  switch (unitType) {
-    case "chapter":
-      return "チャプター"
-    case "unit":
-      return "ユニット"
-    case "page":
-      return "ページ"
-    case "section":
-    default:
-      return "セクション"
-  }
-}
 
 function materialToVM(m: MaterialRow): MaterialVM {
-  const startDate = safeISO(m.start_date)
-  const endDate = safeISO(m.end_date)
+  const start_date = safeISO(m.start_date)
+  const end_date = safeISO(m.end_date)
 
-  const totalUnits = Number(m.unit_count ?? 0)
-  const lapsTotal = Number(m.rounds ?? 0)
-  const totalTasks = Math.max(0, totalUnits * lapsTotal)
+  const unit_count = m.unit_count
+  const rounds = m.rounds
+  const totalTasks = Math.max(0, unit_count * rounds)
 
   const plannedTotal = sumDays(m.plan_days)
   const actualTotal = sumDays(m.actual_days)
 
-  const denom = plannedTotal > 0 ? plannedTotal : Math.max(1, totalTasks)
-  const plannedPct = clampPct100((plannedTotal / denom) * 100)
-  const actualPct = clampPct100((actualTotal / denom) * 100)
+  const denominator = plannedTotal > 0 ? plannedTotal : Math.max(1, totalTasks)
+  const plannedPct = clampPct100((plannedTotal / denominator) * 100)
+  const actualPct = clampPct100((actualTotal / denominator) * 100)
 
-  const lapsNow = totalUnits > 0 ? Math.floor(actualTotal / totalUnits) : 0
+  const rounds_now = unit_count > 0 ? Math.floor(actualTotal / unit_count) : 0
 
-  const unitType = normalizeUnitType(m.unit_type)
-  const unitLabel = unitTypeToLabel(unitType)
+  const unit_type = m.unit_type
 
   return {
     id: m.id,
     title: m.title,
+    project_id: m.project_id,
     slug: m.slug,
-    order: Number.isFinite(m.order as any) ? Number(m.order) : 999999,
-    startDate,
-    endDate,
-    totalUnits,
-    lapsNow,
-    lapsTotal,
+    order: m.order,
+    start_date,
+    end_date,
+    unit_count,
+    rounds_now,
+    rounds,
     plannedPct,
     actualPct,
-    planDays: m.plan_days ?? [],
-    actualDays: m.actual_days ?? [],
-    unitType,
-    unitLabel,
+    plan_days: m.plan_days ?? [],
+    actual_days: m.actual_days ?? [],
+    unit_type,
   }
 }
 
@@ -115,10 +81,14 @@ function groupMaterialsByProjectSlug(
     out[pSlug].push(materialToVM(m))
   }
 
+  //教材配列をorder順に（nullあればorderの整形）
   for (const slug of Object.keys(out)) {
+
     out[slug].sort((a, b) => {
-      if (a.order !== b.order) return a.order - b.order
-      return String(a.id).localeCompare(String(b.id))
+      return a.order - b.order
+    })
+    out[slug].forEach((m, index) => {
+      m.order = index
     })
   }
 
@@ -126,7 +96,7 @@ function groupMaterialsByProjectSlug(
 }
 
 export async function getProjectPageData(userId: string): Promise<{
-  projects: ProjectForProjectPage[]
+  projects: ProjectDetails[]
   materialsByProjectSlug: Record<string, MaterialVM[]>
 }> {
   const projectsRaw = await fetchProjects(userId)
@@ -135,16 +105,17 @@ export async function getProjectPageData(userId: string): Promise<{
   //すべての教材配列
   const materialsRaw = await fetchMaterialsByProjectIds(userId, projectIds)
 
+  //プロジェクトスラッグと教材配列の一対一
   const materialsByProjectSlug = groupMaterialsByProjectSlug(projectsRaw, materialsRaw)
 
-  const projects: ProjectForProjectPage[] = projectsRaw.map((p) => ({
+  const projects= projectsRaw.map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,
     order: p.order,
     period: { from: "", to: "" },
     daysLeftLabel: "",
-    materialsTotal: (materialsByProjectSlug[p.slug] ?? []).length,
+    materialsTotal: materialsByProjectSlug[p.slug].length,
     plannedPct: 0,
     actualPct: 0,
   }))

@@ -11,19 +11,9 @@ export const UNIT_TYPE_ITEMS = [
   { id: "lesson", label: "レッスン" },
 ] as const
 
-export type UnitType = (typeof UNIT_TYPE_ITEMS)[number]["id"]
+export type unit_type = (typeof UNIT_TYPE_ITEMS)[number]["id"]
 
-export function unitLabel(unitType: UnitType): string {
-  const found = UNIT_TYPE_ITEMS.find((x) => x.id === unitType)
+export function unitLabel(unit_type: unit_type): string {
+  const found = UNIT_TYPE_ITEMS.find((x) => x.id === unit_type)
   return found?.label ?? "セクション"
-}
-
-export function isUnitType(v: unknown): v is UnitType {
-  return UNIT_TYPE_ITEMS.some((x) => x.id === v)
-}
-
-export function normalizeUnitType(v: unknown): UnitType {
-  const s = String(v ?? "").trim().toLowerCase()
-  if (isUnitType(s)) return s
-  return "section"
 }

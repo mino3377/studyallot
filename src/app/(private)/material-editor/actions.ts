@@ -16,11 +16,11 @@ export type SaveNewMaterialInput = {
   newProjectName?: string
 
   title: string
-  startDate: string
-  endDate: string
+  start_date: string
+  end_date: string
 
-  unitType: string
-  unitCount: number
+  unit_type: string
+  unit_count: number
   rounds: number
 
   planDays: number[]
@@ -35,10 +35,10 @@ type UpdateMaterialInput = {
 
   title?: string
 
-  startDate: string
-  endDate: string
-  unitType: string
-  unitCount: number
+  start_date: string
+  end_date: string
+  unit_type: string
+  unit_count: number
   rounds: number
   planDays: number[]
 }
@@ -126,15 +126,15 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
   const title = (input.title ?? "").trim()
   assert(title.length > 0, "教材名が空です")
 
-  const startDate = toISODate((input.startDate ?? "").trim())
-  const endDate = toISODate((input.endDate ?? "").trim())
+  const start_date = toISODate((input.start_date ?? "").trim())
+  const end_date = toISODate((input.end_date ?? "").trim())
 
-  assertDateOrder(startDate, endDate)
+  assertDateOrder(start_date, end_date)
 
-  const unitType = (input.unitType ?? "").trim()
-  assert(unitType.length > 0, "unitType が空です")
+  const unit_type = (input.unit_type ?? "").trim()
+  assert(unit_type.length > 0, "unit_type が空です")
 
-  const unitCount = toPositiveIntUnder1000(input.unitCount, "区切り数")
+  const unit_count = toPositiveIntUnder1000(input.unit_count, "区切り数")
   const rounds = toPositiveIntUnder1000(input.rounds, "周回数")
 
   const planDays = Array.isArray(input.planDays) ? input.planDays.map(Number) : []
@@ -144,11 +144,11 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
     "planDays に不正な値があります"
   )
 
-  const expectedLen = daysBetweenInclusive(startDate, endDate)
+  const expectedLen = daysBetweenInclusive(start_date, end_date)
   assert(expectedLen > 0, "日付範囲が不正です")
   assert(planDays.length === expectedLen, "planDays の長さが日付範囲と一致しません")
 
-  const totalTasks = unitCount * rounds
+  const totalTasks = unit_count * rounds
   const plannedSum = sum(planDays)
   assert(
     plannedSum === totalTasks,
@@ -182,10 +182,10 @@ export async function saveNewMaterialAction(input: SaveNewMaterialInput) {
       project_id: projectId,
       slug: makePublicId("m"),
       title,
-      start_date: startDate,
-      end_date: endDate,
-      unit_type: unitType,
-      unit_count: unitCount,
+      start_date: start_date,
+      end_date: end_date,
+      unit_type: unit_type,
+      unit_count: unit_count,
       rounds,
       plan_days: planDays,
       actual_days: actualDays,
@@ -222,14 +222,14 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   const slug = (input.slug ?? "").trim()
   assert(slug.length > 0, "slug が空です")
 
-  const startDate = toISODate((input.startDate ?? "").trim())
-  const endDate = toISODate((input.endDate ?? "").trim())
-  assertDateOrder(startDate, endDate)
+  const start_date = toISODate((input.start_date ?? "").trim())
+  const end_date = toISODate((input.end_date ?? "").trim())
+  assertDateOrder(start_date, end_date)
 
-  const unitType = (input.unitType ?? "").trim()
-  assert(unitType.length > 0, "unitType が空です")
+  const unit_type = (input.unit_type ?? "").trim()
+  assert(unit_type.length > 0, "unit_type が空です")
 
-  const unitCount = toPositiveIntUnder1000(input.unitCount, "区切り数")
+  const unit_count = toPositiveIntUnder1000(input.unit_count, "区切り数")
   const rounds = toPositiveIntUnder1000(input.rounds, "周回数")
 
   const planDays = Array.isArray(input.planDays) ? input.planDays.map(Number) : []
@@ -239,11 +239,11 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
     "planDays に不正な値があります"
   )
 
-  const expectedLen = daysBetweenInclusive(startDate, endDate)
+  const expectedLen = daysBetweenInclusive(start_date, end_date)
   assert(expectedLen > 0, "日付範囲が不正です")
   assert(planDays.length === expectedLen, "planDays の長さが日付範囲と一致しません")
 
-  const totalTasks = unitCount * rounds
+  const totalTasks = unit_count * rounds
   assert(sum(planDays) === totalTasks, "planDays の合計が総タスク数と一致しません")
 
   const { data: existing, error: exErr } = await supabase
@@ -256,11 +256,11 @@ export async function updateMaterialAction(input: UpdateMaterialInput) {
   if (exErr) throw new Error(exErr.message)
   assert(existing, "教材が見つかりません")
 
-  assert(existing.start_date === startDate, "開始日は編集できません")
-  assert(existing.end_date === endDate, "終了日は編集できません")
-  assert(Number(existing.unit_count) === unitCount, "区切り数は編集できません")
+  assert(existing.start_date === start_date, "開始日は編集できません")
+  assert(existing.end_date === end_date, "終了日は編集できません")
+  assert(Number(existing.unit_count) === unit_count, "区切り数は編集できません")
   assert(Number(existing.rounds) === rounds, "周回数は編集できません")
-  assert(String(existing.unit_type) === unitType, "区切りの呼び方は編集できません")
+  assert(String(existing.unit_type) === unit_type, "区切りの呼び方は編集できません")
 
   const projectId = await resolveProjectId({
     supabase,

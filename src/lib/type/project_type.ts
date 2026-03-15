@@ -5,10 +5,7 @@ export type ProjectRow = {
   order: number
 }
 
-export type ProjectForProjectPage = {
-  id: number | string
-  slug: string
-  name: string
+export type ProjectDetails = ProjectRow & {
   period: { from: string; to: string }
   daysLeftLabel: string
   materialsTotal: number

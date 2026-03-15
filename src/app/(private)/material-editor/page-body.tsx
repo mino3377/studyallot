@@ -1,5 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\page-body.tsx
-
 "use client"
 
 import * as React from "react"
@@ -18,60 +16,64 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import PlanAdjustCalendar from "./_components/plan-adjust-calendar"
 
 import { saveNewMaterialAction, updateMaterialAction } from "./actions"
-import { unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
+import { unit_type, unitLabel as unit_typeLabel } from "@/lib/type/unit-type"
 
 import { createTemplateAction, fetchTemplateAction } from "./template-actions"
-import { addDays, eachDayOfInterval, format } from "date-fns"
+import { addDays } from "date-fns"
 import { PlanShareDialog } from "./_components/plan-share-dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { NotebookPen } from "lucide-react"
 import { unitLabelByType } from "@/lib/unit-wording"
 import { isRedirectError } from "next/dist/client/components/redirect-error"
+import {
+  buildMaterialEditorSaveDraft,
+  buildMaterialEditorShareDraft,
+  getPlanSummary,
+} from "./_lib/editor-payload"
+import {
+  MaterialEditorSaveSchema,
+  MaterialEditorShareSchema,
+} from "./_lib/editor-validator"
 
-function fmtISODate(d?: Date) {
-  if (!d) return ""
-  return format(d, "yyyy-MM-dd")
-}
-
-export default function NewAddPageBody({
+export default function MaterialEditorPageBody({
   projects,
   initial,
 }: {
   projects: ProjectOption[]
   initial?: {
-    editSlug: string
-    projectId?: string
-    title?: string
-    startDate?: string
-    endDate?: string
-    unitType?: any
-    unitCount: number
-    laps?: number
-    planDays?: number[]
+    edit_slug: string
+    project_id: string
+    title: string
+    start_date: string
+    end_date: string
+    unit_type: unit_type
+    unit_count: number
+    rounds: number
+    plan_days: number[]
   }
 }) {
   const searchParams = useSearchParams()
   const templateId = searchParams.get("template")
   const isTemplateMode = !!templateId
-  const isEdit = !!initial?.editSlug && !isTemplateMode
+  const isEdit = !!initial?.edit_slug && !isTemplateMode
 
   const [step1, setStep1] = React.useState<ProjectSelectStepValue>(() => ({
     mode: "existing",
-    selectedProjectId: initial?.projectId ?? "",
+    selectedProjectId: initial?.project_id ?? "",
     newProjectName: "",
   }))
 
   const [materialStep, setMaterialStep] = React.useState<MaterialRegisterValue>(() => ({
     title: initial?.title ?? "",
-    startDate: initial?.startDate ? new Date(`${initial.startDate}T00:00:00`) : undefined,
-    endDate: initial?.endDate ? new Date(`${initial.endDate}T00:00:00`) : undefined,
-    unitType: (initial?.unitType as any) ?? "section",
-    unitCount: initial?.unitCount != null ? String(initial.unitCount) : "",
-    laps: initial?.laps != null ? String(initial.laps) : "",
+    start_date: initial?.start_date ? new Date(`${initial.start_date}T00:00:00`) : undefined,
+    end_date: initial?.end_date ? new Date(`${initial.end_date}T00:00:00`) : undefined,
+    unit_type: initial?.unit_type as unit_type,
+    unit_count: initial?.unit_count != null ? String(initial.unit_count) : "",
+    rounds: initial?.rounds != null ? String(initial.rounds) : "",
   }))
 
   const [planDays, setPlanDays] = React.useState<number[]>(
-    () => (initial?.planDays && Array.isArray(initial.planDays) ? initial.planDays : [])
+    () => (initial?.plan_days && Array.isArray(initial.plan_days) ? initial.plan_days : [])
   )
   const [templateInitialPlanDays, setTemplateInitialPlanDays] = React.useState<
     number[] | undefined
@@ -86,21 +88,25 @@ export default function NewAddPageBody({
   const goStep2 = () => setCurrentStep(2)
 
   const range: DateRange | undefined =
-    materialStep.startDate && materialStep.endDate
-      ? { from: materialStep.startDate, to: materialStep.endDate }
+    materialStep.start_date && materialStep.end_date
+      ? { from: materialStep.start_date, to: materialStep.end_date }
       : undefined
 
-  const rawUnitCount = Number(materialStep.unitCount)
-  const unitCountNum =
-    materialStep.unitCount !== "" && Number.isInteger(rawUnitCount) && rawUnitCount > 0
-      ? rawUnitCount
+  const rawunit_count = Number(materialStep.unit_count)
+  const unit_countNum =
+    materialStep.unit_count !== "" && Number.isInteger(rawunit_count) && rawunit_count > 0
+      ? rawunit_count
       : undefined
 
-  const rawLaps = Number(materialStep.laps)
-  const lapsNum =
-    materialStep.laps !== "" && Number.isInteger(rawLaps) && rawLaps > 0 ? rawLaps : undefined
+  const rawRoundsCount = Number(materialStep.rounds)
+  const roundsCountNum =
+    materialStep.rounds !== "" &&
+      Number.isInteger(rawRoundsCount) &&
+      rawRoundsCount > 0
+      ? rawRoundsCount
+      : undefined
 
-  const unitLabelText = unitTypeLabel(materialStep.unitType)
+  const unitLabelText = unit_typeLabel(materialStep.unit_type)
 
   const [shareOpen, setShareOpen] = React.useState(false)
   const [shareUrl, setShareUrl] = React.useState("")
@@ -116,39 +122,39 @@ export default function NewAddPageBody({
     if (appliedRef.current === templateId) return
     appliedRef.current = templateId
 
-    ;(async () => {
-      const t = await fetchTemplateAction(templateId)
+      ; (async () => {
+        const t = await fetchTemplateAction(templateId)
 
-      const pname = (t.projectName ?? "").trim()
-      if (pname.length > 0) {
-        const hit = projects.find((p) => p.name.trim() === pname)
-        if (hit) {
-          setStep1({ mode: "existing", selectedProjectId: String(hit.id), newProjectName: "" })
+        const pname = (t.projectName ?? "").trim()
+        if (pname.length > 0) {
+          const hit = projects.find((p) => p.name.trim() === pname)
+          if (hit) {
+            setStep1({ mode: "existing", selectedProjectId: String(hit.id), newProjectName: "" })
+          } else {
+            setStep1({ mode: "new", selectedProjectId: "", newProjectName: pname })
+          }
         } else {
-          setStep1({ mode: "new", selectedProjectId: "", newProjectName: pname })
+          setStep1((prev) => ({ ...prev, mode: "new", selectedProjectId: "" }))
         }
-      } else {
-        setStep1((prev) => ({ ...prev, mode: "new", selectedProjectId: "" }))
-      }
 
-      const today = new Date()
-      const fetchedPlanDays = Array.isArray(t.planDays) ? t.planDays : []
-      const n = fetchedPlanDays.length
-      const end = addDays(today, Math.max(0, n - 1))
+        const today = new Date()
+        const fetchedPlanDays = Array.isArray(t.planDays) ? t.planDays : []
+        const planDaysCount = fetchedPlanDays.length
+        const end_date = addDays(today, Math.max(0, planDaysCount - 1))
 
-      setMaterialStep({
-        title: t.title ?? "",
-        startDate: today,
-        endDate: end,
-        unitType: (t.unitType as any) ?? "section",
-        unitCount: String(t.unitCount ?? ""),
-        laps: String(t.rounds ?? ""),
-      })
+        setMaterialStep({
+          title: t.title ?? "",
+          start_date: today,
+          end_date,
+          unit_type: t.unit_type,
+          unit_count: String(t.unit_count ?? ""),
+          rounds: String(t.rounds ?? ""),
+        })
 
-      setPlanDays(fetchedPlanDays)
-      setTemplateInitialPlanDays(fetchedPlanDays)
-      setCurrentStep(2)
-    })()
+        setPlanDays(fetchedPlanDays)
+        setTemplateInitialPlanDays(fetchedPlanDays)
+        setCurrentStep(2)
+      })()
   }, [templateId, projects])
 
   const showNotice = (msg: string) => {
@@ -177,91 +183,30 @@ export default function NewAddPageBody({
 
   const stableInitialPlanDays =
     templateInitialPlanDays ??
-    (isEdit ? (Array.isArray(initial?.planDays) ? initial.planDays : []) : undefined)
+    (isEdit ? (Array.isArray(initial?.plan_days) ? initial.plan_days : []) : undefined)
 
-  const totalTasks =
-    unitCountNum != null && lapsNum != null && unitCountNum > 0 && lapsNum > 0
-      ? unitCountNum * lapsNum
-      : 0
-
-  const dayCount =
-    range?.from && range?.to
-      ? eachDayOfInterval({ start: range.from, end: range.to }).length
-      : 0
-
-  const hasTaskInputs = !!unitCountNum && !!lapsNum && dayCount > 0
-  const isPlanCountReady = hasTaskInputs && planDays.length === dayCount
-
-  const assignedTaskCount = isPlanCountReady ? planDays.reduce((sum, n) => sum + n, 0) : 0
-
-  const remainingTaskCount = isPlanCountReady ? totalTasks - assignedTaskCount : null
-
-  const getSaveValidationMessage = () => {
-    if (step1.mode === "existing" && !String(step1.selectedProjectId ?? "").trim()) {
-      return "プロジェクトを選択してください。"
-    }
-
-    if (step1.mode === "new" && !String(step1.newProjectName ?? "").trim()) {
-      return "プロジェクト名を入力してください。"
-    }
-
-    if (!materialStep.title.trim()) {
-      return "教材名を入力してください。"
-    }
-
-    const startISO = fmtISODate(materialStep.startDate)
-    const endISO = fmtISODate(materialStep.endDate)
-
-    if (!startISO || !endISO) {
-      return "開始日と終了日を入力してください。"
-    }
-
-    if (!unitCountNum) {
-      return `${unitLabelText}数を入力してください。`
-    }
-
-    if (!lapsNum) {
-      return "周回数を入力してください。"
-    }
-
-    if (unitCountNum >= 1000) {
-      return `${unitLabelText}数は1000未満にしてください。`
-    }
-
-    if (lapsNum >= 1000) {
-      return "周回数は1000未満にしてください。"
-    }
-
-    if (!planDays.length || !isPlanCountReady) {
-      return "カレンダーでタスク配分を完了してください。"
-    }
-
-    const sumPlanDays = planDays.reduce((a, b) => a + b, 0)
-
-    if (remainingTaskCount != null && remainingTaskCount !== 0) {
-      return remainingTaskCount > 0
-        ? `タスク配分が ${remainingTaskCount} 個不足しています。`
-        : `タスク配分が ${Math.abs(remainingTaskCount)} 個超過しています。`
-    }
-
-    if (sumPlanDays !== totalTasks) {
-      return `タスク配分合計が一致していません。（計画:${sumPlanDays} / 総タスク:${totalTasks}）`
-    }
-
-    return ""
-  }
+  const { remainingTaskCount } = getPlanSummary({
+    range,
+    unit_count: unit_countNum,
+    rounds: roundsCountNum,
+    planDays,
+  })
 
   const handleSave = async () => {
     if (isSaving) return
 
-    const validationMessage = getSaveValidationMessage()
-    if (validationMessage) {
-      setSaveValidationMessage(validationMessage)
+    const parsed = MaterialEditorSaveSchema.safeParse(
+      buildMaterialEditorSaveDraft({
+        step1,
+        materialStep,
+        planDays,
+      })
+    )
+
+    if (!parsed.success) {
+      setSaveValidationMessage(parsed.error.issues[0]?.message ?? "入力内容を確認してください。")
       return
     }
-
-    const startISO = fmtISODate(materialStep.startDate)
-    const endISO = fmtISODate(materialStep.endDate)
 
     try {
       setIsSaving(true)
@@ -269,33 +214,33 @@ export default function NewAddPageBody({
 
       if (isEdit) {
         await updateMaterialAction({
-          slug: initial!.editSlug,
-          projectMode: step1.mode,
-          selectedProjectId: step1.selectedProjectId,
-          newProjectName: step1.newProjectName,
-          title: materialStep.title.trim(),
-          startDate: startISO,
-          endDate: endISO,
-          unitType: materialStep.unitType,
-          unitCount: unitCountNum!,
-          rounds: lapsNum!,
-          planDays,
+          slug: initial!.edit_slug,
+          projectMode: parsed.data.projectMode,
+          selectedProjectId: parsed.data.selectedProjectId,
+          newProjectName: parsed.data.newProjectName,
+          title: parsed.data.title,
+          start_date: parsed.data.start_date,
+          end_date: parsed.data.end_date,
+          unit_type: parsed.data.unit_type,
+          unit_count: parsed.data.unit_count,
+          rounds: parsed.data.rounds,
+          planDays: parsed.data.planDays,
         })
         return
       }
 
       await saveNewMaterialAction({
-        projectMode: step1.mode,
-        selectedProjectId: step1.selectedProjectId,
-        newProjectName: step1.newProjectName,
-        title: materialStep.title.trim(),
-        startDate: startISO,
-        endDate: endISO,
-        unitType: materialStep.unitType,
-        unitCount: unitCountNum!,
-        rounds: lapsNum!,
-        planDays,
-        actualDays: Array.from({ length: planDays.length }, () => 0),
+        projectMode: parsed.data.projectMode,
+        selectedProjectId: parsed.data.selectedProjectId,
+        newProjectName: parsed.data.newProjectName,
+        title: parsed.data.title,
+        start_date: parsed.data.start_date,
+        end_date: parsed.data.end_date,
+        unit_type: parsed.data.unit_type,
+        unit_count: parsed.data.unit_count,
+        rounds: parsed.data.rounds,
+        planDays: parsed.data.planDays,
+        actualDays: Array.from({ length: parsed.data.planDays.length }, () => 0),
       })
     } catch (e: unknown) {
       if (isRedirectError(e)) {
@@ -311,50 +256,41 @@ export default function NewAddPageBody({
   }
 
   const handleShare = async () => {
-    if (!materialStep.title.trim()) {
-      setShareUrl("教材名を入力してください")
-      setShareOpen(true)
-      return
-    }
-    if (!unitCountNum || !lapsNum) {
-      setShareUrl("区切り数 / 周回数を入力してください")
-      setShareOpen(true)
-      return
-    }
-    if (!planDays.length) {
-      setShareUrl("計画が未作成です（カレンダーで配分してください）")
-      setShareOpen(true)
-      return
-    }
+    const parsed = MaterialEditorShareSchema.safeParse(
+      buildMaterialEditorShareDraft({
+        step1,
+        materialStep,
+        planDays,
+      })
+    )
 
-    const s = planDays.reduce((a, b) => a + b, 0)
-    if (s !== totalTasks) {
-      setShareUrl(`計画合計が一致しません（計画:${s} / 総タスク:${totalTasks}）`)
+    if (!parsed.success) {
+      setShareUrl(parsed.error.issues[0]?.message ?? "共有URLの作成に失敗しました")
       setShareOpen(true)
       return
     }
 
     try {
       const projectName =
-        step1.mode === "new"
-          ? (step1.newProjectName ?? "").trim()
-          : (projects.find((p) => String(p.id) === String(step1.selectedProjectId ?? ""))?.name ??
-              "").trim()
+        parsed.data.projectMode === "new"
+          ? (parsed.data.newProjectName ?? "").trim()
+          : (projects.find((p) => String(p.id) === String(parsed.data.selectedProjectId ?? ""))?.name ??
+            "").trim()
 
       const { publicId } = await createTemplateAction({
         projectName,
-        title: materialStep.title.trim(),
-        unitType: materialStep.unitType,
-        unitCount: unitCountNum,
-        rounds: lapsNum,
-        planDays,
+        title: parsed.data.title,
+        unit_type: parsed.data.unit_type,
+        unit_count: parsed.data.unit_count,
+        rounds: parsed.data.rounds,
+        planDays: parsed.data.planDays,
       })
 
       const url = `${window.location.origin}/material-editor?template=${publicId}`
       setShareUrl(url)
       setShareOpen(true)
-    } catch (e: any) {
-      setShareUrl(e?.message ?? "共有URLの作成に失敗しました")
+    } catch (e: unknown) {
+      setShareUrl(e instanceof Error ? e.message : "共有URLの作成に失敗しました")
       setShareOpen(true)
     }
   }
@@ -387,14 +323,14 @@ export default function NewAddPageBody({
         </div>
 
         <div className="hidden md:flex md:col-span-1 h-full min-h-0">
-          {range?.from && range?.to && unitCountNum && lapsNum && unitLabelText ? (
+          {range?.from && range?.to && unit_countNum && roundsCountNum && unitLabelText ? (
             <PlanAdjustCalendar
               range={range}
-              unitCount={unitCountNum}
-              laps={lapsNum}
+              unit_count={unit_countNum}
+              rounds={roundsCountNum}
               unitLabel={unitLabelText}
               restDays={restDays}
-              unitType={materialStep.unitType}
+              unit_type={materialStep.unit_type}
               onPlanDaysChange={setPlanDays}
               initialPlanDays={stableInitialPlanDays}
               onShare={handleShare}
@@ -404,7 +340,7 @@ export default function NewAddPageBody({
             <Card className="w-full m-3 p-12 flex items-center">
               <CardContent className="p-0 gap-2 text-sm text-muted-foreground flex justify-center items-center">
                 <NotebookPen />
-                教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unitType)}数 / 周回数」を入力してください。
+                教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unit_type)}数 / 周回数」を入力してください。
               </CardContent>
             </Card>
           )}
@@ -419,14 +355,14 @@ export default function NewAddPageBody({
 
               <div className="h-full p-3 flex flex-col min-h-0">
                 <div className="flex-1 min-h-0 overflow-y-auto">
-                  {range?.from && range?.to && unitCountNum && lapsNum && unitLabelText ? (
+                  {range?.from && range?.to && unit_countNum && roundsCountNum && unitLabelText ? (
                     <PlanAdjustCalendar
                       range={range}
-                      unitCount={unitCountNum}
-                      laps={lapsNum}
+                      unit_count={unit_countNum}
+                      rounds={roundsCountNum}
                       unitLabel={unitLabelText}
                       restDays={restDays}
-                      unitType={materialStep.unitType}
+                      unit_type={materialStep.unit_type}
                       onPlanDaysChange={setPlanDays}
                       initialPlanDays={stableInitialPlanDays}
                       onShare={handleShare}
@@ -436,7 +372,7 @@ export default function NewAddPageBody({
                     <Card className="w-full m-3 p-12 flex items-center">
                       <CardContent className="p-0 gap-2 text-sm text-muted-foreground flex justify-center items-center">
                         <NotebookPen />
-                        教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unitType)}数 / 周回数」を入力してください。
+                        教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unit_type)}数 / 周回数」を入力してください。
                       </CardContent>
                     </Card>
                   )}

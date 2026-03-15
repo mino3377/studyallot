@@ -5,157 +5,42 @@ import * as React from "react"
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { eachDayOfInterval, format, isAfter, isBefore, isSameDay } from "date-fns"
+import { isSameDay } from "date-fns"
 import type { DateRange } from "react-day-picker"
-import type { UnitType } from "@/lib/type/unit-type"
-import { unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
+import { unitLabel, unitLabel as unit_typeLabel } from "@/lib/type/unit-type"
+import { MaterialRow } from "@/lib/type/material_type"
+import { dateCompare, iso, parseISODateOnly, weekdayJP } from "@/lib/date/date"
+import {
+  buildCountMapFromDays,
+  buildPlanMapFromDays,
+  clampToRange,
+  makeAllTasks,
+  type ProjectTask as Task,
+} from "../_lib/task-map"
 
-type MaterialLike = {
-  slug: string
-  title: string
-  startDate: string
-  endDate: string
-  totalUnits: number
-  lapsTotal: number
-  planDays?: number[]
-  actualDays?: number[]
-  unitType?: UnitType
-  unitLabel?: string
-}
-
-type Task = {
-  id: string
-  unitNo: number
-  lap: number
-}
-
-function iso(d: Date) {
-  return format(d, "yyyy-MM-dd")
-}
-
-function parseISODateOnly(s?: string) {
-  if (!s) return undefined
-  const d = new Date(`${s}T00:00:00`)
-  return Number.isNaN(d.getTime()) ? undefined : d
-}
-
+//
 function isInRange(d: Date, range?: DateRange) {
   if (!range?.from || !range?.to) return false
-  return !isBefore(d, range.from) && !isAfter(d, range.to)
-}
-
-function weekdayJP(d: Date) {
-  const names = ["日", "月", "火", "水", "木", "金", "土"]
-  return names[d.getDay()] ?? ""
-}
-
-function makeAllTasks(laps: number, units: number): Task[] {
-  const out: Task[] = []
-  for (let lap = 1; lap <= laps; lap++) {
-    for (let u = 1; u <= units; u++) {
-      out.push({ id: `L${lap}-U${u}`, unitNo: u, lap })
-    }
-  }
-  return out
-}
-
-function distributeEvenlyCounts(taskLen: number, dayLen: number): number[] {
-  if (dayLen <= 0) return []
-  const base = Math.floor(taskLen / dayLen)
-  let rem = taskLen % dayLen
-  const out: number[] = []
-  for (let i = 0; i < dayLen; i++) {
-    const take = base + (rem > 0 ? 1 : 0)
-    rem = Math.max(0, rem - 1)
-    out.push(take)
-  }
-  return out
-}
-
-function buildPlanMapFromDays(
-  range: DateRange,
-  tasks: Task[],
-  planDays?: number[]
-): Record<string, Task[]> {
-  const from = range.from
-  const to = range.to
-  const map: Record<string, Task[]> = {}
-  if (!from || !to) return map
-
-  const days = eachDayOfInterval({ start: from, end: to })
-  const N = days.length
-
-  const countsRaw =
-    planDays && planDays.length > 0
-      ? planDays.slice(0, N)
-      : distributeEvenlyCounts(tasks.length, N)
-
-  const counts: number[] = Array.from({ length: N }, (_, i) => countsRaw[i] ?? 0).map((x) =>
-    Number.isFinite(x) ? Math.max(0, Math.floor(x)) : 0
-  )
-
-  let idx = 0
-  for (let i = 0; i < N; i++) {
-    const dayISO = iso(days[i]!)
-    const take = Math.max(0, Math.floor(counts[i]!))
-    map[dayISO] = tasks.slice(idx, idx + take)
-    idx += take
-  }
-
-  if (idx < tasks.length && N > 0) {
-    const lastISO = iso(days[N - 1]!)
-    map[lastISO] = [...(map[lastISO] ?? []), ...tasks.slice(idx)]
-  }
-
-  return map
-}
-
-function buildCountMapFromDays(range: DateRange, counts?: number[]): Record<string, number> {
-  const from = range.from
-  const to = range.to
-  const out: Record<string, number> = {}
-  if (!from || !to) return out
-
-  const days = eachDayOfInterval({ start: from, end: to })
-  for (let i = 0; i < days.length; i++) {
-    const dISO = iso(days[i]!)
-    const v = counts?.[i]
-    out[dISO] = Number.isFinite(v) ? Math.max(0, Math.floor(v as number)) : 0
-  }
-  return out
-}
-
-function clampToRange(today: Date, range: DateRange) {
-  const from = range.from
-  const to = range.to
-  if (!from || !to) return undefined
-
-  const t = new Date(today)
-  t.setHours(0, 0, 0, 0)
-
-  if (t.getTime() < from.getTime()) return from
-  if (t.getTime() > to.getTime()) return to
-  return t
+  return dateCompare(range.from, d) && dateCompare(d, range.to)
 }
 
 type Props = {
-  projectName?: string
-  materials: MaterialLike[]
-  unitType?: UnitType
-  unitLabel?: string
+  project_name: string
+  materials: MaterialRow[]
   onSelectMaterialSlug?: (slug: string) => void
 }
 
 export default function ProjectRecordCalendarPanel({
-  projectName,
+  project_name,
   materials,
-  unitType = "section",
-  unitLabel = "セクション",
   onSelectMaterialSlug,
 }: Props) {
+
+
+  //プロジェクト内の全ての教材から開始日と終了日をだして、プロジェクトの開始日と終了日を出す
   const projectRange = React.useMemo<DateRange>(() => {
     const dates = materials
-      .flatMap((m) => [parseISODateOnly(m.startDate), parseISODateOnly(m.endDate)])
+      .flatMap((m) => [parseISODateOnly(m.start_date), parseISODateOnly(m.end_date)])
       .filter(Boolean) as Date[]
     if (dates.length === 0) return { from: undefined, to: undefined }
     const from = new Date(Math.min(...dates.map((d) => d.getTime())))
@@ -165,67 +50,82 @@ export default function ProjectRecordCalendarPanel({
 
   const ready = !!projectRange.from && !!projectRange.to
 
+
+  //カレンダーの選択日（デフォルトは「今日」）
   const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(
     clampToRange(new Date(), projectRange)
   )
 
+  //カレンダーの選択日を中身が変わったら変える
   React.useEffect(() => {
     if (!ready) return
     setSelectedDay(clampToRange(new Date(), projectRange))
   }, [ready, projectRange.from?.getTime(), projectRange.to?.getTime()])
 
+
+  //計画:教材スラッグ:{教材名:{日付:タスク配列}}
   const planByMaterial = React.useMemo(() => {
     const out: Record<string, { title: string; map: Record<string, Task[]> }> = {}
     for (const m of materials) {
       const range: DateRange = {
-        from: parseISODateOnly(m.startDate),
-        to: parseISODateOnly(m.endDate),
+        from: parseISODateOnly(m.start_date),
+        to: parseISODateOnly(m.end_date),
       }
-      const tasks = makeAllTasks(m.lapsTotal, m.totalUnits)
-      out[m.slug] = { title: m.title, map: buildPlanMapFromDays(range, tasks, m.planDays) }
+      const tasks = makeAllTasks(m.rounds, m.unit_count)
+      out[m.slug] = { title: m.title, map: buildPlanMapFromDays(range, tasks, m.plan_days) }
     }
     return out
   }, [materials])
 
+
+  //実際:教材スラッグ:{日付:タスク数}
   const actualByMaterial = React.useMemo(() => {
     const out: Record<string, Record<string, number>> = {}
     for (const m of materials) {
       const range: DateRange = {
-        from: parseISODateOnly(m.startDate),
-        to: parseISODateOnly(m.endDate),
+        from: parseISODateOnly(m.start_date),
+        to: parseISODateOnly(m.end_date),
       }
-      out[m.slug] = buildCountMapFromDays(range, m.actualDays)
+      out[m.slug] = buildCountMapFromDays(range, m.actual_days)
     }
     return out
   }, [materials])
 
-  const selectedISO = selectedDay ? iso(selectedDay) : ""
+
+  const selectedDayFormat = selectedDay ? iso(selectedDay) : ""
 
   const dayItems = React.useMemo(() => {
-    if (!selectedISO) return []
-    const items: { slug: string; materialTitle: string; count: number; unitLabel: string }[] = []
+    if (!selectedDayFormat) return []
+
+    const out = []
 
     for (const m of materials) {
-      const entry = planByMaterial[m.slug]
-      const c = entry?.map[selectedISO]?.length ?? 0
-      if (c > 0) {
-        items.push({
-          slug: m.slug,
-          materialTitle: m.title,
-          count: c,
-          unitLabel: m.unitLabel ?? unitTypeLabel(m.unitType ?? unitType),
-        })
-      }
+      const todayTasks = planByMaterial[m.slug]?.map[selectedDayFormat] ?? []
+      const count = todayTasks.length
+
+      if (count === 0) continue
+
+      out.push({
+        slug: m.slug,
+        title: m.title,
+        count,
+        unit_type: m.unit_type,
+      })
     }
 
-    return items
-  }, [materials, planByMaterial, selectedISO])
+    return out
+  }, [materials, planByMaterial, selectedDayFormat])
 
-  const dayTotal = React.useMemo(() => dayItems.reduce((a, b) => a + b.count, 0), [dayItems])
+  const dayTotal = React.useMemo(() => {
+    return dayItems.reduce((sum, item) => sum + item.count, 0)
+  }, [dayItems])
 
+  //期間にその日が入っているかどうか
   const inRangeModifier = (date: Date) => isInRange(date, projectRange)
-  const isStart = (date: Date) => !!projectRange?.from && isSameDay(date, projectRange.from)
-  const isEnd = (date: Date) => !!projectRange?.to && isSameDay(date, projectRange.to)
+
+
+  const isStart = (date: Date) => !!projectRange.from && isSameDay(date, projectRange.from)
+  const isEnd = (date: Date) => !!projectRange.to && isSameDay(date, projectRange.to)
 
   if (!ready) {
     return (
@@ -317,13 +217,13 @@ export default function ProjectRecordCalendarPanel({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">
-              {projectName ? `${projectName}` : "プロジェクト全体"}
+              {project_name ? `${project_name}` : "プロジェクト全体"}
             </div>
             <div className="text-sm font-bold">
               {selectedDay ? `${iso(selectedDay)} (${weekdayJP(selectedDay)})` : "-"}
             </div>
             <div className="text-xs text-muted-foreground">
-              今日の合計: {dayTotal} {unitLabel}
+              今日の合計: {dayTotal}タスク
             </div>
           </div>
         </div>
@@ -337,13 +237,13 @@ export default function ProjectRecordCalendarPanel({
             <ul className="space-y-2">
               {dayItems.map((it, idx) => (
                 <li
-                  key={`${it.materialTitle}-${idx}`}
+                  key={`${it.title}-${idx}`}
                   className="rounded-md border px-3 py-2 bg-muted cursor-pointer"
                   onClick={() => onSelectMaterialSlug?.(it.slug)}
                 >
-                  <div className="text-sm font-semibold truncate">{it.materialTitle}</div>
+                  <div className="text-sm font-semibold truncate">{it.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {it.count} {it.unitLabel}
+                    {it.count} {unitLabel(it.unit_type)}
                   </div>
                 </li>
               ))}

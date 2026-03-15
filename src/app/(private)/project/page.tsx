@@ -7,7 +7,7 @@ import { deleteMaterialAction, deleteProjectAction, replanDelayedPlansAction, sa
 export const metadata = { title: "Project | studyallot" }
 
 export default async function ProjectPage() {
-  const user = await requireUser()
+  const user = await requireUser();
 
   const { projects, materialsByProjectSlug } = await getProjectPageData(user.id)
 
@@ -15,13 +15,7 @@ export default async function ProjectPage() {
     <div className="space-y-6 h-full flex-1 min-h-0 flex flex-col">
       <ProjectPageBody
         projects={projects}
-        materialsBySlug={materialsByProjectSlug}
-        saveSectionRecordsAction={saveSectionRecordsAction}
-        updateProjectMetaAction={updateProjectMetaAction}
-        replanDelayedPlansAction={replanDelayedPlansAction}
-        updateMaterialOrdersAction={updateMaterialOrdersAction}
-        deleteMaterialAction={deleteMaterialAction}
-        deleteProjectAction={deleteProjectAction}
+        materialsByProjectSlug={materialsByProjectSlug}
       />
     </div>
   )

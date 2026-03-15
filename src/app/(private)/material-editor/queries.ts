@@ -3,7 +3,7 @@ import "server-only"
 import { createClient } from "@/utils/supabase/server"
 
 export type ProjectRow = {
-  id: number | string
+  id: number
   name: string
 }
 

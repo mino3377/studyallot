@@ -13,7 +13,7 @@ import {
   isSameDay,
 } from "date-fns"
 import type { DateRange } from "react-day-picker"
-import type { UnitType } from "@/lib/type/unit-type"
+import type { unit_type } from "@/lib/type/unit-type"
 import { taskLabelRange, taskLabelSingle} from "@/lib/unit-wording"
 import { Share } from "lucide-react"
 
@@ -30,10 +30,10 @@ type DisplayTask = {
 
 type Props = {
   range: DateRange
-  unitCount: number
-  laps: number
+  unit_count: number
+  rounds: number
   unitLabel: string
-  unitType: UnitType
+  unit_type: unit_type
   restDays: Set<number>
   onPlanDaysChange?: (days: number[]) => void
   initialPlanDays?: number[]
@@ -109,7 +109,7 @@ function distributeEvenly(
   return map
 }
 
-function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
+function toDisplayTasks(unit_type: unit_type, tasks: Task[]): DisplayTask[] {
   const out: DisplayTask[] = []
   const sorted = [...tasks].sort(
     (a, b) => (a.lap - b.lap) || (a.unitNo - b.unitNo)
@@ -133,12 +133,12 @@ function toDisplayTasks(unitType: UnitType, tasks: Task[]): DisplayTask[] {
     if (start.unitNo === end.unitNo) {
       out.push({
         key: start.id,
-        label: taskLabelSingle(unitType, start.unitNo, start.lap),
+        label: taskLabelSingle(unit_type, start.unitNo, start.lap),
       })
     } else {
       out.push({
         key: `${start.id}..${end.id}`,
-        label: taskLabelRange(unitType, start.unitNo, end.unitNo, start.lap),
+        label: taskLabelRange(unit_type, start.unitNo, end.unitNo, start.lap),
       })
     }
 
@@ -173,17 +173,17 @@ function planFromCounts(
 
 export default function PlanAdjustCalendar({
   range,
-  unitCount,
-  laps,
+  unit_count,
+  rounds,
   unitLabel,
-  unitType,
+  unit_type,
   restDays,
   onPlanDaysChange,
   initialPlanDays,
   onShare,
   onManualPlanChange,
 }: Props) {
-  const ready = !!range?.from && !!range?.to && !!unitCount && !!laps && !!unitLabel
+  const ready = !!range?.from && !!range?.to && !!unit_count && !!rounds && !!unitLabel
 
   const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(range?.from)
   const [counts, setCounts] = React.useState<number[]>([])
@@ -193,7 +193,7 @@ export default function PlanAdjustCalendar({
 
   React.useEffect(() => {
     if (!ready) return
-    const tasks = makeAllTasks(laps, unitCount)
+    const tasks = makeAllTasks(rounds, unit_count)
 
     const daysAll = eachDayOfInterval({ start: range.from!, end: range.to! })
     const N = daysAll.length
@@ -219,10 +219,10 @@ export default function PlanAdjustCalendar({
     setSelectedDay(range.from)
   }, [
     ready,
-    laps,
-    unitCount,
+    rounds,
+    unit_count,
     unitLabel,
-    unitType,
+    unit_type,
     range?.from?.getTime(),
     range?.to?.getTime(),
     restKey,
@@ -234,13 +234,13 @@ export default function PlanAdjustCalendar({
     onPlanDaysChange?.(counts)
   }, [ready, counts, onPlanDaysChange])
 
-  const totalTasks = unitCount * laps
+  const totalTasks = unit_count * rounds
 
   const plan = React.useMemo(() => {
     if (!ready) return {}
-    const tasks = makeAllTasks(laps, unitCount)
+    const tasks = makeAllTasks(rounds, unit_count)
     return planFromCounts(tasks, range, counts)
-  }, [ready, laps, unitCount, range, counts])
+  }, [ready, rounds, unit_count, range, counts])
 
   const countMap = React.useMemo(() => {
     const map: Record<string, number> = {}
@@ -262,8 +262,8 @@ export default function PlanAdjustCalendar({
   const selectedISO = selectedDay ? iso(selectedDay) : ""
   const selectedTasksRaw = selectedISO ? plan[selectedISO] ?? [] : []
   const displayTasks = React.useMemo(
-    () => toDisplayTasks(unitType, selectedTasksRaw),
-    [unitType, selectedTasksRaw]
+    () => toDisplayTasks(unit_type, selectedTasksRaw),
+    [unit_type, selectedTasksRaw]
   )
 
   const selectedIndex = React.useMemo(() => {

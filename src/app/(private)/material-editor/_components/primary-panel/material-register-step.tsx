@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
 import { UNIT_TYPE_ITEMS, unitLabel } from "@/lib/type/unit-type"
-import type { UnitType } from "@/lib/type/unit-type"
+import type { unit_type } from "@/lib/type/unit-type"
 import MaterialSelectToggle from "../select-toggle"
 import {
   AlertDialog,
@@ -25,11 +25,11 @@ import {
 
 export type MaterialRegisterValue = {
   title: string
-  startDate?: Date
-  endDate?: Date
-  unitType: UnitType
-  unitCount: string
-  laps: string
+  start_date?: Date
+  end_date?: Date
+  unit_type: unit_type
+  unit_count: string
+  rounds: string
 }
 
 type Props = {
@@ -73,7 +73,7 @@ export default function MaterialRegisterStep({
   saveValidationMessage,
   onClearSaveValidationMessage,
 }: Props) {
-  const uLabel = unitLabel(value.unitType)
+  const uLabel = unitLabel(value.unit_type)
   const lock = !!isEdit
   const saveDisabled = !!isSaving
 
@@ -154,21 +154,21 @@ export default function MaterialRegisterStep({
                       disabled={lock}
                     >
                       <CalendarIcon className="h-4 w-4" />
-                      {value.startDate ? fmtYYYYMMDD(value.startDate) : ""}
+                      {value.start_date ? fmtYYYYMMDD(value.start_date) : ""}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={value.startDate}
+                      selected={value.start_date}
                       onSelect={(d) => {
                         if (!d) return
-                        if (value.endDate && d.getTime() > value.endDate.getTime()) return
-                        set({ startDate: d })
+                        if (value.end_date && d.getTime() > value.end_date.getTime()) return
+                        set({ start_date: d })
                       }}
                       disabled={(date) => {
                         if (lock) return true
-                        if (value.endDate && date.getTime() > value.endDate.getTime()) return true
+                        if (value.end_date && date.getTime() > value.end_date.getTime()) return true
                         return false
                       }}
                     />
@@ -186,21 +186,21 @@ export default function MaterialRegisterStep({
                       disabled={lock}
                     >
                       <CalendarIcon className="h-4 w-4" />
-                      {value.endDate ? fmtYYYYMMDD(value.endDate) : ""}
+                      {value.end_date ? fmtYYYYMMDD(value.end_date) : ""}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={value.endDate}
+                      selected={value.end_date}
                       onSelect={(d) => {
                         if (!d) return
-                        if (value.startDate && d.getTime() < value.startDate.getTime()) return
-                        set({ endDate: d })
+                        if (value.start_date && d.getTime() < value.start_date.getTime()) return
+                        set({ end_date: d })
                       }}
                       disabled={(date) => {
                         if (lock) return true
-                        if (value.startDate && date.getTime() < value.startDate.getTime()) return true
+                        if (value.start_date && date.getTime() < value.start_date.getTime()) return true
                         return false
                       }}
                     />
@@ -213,8 +213,8 @@ export default function MaterialRegisterStep({
               <Label>区切りの呼び方</Label>
               <MaterialSelectToggle
                 items={[...UNIT_TYPE_ITEMS]}
-                selectedId={value.unitType}
-                onSelect={(id) => set({ unitType: id as UnitType })}
+                selectedId={value.unit_type}
+                onSelect={(id) => set({ unit_type: id as unit_type })}
                 triggerHandlers={blockTrigger}
               />
             </div>
@@ -227,8 +227,8 @@ export default function MaterialRegisterStep({
                   min={1}
                   max={999}
                   step={1}
-                  value={value.unitCount}
-                  onChange={(e) => set({ unitCount: e.target.value })}
+                  value={value.unit_count}
+                  onChange={(e) => set({ unit_count: e.target.value })}
                   disabled={lock}
                 />
               </div>
@@ -240,8 +240,8 @@ export default function MaterialRegisterStep({
                   min={1}
                   max={999}
                   step={1}
-                  value={value.laps}
-                  onChange={(e) => set({ laps: e.target.value })}
+                  value={value.rounds}
+                  onChange={(e) => set({ rounds: e.target.value })}
                   disabled={lock}
                 />
               </div>

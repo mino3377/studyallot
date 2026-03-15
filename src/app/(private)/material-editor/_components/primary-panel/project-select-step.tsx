@@ -1,5 +1,3 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\_components\material-editor-primary\project-select-step.tsx
-
 "use client"
 
 import * as React from "react"
@@ -32,6 +30,8 @@ export default function ProjectSelectStep({
   onChange,
   onNext,
 }: Props) {
+  const [open, setOpen] = React.useState(false)
+
   const hasProjects = projects.length > 0
   const mode: "existing" | "new" = hasProjects ? value.mode : "new"
 
@@ -110,7 +110,9 @@ export default function ProjectSelectStep({
                     : undefined
                 }
                 placeholder="プロジェクトを選択"
+                open={open}
                 onOpenChange={(o) => {
+                  setOpen(o)
                   if (o) switchToExisting()
                 }}
                 onSelect={(id) => {

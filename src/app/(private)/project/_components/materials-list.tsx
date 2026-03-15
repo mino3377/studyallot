@@ -5,7 +5,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import ProgressRateCard from "@/app/(private)/project/_components/material-progress-rate"
 import { CheckSquare, Pencil, GripVertical, Trash2 } from "lucide-react"
-import type { MaterialVM } from "@/lib/type/material"
+import type { MaterialVM } from "@/lib/type/material_type"
 import { taskLabelRange, taskLabelSingle } from "@/lib/unit-wording"
 
 import {
@@ -27,10 +27,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-import { UnitType, unitLabel as unitTypeLabel } from "@/lib/type/unit-type"
+import { unit_type } from "@/lib/type/unit-type"
 
 type Props = {
-  materials: MaterialVM[]
+  materialsInSelectedProject: MaterialVM[]
   projectName?: string
   selectedMaterialSlug?: string | null
   onSelectMaterial?: (m: MaterialVM) => void
@@ -41,169 +41,115 @@ type Props = {
   ) => Promise<void> | void
 }
 
-type Task = { id: string; unitNo: number; lap: number }
-
 function getTodayISOJST() {
-  const fmt = new Intl.DateTimeFormat("sv-SE", {
+  return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  })
-  return fmt.format(new Date())
+  }).format(new Date())
 }
 
-function clampInt(n: number, min: number, max: number) {
-  if (!Number.isFinite(n)) return min
-  if (n < min) return min
-  if (n > max) return max
-  return n
+function toDate(value?: string) {
+  if (!value) return null
+  return new Date(`${value.slice(0, 10)}T00:00:00`)
 }
 
-function dayCount(m: MaterialVM) {
-  const start = (m.startDate ?? "").slice(0, 10)
-  const end = (m.endDate ?? "").slice(0, 10)
-  if (!start || !end) return 0
-  const msPerDay = 24 * 60 * 60 * 1000
-  const startD = new Date(`${start}T00:00:00`)
-  const endD = new Date(`${end}T00:00:00`)
-  const D = Math.floor((endD.getTime() - startD.getTime()) / msPerDay) + 1
-  return Number.isFinite(D) ? Math.max(0, D) : 0
+function toSafeCounts(arr?: number[]) {
+  if (!Array.isArray(arr)) return []
+  return arr.map((v) => (Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0))
 }
 
-function todayIndexInRange(m: MaterialVM) {
-  const start = (m.startDate ?? "").slice(0, 10)
-  const end = (m.endDate ?? "").slice(0, 10)
-  if (!start || !end) return { inRange: false, idx: -1, len: 0 }
+function getTodayIndex(m: MaterialVM) {
+  const start = toDate(m.start_date)
+  const end = toDate(m.end_date)
+  const today = toDate(getTodayISOJST())
+
+  if (!start || !end || !today) return -1
 
   const msPerDay = 24 * 60 * 60 * 1000
-  const startD = new Date(`${start}T00:00:00`)
-  const endD = new Date(`${end}T00:00:00`)
-  const todayD = new Date(`${getTodayISOJST()}T00:00:00`)
+  const diff = Math.floor((today.getTime() - start.getTime()) / msPerDay)
+  const totalDays = Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1
 
-  const len = dayCount(m)
-  if (len <= 0) return { inRange: false, idx: -1, len: 0 }
+  if (totalDays <= 0) return -1
+  if (diff < 0 || diff >= totalDays) return -1
 
-  if (todayD.getTime() < startD.getTime() || todayD.getTime() > endD.getTime()) {
-    return { inRange: false, idx: -1, len }
-  }
-
-  const idx = Math.floor((todayD.getTime() - startD.getTime()) / msPerDay)
-  return { inRange: true, idx: clampInt(idx, 0, len - 1), len }
+  return diff
 }
 
-function sumPrefix(arr: number[] | undefined, endExclusive: number) {
-  const a = Array.isArray(arr) ? arr : []
-  let s = 0
+function sumUntil(arr: number[], endExclusive: number) {
+  let total = 0
   for (let i = 0; i < endExclusive; i++) {
-    const v = a[i]
-    s += Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0
+    total += arr[i] ?? 0
   }
-  return s
+  return total
 }
 
-function makeAllTasks(laps: number, units: number): Task[] {
-  const out: Task[] = []
-  for (let lap = 1; lap <= laps; lap++) {
-    for (let u = 1; u <= units; u++) {
-      out.push({ id: `L${lap}-U${u}`, unitNo: u, lap })
-    }
-  }
-  return out
-}
-
-function toDisplayLabels(unitType: UnitType, tasks: Task[]) {
-  if (tasks.length === 0) return []
-
-  if (unitType !== "page") {
-    return tasks.map((t) => taskLabelSingle(unitType, t.unitNo, t.lap))
-  }
-
-  const sorted = [...tasks].sort((a, b) => (a.lap - b.lap) || (a.unitNo - b.unitNo))
-  const out: string[] = []
-  let i = 0
-  while (i < sorted.length) {
-    const start = sorted[i]!
-    let j = i
-    while (
-      j + 1 < sorted.length &&
-      sorted[j + 1]!.lap === start.lap &&
-      sorted[j + 1]!.unitNo === sorted[j]!.unitNo + 1
-    ) {
-      j++
-    }
-    const end = sorted[j]!
-    out.push(taskLabelRange(unitType, start.unitNo, end.unitNo, start.lap))
-    i = j + 1
-  }
-  return out
-}
-
-function getTodayPlanCount(m: MaterialVM) {
-  const { inRange, idx } = todayIndexInRange(m)
-  if (!inRange) return { count: 0, hasPlan: false, idx: -1 }
-  const plan = Array.isArray(m.planDays) ? m.planDays : []
-  const hasPlan = plan.length > 0
-  const v = idx >= 0 && idx < plan.length ? plan[idx] : 0
-  const count = Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0
-  return { count, hasPlan, idx }
+function getTaskLabel(unit_type: unit_type, index: number, unit_count: number) {
+  const unitNo = (index % unit_count) + 1
+  const lap = Math.floor(index / unit_count) + 1
+  return { unitNo, lap, label: taskLabelSingle(unit_type, unitNo, lap) }
 }
 
 function buildTodayTaskText(m: MaterialVM) {
-  const unitType: UnitType = m.unitType ?? "section"
-const unitLabel = m.unitLabel ?? unitTypeLabel(unitType)
+  const idx = getTodayIndex(m)
+  const planDays = toSafeCounts(m.plan_days)
+  const unit_count = Number(m.unit_count ?? 0)
+  const rounds = Number(m.rounds ?? 0)
+  const totalTasks = unit_count * rounds
+  const unit_type: unit_type = m.unit_type
 
-  const { count, idx, hasPlan } = getTodayPlanCount(m)
-  if (!hasPlan || count <= 0) return "今日のタスクなし"
+  if (idx < 0 || planDays.length === 0) return "今日のタスクなし"
 
-  const allTasks = makeAllTasks(Number(m.lapsTotal ?? 0), Number(m.totalUnits ?? 0))
-  const start = sumPrefix(m.planDays, Math.max(0, idx))
-  const end = Math.min(allTasks.length, start + count)
-  const todayTasks = allTasks.slice(start, end)
-  if (todayTasks.length === 0) return "今日のタスクなし"
+  const todayCount = planDays[idx] ?? 0
+  if (todayCount <= 0 || unit_count <= 0 || rounds <= 0) return "今日のタスクなし"
 
-  const labels = toDisplayLabels(unitType, todayTasks)
+  const startTaskIndex = sumUntil(planDays, idx)
+  const endTaskIndex = Math.min(totalTasks - 1, startTaskIndex + todayCount - 1)
 
-  if (labels.length <= 2) return labels
-  return `${labels[0]} ~ ${labels[labels.length - 1]}`
+  if (startTaskIndex > endTaskIndex || startTaskIndex >= totalTasks) {
+    return "今日のタスクなし"
+  }
+
+  const start = getTaskLabel(unit_type, startTaskIndex, unit_count)
+  const end = getTaskLabel(unit_type, endTaskIndex, unit_count)
+
+  if (unit_type === "page" && start.lap === end.lap && start.unitNo !== end.unitNo) {
+    return taskLabelRange(unit_type, start.unitNo, end.unitNo, start.lap)
+  }
+
+  if (startTaskIndex === endTaskIndex) {
+    return start.label
+  }
+
+  return `${start.label} ~ ${end.label}`
 }
 
 function calcDeltaUntilToday(m: MaterialVM) {
-  const start = (m.startDate ?? "").slice(0, 10)
-  const end = (m.endDate ?? "").slice(0, 10)
-  if (!start || !end) return { delta: 0, hasData: false }
+  const idx = getTodayIndex(m)
+  const planDays = toSafeCounts(m.plan_days)
+  const actualDays = toSafeCounts(m.actual_days)
 
-  const msPerDay = 24 * 60 * 60 * 1000
-  const startD = new Date(`${start}T00:00:00`)
-  const endD = new Date(`${end}T00:00:00`)
-  const todayD = new Date(`${getTodayISOJST()}T00:00:00`)
+  const hasData = planDays.length > 0 || actualDays.length > 0
+  if (idx < 0 || !hasData) return { delta: 0, hasData }
 
-  const D = Math.floor((endD.getTime() - startD.getTime()) / msPerDay) + 1
-  if (!Number.isFinite(D) || D <= 0) return { delta: 0, hasData: false }
+  const planned = sumUntil(planDays, idx + 1)
+  const actual = sumUntil(actualDays, idx + 1)
 
-  const rawIdx = Math.floor((todayD.getTime() - startD.getTime()) / msPerDay)
-  const fixedLen = clampInt(rawIdx + 1, 0, D)
-
-  const planned = sumPrefix(m.planDays, fixedLen)
-  const actual = sumPrefix(m.actualDays, fixedLen)
-
-  const hasData =
-    (Array.isArray(m.planDays) && m.planDays.length > 0) ||
-    (Array.isArray(m.actualDays) && m.actualDays.length > 0)
-  return { delta: planned - actual, hasData }
+  return { delta: planned - actual, hasData: true }
 }
 
 export default function MaterialsList({
-  materials,
+  materialsInSelectedProject,
   onSelectMaterial,
   onEditMaterial,
   onDeleteMaterial,
   selectedMaterialSlug,
   onReorderMaterials,
 }: Props) {
-  const hasMaterials = materials.length > 0
+  const hasMaterials = materialsInSelectedProject.length > 0
 
-  const [ordered, setOrdered] = React.useState<MaterialVM[]>(materials)
+  const [ordered, setOrdered] = React.useState<MaterialVM[]>(materialsInSelectedProject)
   const [dragId, setDragId] = React.useState<string | null>(null)
   const [isSavingOrder, setIsSavingOrder] = React.useState(false)
 
@@ -211,8 +157,8 @@ export default function MaterialsList({
 
   React.useEffect(() => {
     if (dragId) return
-    setOrdered(materials)
-  }, [materials, dragId])
+    setOrdered(materialsInSelectedProject)
+  }, [materialsInSelectedProject, dragId])
 
   const COLS = "grid-cols-[22px_minmax(0,1fr)_35px_35px_35px]"
 
@@ -255,6 +201,7 @@ export default function MaterialsList({
         if (from < 0 || to < 0) return prev
         const next = [...prev]
         const [moved] = next.splice(from, 1)
+        if (!moved) return prev
         next.splice(to, 0, moved)
         pendingPersistRef.current = next
         return next
@@ -422,7 +369,6 @@ export default function MaterialsList({
                         className="p-2 w-auto min-w-0"
                       >
                         <div className="flex gap-2">
-                          {/* 削除 */}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem
@@ -455,7 +401,6 @@ export default function MaterialsList({
                             </AlertDialogContent>
                           </AlertDialog>
 
-                          {/* 編集 */}
                           <DropdownMenuItem
                             className="flex flex-col items-center justify-center px-4 py-2"
                             onSelect={(e) => {

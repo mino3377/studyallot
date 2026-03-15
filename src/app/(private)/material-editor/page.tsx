@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import NewAddPageBody from "./page-body"
+import { unit_type } from "@/lib/type/unit-type"
 
 export const metadata = { title: "New Material | studyallot" }
 
@@ -72,15 +73,15 @@ export default async function NewAddPage({
     <NewAddPageBody
       projects={projects}
       initial={{
-        editSlug: mat.slug as string,
-        projectId: String(mat.project_id),
+        edit_slug: mat.slug as string,
+        project_id: String(mat.project_id),
         title: mat.title as string,
-        startDate: mat.start_date as string,
-        endDate: mat.end_date as string,
-        unitType: mat.unit_type as string,
-        unitCount: Number(mat.unit_count),
-        laps: Number(mat.rounds),
-        planDays: (mat.plan_days as number[]) ?? [],
+        start_date: mat.start_date as string,
+        end_date: mat.end_date as string,
+        unit_type: mat.unit_type as unit_type,
+        unit_count: Number(mat.unit_count),
+        rounds: Number(mat.rounds),
+        plan_days: (mat.plan_days as number[]) ?? [],
       }}
     />
   )

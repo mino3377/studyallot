@@ -5,12 +5,13 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { makePublicId } from "@/lib/slug"
+import { unit_type } from "@/lib/type/unit-type"
 
 export type CreateTemplateInput = {
   projectName?: string
   title: string
-  unitType: string
-  unitCount: number
+  unit_type: string
+  unit_count: number
   rounds: number
   planDays: number[]
 }
@@ -29,8 +30,8 @@ export async function createTemplateAction(input: CreateTemplateInput) {
     public_id: publicId,
     project_name: (input.projectName ?? "").trim(),
     title: input.title.trim(),
-    unit_type: input.unitType,
-    unit_count: input.unitCount,
+    unit_type: input.unit_type,
+    unit_count: input.unit_count,
     rounds: input.rounds,
     plan_days: input.planDays,
   })
@@ -55,8 +56,8 @@ export async function fetchTemplateAction(publicId: string) {
     publicId: data.public_id as string,
     projectName: (data.project_name ?? "") as string,
     title: data.title as string,
-    unitType: data.unit_type as string,
-    unitCount: Number(data.unit_count),
+    unit_type: data.unit_type as unit_type,
+    unit_count: Number(data.unit_count),
     rounds: Number(data.rounds),
     planDays: (data.plan_days ?? []) as number[],
   }

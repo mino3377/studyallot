@@ -9,17 +9,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
 import { BookCheck, CalendarSync, Eraser, SquareCheckBig } from "lucide-react";
 import Link from "next/link"
 import * as React from "react"
 
-type ProjectPageButtonProps = {
+type ProjectActionButtonProps = {
   href?: string
   ariaLabel?: string
   children: React.ReactNode
   onClick?: React.MouseEventHandler<HTMLElement>
-  asButton?: boolean
   disabled?: boolean
 }
 
@@ -35,34 +33,20 @@ const baseClassName = `
   flex flex-col justify-center items-center
 `
 
-export function ProjectPageButton({
+export function ProjectActionButton({
   href,
   ariaLabel = "ボタン",
   children,
   onClick,
-  asButton = false,
   disabled = false,
-}: ProjectPageButtonProps) {
-  if (asButton) {
-    return (
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        onClick={onClick}
-        disabled={disabled}
-        className={baseClassName}
-      >
-        {children}
-      </button>
-    )
-  }
+}: ProjectActionButtonProps) {
 
   if (href) {
     return (
       <Link
         href={href}
         aria-label={ariaLabel}
-        onClick={onClick as any}
+        onClick={onClick}
         className={baseClassName}
       >
         {children}
@@ -83,52 +67,51 @@ export function ProjectPageButton({
   )
 }
 
-export function ProjectActionButton({
+export function ProjectActionButtonRow({
   openRename,
   toggleProjectProgress,
-  replanAllDelayedInProject,
+  replanDelayedMaterial,
   isReplanning
 }: {
   openRename: () => void,
   toggleProjectProgress: () => void,
-  replanAllDelayedInProject: () => void | Promise<void>,
+  replanDelayedMaterial: () => void | Promise<void>,
   isReplanning: boolean
 }) {
 
   const [isOpenDialog, setIsOpenDialog] = React.useState<boolean>(false)
 
   const handleReplanConfirm = async () => {
-    await replanAllDelayedInProject()
+    await replanDelayedMaterial()
     setIsOpenDialog(false)
   }
 
 
   return (
     <>
-
       <div className="grid grid-cols-2 sm:grid-cols-4 sm:justify-start gap-2 items-center">
-        <ProjectPageButton ariaLabel="プロジェクトを編集" onClick={openRename}>
+        <ProjectActionButton ariaLabel="プロジェクトを編集" onClick={openRename}>
           <Eraser className="h-7 w-7" />
           <div className="">プロジェクト編集</div>
-        </ProjectPageButton>
+        </ProjectActionButton>
 
-        <ProjectPageButton ariaLabel="プロジェクトの進捗" onClick={toggleProjectProgress}>
+        <ProjectActionButton ariaLabel="プロジェクトの進捗" onClick={toggleProjectProgress}>
           <SquareCheckBig className="h-7 w-7" />
           <div className="">プロジェクト進捗</div>
-        </ProjectPageButton>
+        </ProjectActionButton>
 
-        <ProjectPageButton
+        <ProjectActionButton
           ariaLabel="計画の再配分"
           onClick={() => { setIsOpenDialog(true) }}
         >
           <CalendarSync className="h-7 w-7" />
           <div className="">{isReplanning ? "再配分中...." : "計画の再配分"}</div>
-        </ProjectPageButton>
+        </ProjectActionButton>
 
-        <ProjectPageButton ariaLabel="本日タスク完了" onClick={toggleProjectProgress}>
+        <ProjectActionButton ariaLabel="本日タスク完了" onClick={toggleProjectProgress}>
           <BookCheck className="h-7 w-7" />
           <div className="">本日タスク完了</div>
-        </ProjectPageButton>
+        </ProjectActionButton>
       </div>
 
       <AlertDialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>

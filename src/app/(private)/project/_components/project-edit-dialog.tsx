@@ -15,45 +15,39 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Trash2 } from "lucide-react"
-import type { ProjectForProjectPage } from "../data"
+import { ProjectDetails } from "@/lib/type/project_type"
+import { Label } from "@/components/ui/label"
 
-type ConfirmDelete = { id: string; slug: string; name: string } | null
+type ConfirmDelete = { id: number; slug: string; name: string } | null
 
-export function ProjectRenameDialog({
-  open,
-  onOpenChange,
-
-  renameValue,
-  onRenameValueChange,
-
-  orderProjects,
-  setOrderProjects,
-
-  selectedSlug,
-
-  isSaving,
-  onSave,
-
-  isDeletingProjectId,
-  onDeleteProject,
-}: {
+type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-
   renameValue: string
   onRenameValueChange: (v: string) => void
-
-  orderProjects: ProjectForProjectPage[]
-  setOrderProjects: React.Dispatch<React.SetStateAction<ProjectForProjectPage[]>>
-
+  orderProjects: ProjectDetails[]
+  setOrderProjects: React.Dispatch<React.SetStateAction<ProjectDetails[]>>
   selectedSlug: string
-
   isSaving: boolean
   onSave: () => Promise<void> | void
-
   isDeletingProjectId: string | null
-  onDeleteProject: (projectId: number | string) => Promise<void>
-}) {
+  onDeleteProject: (projectId: number) => Promise<void>
+}
+
+export function ProjectEditDialog({
+  open,
+  onOpenChange,
+  renameValue,
+  onRenameValueChange,
+  orderProjects,
+  setOrderProjects,
+  selectedSlug,
+  isSaving,
+  onSave,
+  isDeletingProjectId,
+  onDeleteProject,
+}: Props) {
+
   const [dragId, setDragId] = React.useState<string | null>(null)
   const [confirmDeleteProject, setConfirmDeleteProject] = React.useState<ConfirmDelete>(null)
 
@@ -61,14 +55,15 @@ export function ProjectRenameDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>プロジェクト名を変更</DialogTitle>
+          <DialogTitle>プロジェクト編集</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <Input value={renameValue} onChange={(e) => onRenameValueChange(e.target.value)} />
+        <div className="space-y-3 mt-1">
+          <Label id="name">プロジェクト名</Label>
+          <Input name="name" value={renameValue} onChange={(e) => onRenameValueChange(e.target.value)} />
 
           <div className="mt-4">
-            <div className="text-sm font-semibold mb-2">プロジェクトの順番</div>
+            <Label id="プロジェクトの順番">プロジェクトの順番</Label>
             <div className="text-xs text-muted-foreground mb-2">ドラッグして並び替え</div>
 
             <div className="space-y-2">
@@ -126,7 +121,7 @@ export function ProjectRenameDialog({
                         title="削除"
                         disabled={isDeletingThis}
                         onClick={() => {
-                          setConfirmDeleteProject({ id, slug: p.slug, name: p.name })
+                          setConfirmDeleteProject({ id: p.id, slug: p.slug, name: p.name })
                         }}
                       >
                         <Trash2 className="h-5 w-5" />
@@ -158,7 +153,7 @@ export function ProjectRenameDialog({
             <AlertDialogHeader>
               <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
               <AlertDialogDescription>
-                「{confirmDeleteProject?.name ?? ""}」を削除すると、プロジェクト内の教材・計画・実績も含めて復元できません。
+                「{confirmDeleteProject?.name ?? ""}」を削除すると、プロジェクト内の教材データも削除されます。
               </AlertDialogDescription>
             </AlertDialogHeader>
 

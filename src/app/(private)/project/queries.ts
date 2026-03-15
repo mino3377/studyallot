@@ -1,6 +1,6 @@
 // C:\Users\chiso\nextjs\study-allot\src\app\(private)\project\queries.ts
-import { MaterialRow } from "@/lib/type/material"
-import { ProjectRow } from "@/lib/type/project"
+import { MaterialRow } from "@/lib/type/material_type"
+import { ProjectRow } from "@/lib/type/project_type"
 import { createClient } from "@/utils/supabase/server"
 
 export async function fetchProjects(userId: string): Promise<ProjectRow[]> {
@@ -30,10 +30,13 @@ export async function fetchMaterialsByProjectIds(
     )
     .eq("user_id", userId)
     .in("project_id", projectIds)
-    .order("project_id", { ascending: true})
-    .order("order", { ascending: true , nullsFirst:true})
+    .order("project_id", { ascending: true })
+    .order("order", { ascending: true })
     .order("id", { ascending: true })
 
+
+
   if (error) throw new Error(error.message)
+
   return (data ?? []) as MaterialRow[]
 }

@@ -6,9 +6,6 @@ import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-
-
-
 //プロジェクト名と名前の変更
 export async function updateProjectMetaAction(fd: FormData) {
     const supabase = await createClient()
@@ -235,17 +232,17 @@ export async function replanDelayedPlansAction(fd: FormData) {
     if (matsErr) throw new Error(matsErr.message)
 
     for (const m of mats ?? []) {
-        const startDate = toISO10(m.start_date)
-        const endDate = toISO10(m.end_date)
-        const unitCount = Number(m.unit_count ?? 0)
+        const start_date = toISO10(m.start_date)
+        const end_date = toISO10(m.end_date)
+        const unit_count = Number(m.unit_count ?? 0)
         const rounds = Number(m.rounds ?? 0)
 
-        if (!startDate || !endDate) continue
-        if (!Number.isFinite(unitCount) || !Number.isFinite(rounds)) continue
-        if (unitCount <= 0 || rounds <= 0) continue
+        if (!start_date || !end_date) continue
+        if (!Number.isFinite(unit_count) || !Number.isFinite(rounds)) continue
+        if (unit_count <= 0 || rounds <= 0) continue
 
-        const start = new Date(`${startDate}T00:00:00`)
-        const end = new Date(`${endDate}T00:00:00`)
+        const start = new Date(`${start_date}T00:00:00`)
+        const end = new Date(`${end_date}T00:00:00`)
         const today = new Date(`${todayISO}T00:00:00`)
 
         const D = Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1
@@ -262,7 +259,7 @@ export async function replanDelayedPlansAction(fd: FormData) {
 
         if (!(plannedCum > actualCum)) continue
 
-        const totalTasks = Math.max(0, unitCount * rounds)
+        const totalTasks = Math.max(0, unit_count * rounds)
 
         const fixed = padPrefixFromActual(actualDays, fixedLen)
         const done = fixed.reduce((s, n) => s + n, 0)
