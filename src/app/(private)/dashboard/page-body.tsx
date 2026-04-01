@@ -2,12 +2,9 @@
 
 "use client"
 
-import * as React from "react"
 import MaterialsList from "./_components/materials-list"
 
 import type { Material } from "@/lib/type/material_type"
-import MemoPaper from "@/components/memo-paper"
-import Timer from "@/components/timer/timer"
 import { getCurrentMaterials } from "./_lib/get-current-materials"
 import SimpleStatsPanel from "@/components/stats-card/simple-stats-panel"
 import type { RecordTask } from "./_lib/queries"

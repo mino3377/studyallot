@@ -10,11 +10,11 @@ export type recordTaskMap = Record<string, { taskCount: number, studyTime: numbe
 // {material:{} , record:{何月何日:{ taskCount: 何個, studyTime: 何分} ...} }
 export function materialRecordObjectRow(materialRow: Material[], recordRow: RecordTask[]) {
 
-    let materialRecordRow: { material: Material, record: recordTaskMap }[] = []
+    const materialRecordRow: { material: Material, record: recordTaskMap }[] = []
 
     for (let i = 0; i < materialRow.length; i++) {
 
-        let recordTaskMap: recordTaskMap = {}
+        const recordTaskMap: recordTaskMap = {}
 
         recordRow
             .filter((record) => materialRow[i].id === record.material_id)
@@ -57,7 +57,7 @@ export function calcRecordSumInRange(
     endDate: Date,
     materialRecordRow: { material: Material, record: recordTaskMap }[]) {
 
-    let recordRowFlatted: { taskCount: number, studyTime: number }[] = []
+    const recordRowFlatted: { taskCount: number, studyTime: number }[] = []
 
     materialRecordRow.forEach((record) => {
         Object

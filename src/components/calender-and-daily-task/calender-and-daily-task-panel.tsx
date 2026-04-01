@@ -27,7 +27,7 @@ materialRow
     const [displayDate, setDisplayDate] = React.useState<Date>(today)
 
     // 教材ごとのタスク
-    let materialTaskMapRow: MaterialTaskMap[] = []
+    const materialTaskMapRow: MaterialTaskMap[] = []
 
     materialRow.map((material) => {
 

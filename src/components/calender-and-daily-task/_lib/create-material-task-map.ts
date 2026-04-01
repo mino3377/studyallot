@@ -5,7 +5,7 @@ import { MaterialTaskMap } from "@/app/(private)/dashboard/page-body";
 
 export function createMaterialTaskMap(material: Material, dateTaskRow: dayTaskRecord[]) {
 
-    let taskMapValue: Record<string, number> = {}
+    const taskMapValue: Record<string, number> = {}
     dateTaskRow.forEach((task) => taskMapValue[iso(task.date)] = task.taskCount)
     const materialTaskMap: MaterialTaskMap = { material: material, taskMap: taskMapValue }
 

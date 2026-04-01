@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import ThemeToggle from "@/components/theme-toggle"
 import { logout } from "@/app/(auth)/login/actions"
 import { LogOut, User, MessageSquare, Info } from "lucide-react"
 import {

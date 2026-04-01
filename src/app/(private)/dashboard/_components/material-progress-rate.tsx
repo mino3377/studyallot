@@ -20,7 +20,6 @@ export default function ProgressRateCard({
   const [animatedActual, setAnimatedActual] = useState(0)
 
   useEffect(() => {
-    setAnimatedActual(0)
     const raf = requestAnimationFrame(() => setAnimatedActual(actual))
     return () => cancelAnimationFrame(raf)
   }, [actual])
@@ -34,38 +33,36 @@ export default function ProgressRateCard({
   }, [size, strokeWidth, animatedActual])
 
   return (
-  <div className="relative shrink-0" style={{ width: size, height: size }}>
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
-      {/* ベース（未達成部分） */}
-      <circle
-        cx={cx}
-        cy={cx}
-        r={r}
-        fill="transparent"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        className="text-muted-foreground"
-      />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+        <circle
+          cx={cx}
+          cy={cx}
+          r={r}
+          fill="transparent"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-muted-foreground"
+        />
 
-      {/* 進捗部分 */}
-      <circle
-        cx={cx}
-        cy={cx}
-        r={r}
-        fill="transparent"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${cx} ${cx})`}
-        className="text-foreground transition-[stroke-dashoffset] duration-700 ease-out"
-      />
-    </svg>
+        <circle
+          cx={cx}
+          cy={cx}
+          r={r}
+          fill="transparent"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${cx} ${cx})`}
+          className="text-foreground transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+      </svg>
 
-    <div className="absolute inset-0 grid place-items-center">
-      <div className="text-xs font-semibold text-foreground">{actual}%</div>
+      <div className="absolute inset-0 grid place-items-center">
+        <div className="text-xs font-semibold text-foreground">{actual}%</div>
+      </div>
     </div>
-  </div>
-)
+  )
 }

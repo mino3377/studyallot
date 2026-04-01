@@ -41,7 +41,7 @@ export async function loginDemoUser(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent('メールアドレスとパスワードを入力してください'))
   }
 
-  const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+  const { error} = await supabase.auth.signInWithPassword({ email, password })
   if (error) {
     redirect('/login?error=' + encodeURIComponent('メール/パスワードが正しくありません'))
   }

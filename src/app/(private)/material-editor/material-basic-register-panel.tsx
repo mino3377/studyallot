@@ -10,7 +10,6 @@ import ProjectAddButton from "@/components/button/project-add-button"
 import ProjectEditButton from "@/components/button/project-edit-button"
 import { Project } from "@/lib/type/project_type"
 import { unitOptions } from "@/lib/type/unit-type"
-import { CalendarIcon, CirclePlus } from "lucide-react"
 import React from "react"
 
 type Props = {

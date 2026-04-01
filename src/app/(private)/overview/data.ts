@@ -1,4 +1,3 @@
-import { generateProjectIdRow } from "@/lib/data";
 import { Material } from "@/lib/type/material_type";
 import { Project, ProjectIdString } from "@/lib/type/project_type";
 
@@ -25,7 +24,7 @@ export function projectAndMaterialRow(projectRow: Project[], materialRow: Materi
         order: project.order
     }))
 
-    let projectMaterialRow: projectMaterialObj[] = []
+    const projectMaterialRow: projectMaterialObj[] = []
 
     for (let i = 0; i < adjustedProjectRow.length; i++) {
         const materials = adjustedMaterialRow.filter((material) => material.projectId === adjustedProjectRow[i].id)

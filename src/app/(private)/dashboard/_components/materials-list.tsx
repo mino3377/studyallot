@@ -4,9 +4,8 @@
 import MaterialActionButtons from "@/components/material-action-buttons"
 import { Material } from "@/lib/type/material_type"
 import Link from "next/link"
-import type { RecordTask } from "../_lib/queries"
 import PieChart from "@/components/graph/pie-chart"
-import { calcDoneTaskCount, materialRecordObjectRow, recordTaskMap } from "../_lib/material-record-object-row"
+import { calcDoneTaskCount, recordTaskMap } from "../_lib/material-record-object-row"
 import { CirclePlus } from "lucide-react"
 
 type Props = {

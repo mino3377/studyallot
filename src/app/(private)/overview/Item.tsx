@@ -1,7 +1,5 @@
-import React from 'react'
 import { useSortable } from "@dnd-kit/react/sortable"
 import MaterialActionButtons from '@/components/material-action-buttons'
-import Link from 'next/link'
 
 type Props = {
   userId: string

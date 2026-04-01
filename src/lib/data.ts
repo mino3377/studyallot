@@ -1,5 +1,3 @@
-import { createClient } from "@/utils/supabase/server";
-import { Material } from "./type/material_type";
 import { Project } from "./type/project_type";
 
 export function generateProjectIdRow(projectRow: Project[]) {

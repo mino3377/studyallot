@@ -1,8 +1,7 @@
 import { MaterialTaskMap } from '@/app/(private)/dashboard/page-body'
-import { monthLabel, monthLabelJP } from '@/lib/constant/period-label'
+import { monthLabelJP } from '@/lib/constant/period-label'
 import { iso } from '@/lib/date/date'
 import { NotebookPen } from 'lucide-react'
-import React from 'react'
 
 type Props = {
   selectedDay: Date,

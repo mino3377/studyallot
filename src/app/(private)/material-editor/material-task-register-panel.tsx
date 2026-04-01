@@ -22,7 +22,7 @@ export default function MaterialTaskRegisterPanel({
   const [taskRatioRow, setTaskRatioRow] = React.useState<number[]>(
     initialTaskRatioRow && initialTaskRatioRow.length === 7
       ? initialTaskRatioRow
-      : Array.from({ length: 7 }, (_) => 1)
+      : Array.from({ length: 7 }, () => 1)
   )
 
   const daysTaskRow = taskDistributeByDays({ startDate, endDate, unitCount, rounds, taskRatioRow })

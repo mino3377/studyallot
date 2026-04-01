@@ -26,7 +26,6 @@ function toDate(value?: string | Date | null) {
 }
 
 export default function MaterialEditorPageBody({
-  userId,
   projectsRow,
   initialMaterial,
   editSlug

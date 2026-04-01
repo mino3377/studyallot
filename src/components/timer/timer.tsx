@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type SetStateAction } from "react"
 import { Pause, Play, RotateCcw } from "lucide-react"
 import TimerSettingsDialog from "./timer-settings-dialog"
 
@@ -46,11 +46,35 @@ export default function Timer() {
     return () => clearInterval(id)
   }, [running, mode, currentSet, totalSets, focusMinutes, breakMinutes])
 
-  useEffect(() => {
+  function resetTimerWithFocus(nextFocusMinutes: number) {
     setMode("focus")
     setCurrentSet(1)
-    setTimeLeft(focusMinutes * 60)
-  }, [focusMinutes, breakMinutes, totalSets])
+    setTimeLeft(nextFocusMinutes * 60)
+  }
+
+  function handleFocusMinutesChange(value: SetStateAction<number>) {
+    setFocusMinutes((prev) => {
+      const nextValue = typeof value === "function" ? value(prev) : value
+      resetTimerWithFocus(nextValue)
+      return nextValue
+    })
+  }
+
+  function handleBreakMinutesChange(value: SetStateAction<number>) {
+    setBreakMinutes((prev) => {
+      const nextValue = typeof value === "function" ? value(prev) : value
+      resetTimerWithFocus(focusMinutes)
+      return nextValue
+    })
+  }
+
+  function handleTotalSetsChange(value: SetStateAction<number>) {
+    setTotalSets((prev) => {
+      const nextValue = typeof value === "function" ? value(prev) : value
+      resetTimerWithFocus(focusMinutes)
+      return nextValue
+    })
+  }
 
   const progress = currentTotalSeconds === 0 ? 0 : timeLeft / currentTotalSeconds
 
@@ -71,7 +95,7 @@ export default function Timer() {
   return (
     <div className="flex h-full w-full items-center min-h-0">
       <div className="flex items-center justify-between w-full h-full min-h-0 overflow-hidden">
-        <div className="flex h-full min-h-0 items-center  p-1 min-w-0 w-full">
+        <div className="flex h-full min-h-0 items-center p-1 min-w-0 w-full">
           <div className="relative aspect-square h-5/6 w-full max-w-full min-h-0">
             <svg className="h-full w-full" viewBox="0 0 120 120">
               <path
@@ -129,11 +153,9 @@ export default function Timer() {
           </div>
 
           <div className="mt-2 flex flex-col shrink-0 items-center justify-center gap-2 min-h-0">
-
-
             <button
               onClick={handleReset}
-              className="rounded-full border  bg-white/50 border-black/10 p-2.5 text-white transition hover:bg-white/30"
+              className="rounded-full border bg-white/50 border-black/10 p-2.5 text-white transition hover:bg-white/30"
             >
               <RotateCcw className="size-4" />
             </button>
@@ -148,9 +170,9 @@ export default function Timer() {
               focusMinutes={focusMinutes}
               breakMinutes={breakMinutes}
               totalSets={totalSets}
-              setFocusMinutes={setFocusMinutes}
-              setBreakMinutes={setBreakMinutes}
-              setTotalSets={setTotalSets}
+              setFocusMinutes={handleFocusMinutesChange}
+              setBreakMinutes={handleBreakMinutesChange}
+              setTotalSets={handleTotalSetsChange}
               disabled={running}
             />
           </div>

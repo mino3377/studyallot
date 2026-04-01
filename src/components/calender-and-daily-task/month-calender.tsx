@@ -2,8 +2,7 @@
 
 
 import { monthLabel, weekLabel } from '@/lib/constant/period-label'
-import { Divide, MoveLeft, MoveRight } from 'lucide-react'
-import React from 'react'
+import {  MoveLeft, MoveRight } from 'lucide-react'
 
 type Props = {
   selectedDay:Date,
@@ -20,10 +19,6 @@ setDisplayDate
 
 }:Props) {
 
-
-
-  let isSelected: boolean = false
-
   //今の月
   const currentYear = new Date(displayDate).getFullYear()
   const currentMonth = new Date(displayDate).getMonth()
@@ -38,22 +33,19 @@ setDisplayDate
   const prevEndMonth = prevDisplayEndDate.getMonth()
   const prevEndDate = prevDisplayEndDate.getDate()
 
-  //次の月
-  const nextStartDate = new Date(currentYear, currentMonth + 1, 1)
-
   //現在の表示月の全日付の配列３つ
-  let prevRow = []
+  const prevRow = []
   for (let i = 0; i < startDay; i++) {
     prevRow.push(new Date(prevEndYear, prevEndMonth, prevEndDate - i))
   }
   prevRow.reverse()
 
-  let currentRow = []
+  const currentRow = []
   for (let i = 0; i < endDate; i++) {
     currentRow.push(new Date(currentYear, currentMonth, i + 1))
   }
 
-  let nextRow = []
+  const nextRow = []
   for (let i = 0; i < 6 - endDay; i++) {
     nextRow.push(new Date(currentYear, currentMonth + 1, i + 1))
   }
@@ -75,7 +67,6 @@ setDisplayDate
     setDisplayDate(prevMonth)
   }
   function handleSelectedDay(day: Date) {
-    isSelected = true
     setSelectedDay(day)
   }
 

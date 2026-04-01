@@ -25,7 +25,7 @@ export default function SimpleStatsPanel({
 
 
     //すべての教材の[{何月何日:何タスク}...]を統合した長い配列
-    let allMaterialTaskRow: dayTaskRecord[] = []
+    const allMaterialTaskRow: dayTaskRecord[] = []
 
     materialRow.forEach((material) => {
         const dayTaskRow = taskDistribute({

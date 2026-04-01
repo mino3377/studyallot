@@ -26,7 +26,7 @@ export function taskDistributeByDays({
     totalRatio = taskRatioRow.reduce((sum, num) => sum += num, 0)
 
     //曜日ごとのタスク量配列　長さ7
-    let taskcountRow = taskRatioRow.map((num) => Math.floor(num / totalRatio * totalTask))
+    const taskcountRow = taskRatioRow.map((num) => Math.floor(num / totalRatio * totalTask))
 
     let actualTotalTask = 0
     taskcountRow.map((num) => actualTotalTask += num)
@@ -40,7 +40,7 @@ export function taskDistributeByDays({
         number: number, ratio: number
     }
 
-    let taskRatioObjectRow: taskRatioObject[] = []
+    const taskRatioObjectRow: taskRatioObject[] = []
 
     for (let i = 0; i < 7; i++) {
         taskRatioObjectRow.push(
@@ -60,7 +60,7 @@ export function taskDistributeByDays({
         end: endDate
     })
 
-    let daysTaskRow: dayTaskRecord[][] = []
+    const daysTaskRow: dayTaskRecord[][] = []
 
     //daysTaskRow完成　[[],[],...] 日月火...の{各日の日にちとタスク数}
     for (let i = 0; i < 7; i++) {
@@ -114,7 +114,7 @@ export function convertToDateTaskSum(materialTaskRow: dayTaskRecord[]) {
         end: sortedRow[sortedRow.length - 1].date
     })
 
-    let taskSumRow: dayTaskRecord[] = []
+    const taskSumRow: dayTaskRecord[] = []
 
     for (let i = 0; i < IntervalRow.length; i++) {
         const sum = sortedRow

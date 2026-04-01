@@ -18,11 +18,11 @@ export default async function ProjectPage() {
   if (!user) redirect("/login")
 
 
-    //教材
+  //教材
   const materialRow: Material[] = await fetchMaterials(user.id)
   const projectOrderRow: Project[] = await fetchProjectIdsAndOrders(user.id)
 
-  let adjustedMaterialRow: Material[] = []
+  const adjustedMaterialRow: Material[] = []
 
   for (let i = 0; i < projectOrderRow.length; i++) {
     const row: Material[] = materialRow
@@ -36,7 +36,7 @@ export default async function ProjectPage() {
 
   return (
     <div className="h-full w-full min-h-0 flex flex-col">
-      <ProjectPageBody userId={user.id} materialRow={adjustedMaterialRow} recordRow = {recordRow}/>
+      <ProjectPageBody userId={user.id} materialRow={adjustedMaterialRow} recordRow={recordRow} />
     </div>
   )
 }
