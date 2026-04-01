@@ -3,7 +3,6 @@ import Link from "next/link"
 
 import studyallot_logo from "@/components/image/studyallot_logo1.svg"
 import Image from "next/image"
-import ThemeToggle from "@/components/theme-toggle"
 
 export default async function LoginLayout({ children }: { children: React.ReactNode }) {
 
@@ -27,9 +26,6 @@ export default async function LoginLayout({ children }: { children: React.ReactN
               <span>StudyAllot</span>
             </div>
           </Link>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-          </div>
         </div>
       </header>
 

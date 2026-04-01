@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/utils/supabase/server"
 import studyallot_logo from "@/components/image/studyallot_logo1.svg"
 import Image from "next/image"
-import ThemeToggle from "@/components/theme-toggle"
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -45,7 +44,6 @@ export default async function PublicLayout({ children }: { children: React.React
                 <Link href="/login">ログイン</Link>
               </Button>
             )}
-            <ThemeToggle />
           </div>
         </div>
       </header>

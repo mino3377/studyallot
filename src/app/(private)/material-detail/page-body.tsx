@@ -72,9 +72,6 @@ export default function MaterialEditorPageBody({ material }: Props) {
                       <SimpleStatsCard title="総タスク数" stats={48} unit="コ" />
                     </div>
                     <div className="border-l-2">
-                      <SimpleStatsCard title="今週の学習時間" stats={9.5} range="week" unit="h" />
-                    </div>
-                    <div className="border-l-2">
                       <SimpleStatsCard title="進捗率" stats={62} unit="%" />
                     </div>
                   </div>
@@ -166,7 +163,7 @@ export default function MaterialEditorPageBody({ material }: Props) {
         {/* 右サイド */}
         <div className="-my-2 -mr-2 col-span-2 flex flex-col space-y-2 bg-green-900/10 p-2">
           <div className="flex h-4/7 w-full items-start justify-center rounded-2xl bg-white p-3 shadow-md">
-            <MonthCalender />
+
           </div>
 
           <div className="flex h-3/7 min-h-0 flex-col justify-center rounded-2xl bg-white p-4 shadow-md">
