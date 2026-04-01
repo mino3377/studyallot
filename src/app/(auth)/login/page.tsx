@@ -12,7 +12,7 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>
 }) {
   const sp = await searchParams
-  const next = sp?.next ?? "/project"
+  const next = sp?.next ?? "/dashboard"
   const error = sp?.error
 
   const supabase = await createClient()

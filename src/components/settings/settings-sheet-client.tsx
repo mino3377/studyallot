@@ -15,8 +15,8 @@ export default function SettingsSheetClient({ user }: { user: unknown }) {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="設定を開く">
-                    <Settings className="w-5 h-5" />
+                <Button variant="ghost" size="icon" aria-label="設定を開く" className="hover:bg-white/50">
+                    <Settings className="w-5 h-5 text-white" />
                 </Button>
             </SheetTrigger>
 

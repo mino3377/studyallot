@@ -10,7 +10,7 @@ import { createClient } from '@/utils/supabase/server'
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
-  const next = (formData.get('next') as string) || '/project'
+  const next = (formData.get('next') as string) || '/dashboard'
   const h = await headers()
   const proto = h.get('x-forwarded-proto') ?? 'http'
   const host  = h.get('x-forwarded-host')  ?? h.get('host') ?? 'localhost:3000'
@@ -33,7 +33,7 @@ export async function login(formData: FormData) {
 export async function loginDemoUser(formData: FormData) {
   const supabase = await createClient()
 
-  const next = (formData.get('next') as string) || '/project'
+  const next = (formData.get('next') as string) || '/dashboard'
   const email = (formData.get('email') as string | null)?.trim()
   const password = (formData.get('password') as string | null) ?? ''
 

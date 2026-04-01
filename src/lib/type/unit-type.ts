@@ -1,15 +1,15 @@
 // src/lib/unit-type.ts
 
-export const UNIT_TYPE_ITEMS = [
-  { id: "section", label: "セクション" },
-  { id: "chapter", label: "章" },
-  { id: "page", label: "ページ" },
-  { id: "unit", label: "ユニット" },
-  { id: "problem", label: "問題" },
-  { id: "question", label: "問" },
-  { id: "part", label: "パート" },
-  { id: "lesson", label: "レッスン" },
-] as const
+export const unitOptions = [
+  { id: "section", title: "セクション" },
+  { id: "chapter", title: "章" },
+  { id: "page", title: "ページ" },
+  { id: "unit", title: "ユニット" },
+  { id: "problem", title: "問題" },
+  { id: "question", title: "問" },
+  { id: "part", title: "パート" },
+  { id: "lesson", title: "レッスン" },
+]
 
 export const UNIT_TYPE_IDS = [
   "section",
@@ -22,9 +22,9 @@ export const UNIT_TYPE_IDS = [
   "lesson",
 ] as const
 
-export type unit_type = (typeof UNIT_TYPE_ITEMS)[number]["id"]
+export type unit_type = (typeof unitOptions)[number]["id"]
 
-export function unitLabel(unit_type: unit_type): string {
-  const found = UNIT_TYPE_ITEMS.find((x) => x.id === unit_type)
-  return found?.label ?? "セクション"
+export function unittitle(unit_type: unit_type): string {
+  const found = unitOptions.find((x) => x.id === unit_type)
+  return found?.title ?? "セクション"
 }

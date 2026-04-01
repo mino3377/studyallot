@@ -1,20 +1,11 @@
 // C:\Users\chiso\nextjs\study-allot\src\lib\validators\project.ts
 import { z } from "zod"
+import { title } from "../constant/project-constant"
 
-const trimStr = (v: unknown) => (typeof v === "string" ? v.trim() : v)
-const emptyToNull = (v: unknown) =>
-  typeof v === "string" && v.trim() === "" ? null : v
-
-const BaseProject = z.object({
-  name: z.preprocess(trimStr, z.string().min(1, "プロジェクト名は必須です。")),
+export const projectBaseSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(title.min, `プロジェクト名は${title.min}文字以上にしてください`)
+    .max(title.max, `プロジェクト名は${title.max}文字以下にしてください`),
 })
-
-export const CreateProjectPayload = BaseProject
-
-export const UpdateProjectPayload = BaseProject
-
-export function parseProjectFormData(fd: FormData) {
-  return {
-    name: String(fd.get("name") ?? ""),
-  }
-}

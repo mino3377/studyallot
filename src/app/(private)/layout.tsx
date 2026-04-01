@@ -1,86 +1,31 @@
 // C:\Users\chiso\nextjs\study-allot\src\app\(private)\layout.tsx
 
 import Header from "@/components/header/header-server"
-import { ChartColumnBig, LayoutDashboard, Pen } from "lucide-react"
-import Link from "next/link"
-
-function NavIcon({
-  href,
-  children,
-  disabled,
-}: {
-  href?: string
-  children: React.ReactNode
-  disabled?: boolean
-}) {
-  if (disabled) {
-    return (
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg opacity-60 cursor-not-allowed">
-        {children}
-      </div>
-    )
-  }
-
-  return (
-    <Link
-      href={href!}
-      className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition"
-    >
-      {children}
-    </Link>
-  )
-}
-
-function SideNav() {
-  return (
-    <div className="hidden lg:flex w-12 mt-12 backdrop-blur-md items-center pl-1 pt-5 gap-5 flex-col">
-      <NavIcon href="/project">
-        <LayoutDashboard className="h-5 w-5" />
-      </NavIcon>
-
-      <NavIcon href="/material-editor">
-        <Pen className="h-5 w-5" />
-      </NavIcon>
-
-      <NavIcon disabled>
-        <ChartColumnBig className="h-5 w-5" />
-      </NavIcon>
-    </div>
-  )
-}
-
-function MobileNav() {
-  return (
-    <footer className="flex justify-around items-center lg:hidden h-12 z-50 fixed bottom-0 w-full">
-      <NavIcon href="/project">
-        <LayoutDashboard className="h-5 w-5" />
-      </NavIcon>
-
-      <NavIcon href="/material-editor">
-        <Pen className="h-5 w-5" />
-      </NavIcon>
-
-      <NavIcon disabled>
-        <ChartColumnBig className="h-5 w-5" />
-      </NavIcon>
-    </footer>
-  )
-}
+import { SideNav } from "@/components/navigation/side-navigation"
+import { Toaster } from "@/components/ui/sonner"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+
   return (
-    <div className="h-screen flex flex-col max-w-screen-2xl mx-auto">
-      <Header />
-
-      <div className="flex flex-1 h-full">
-        <SideNav />
-
-        <main className="flex-1 min-h-0 p-2 md:px-6 mt-12 mb-12 lg:mb-0 overflow-y-auto">
-          {children}
-        </main>
+    <div className="h-screen w-screen flex flex-col max-w-screen-2xl mx-auto bg-linear-to-b from-black to-black/30 font-serif">
+      <div className="w-screen h-12 shrink-0">
+        <Header />
       </div>
 
-      <MobileNav />
+      <div className="flex flex-1 min-h-0 w-full">
+        <SideNav />
+
+        <main
+          className="flex flex-col w-full h-full min-w-0 rounded-t-2xl"
+          style={{
+            background: "linear-gradient(135deg, #D3D8E0 0%, #C4CAD4 55%, #B8BFCA 100%)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
+          }}
+        >
+          {children}
+        </main>
+        <Toaster />
+      </div>
     </div>
   )
 }

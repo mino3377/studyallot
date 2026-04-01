@@ -1,11 +1,18 @@
-export type ProjectRow = {
+export type Project = {
   id: number
   slug?: string
-  name: string
+  title: string
   order?: number
 }
 
-export type ProjectDetails = ProjectRow & {
+export type ProjectIdString = {
+  id: string
+  slug?: string
+  title: string
+  order?: number
+}
+
+export type ProjectDetails = Project & {
   period: { from: string; to: string }
   daysLeftLabel: string
   materialsTotal: number

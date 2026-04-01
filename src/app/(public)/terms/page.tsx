@@ -1,5 +1,5 @@
 // app/(public)/terms/page.tsx
-import BackButton from "@/components/buck-button"
+import BackButton from "@/components/back-button"
 import Link from "next/link"
 
 export const metadata = {

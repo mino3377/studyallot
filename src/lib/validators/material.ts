@@ -1,12 +1,17 @@
 // src/lib/validators/material.ts
 import { z } from "zod"
 import { UNIT_TYPE_IDS } from "../type/unit-type"
+import { rounds, title, unitCount } from "../constant/material-constant"
 
 export const MaterialBaseSchema = z.object({
   title: z
     .string()
-    .min(1, "教材名は1文字以上入力してください")
-    .max(50, "教材名は50文字以内にしてください"),
+    .trim()
+    .min(title.min, `教材名は${title.min}以上にしてください`)
+    .max(title.max, `教材名は${title.max}以下にしてください`),
+  project: z
+    .string()
+    .min(1, "プロジェクトを選択してください"),
 
   start_date: z.date({
     error: "開始日を選択してください",
@@ -17,16 +22,16 @@ export const MaterialBaseSchema = z.object({
   }),
 
   unit_type: z.enum(UNIT_TYPE_IDS, {
-    error: () => ({ message: "区切りの呼び方を選択してください" }),
+    error: "タイプを選択してください",
   }),
 
   unit_count: z
     .number({
-      error: "区切り数を入力してください",
+      error: "ユニット数を入力してください",
     })
-    .int("区切り数は整数で入力してください")
-    .min(1, "区切り数は1以上にしてください")
-    .max(999, "区切り数は999以下にしてください"),
+    .int("ユニット数は整数で入力してください")
+    .min(unitCount.min, `ユニット数は${unitCount.min}以上にしてください`)
+    .max(unitCount.max, `ユニット数は${unitCount.max}以下にしてください`),
 
   rounds: z
     .number({
@@ -34,9 +39,11 @@ export const MaterialBaseSchema = z.object({
 
     })
     .int("周回数は整数で入力してください")
-    .min(1, "周回数は1以上にしてください")
-    .max(999, "周回数は999以下にしてください"),
+    .min(rounds.min, `周回数は${rounds.min}以上にしてください`)
+    .max(rounds.max, `周回数は${rounds.max}以下にしてください`),
 })
+
+
 
 export const MaterialDateRangeSchema = z
   .object({
@@ -47,11 +54,3 @@ export const MaterialDateRangeSchema = z
     message: "終了日は開始日以後にしてください",
     path: ["end_date"],
   })
-
-export const MaterialSchema = MaterialBaseSchema.refine(
-  (data) => data.start_date.getTime() <= data.end_date.getTime(),
-  {
-    message: "終了日は開始日以後にしてください",
-    path: ["end_date"],
-  }
-)

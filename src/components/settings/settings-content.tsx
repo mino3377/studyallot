@@ -79,11 +79,7 @@ export default function SettingsContent({ user }: { user: unknown }) {
         </div>
 
         <Separator className="my-4" />
-
-        <ThemeToggle />
-        <div className="mt-1 text-xs text-muted-foreground">画面の明るさ</div>
-
-        <Separator className="my-4" />
+        
         <div className="space-y-2">
           <Button asChild variant="outline" className="w-full justify-start">
             <a href={feedbackUrl} target="_blank" rel="noreferrer">

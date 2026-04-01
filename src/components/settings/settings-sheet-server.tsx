@@ -8,7 +8,5 @@ export default async function SettingsSheetServer() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  console.log("[SettingsSheetServer] user =", user?.id)
-
   return <SettingsSheetClient user={user} />
 }

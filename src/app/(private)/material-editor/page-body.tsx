@@ -1,490 +1,303 @@
-//C:\Users\chiso\nextjs\study-allot\src\app\(private)\material-editor\page-body.tsx
 "use client"
 
-import * as React from "react"
-import type { DateRange } from "react-day-picker"
-import { useSearchParams } from "next/navigation"
-import { addDays } from "date-fns"
-import { NotebookPen } from "lucide-react"
-import { isRedirectError } from "next/dist/client/components/redirect-error"
+import SaveButton from "@/components/button/save-button"
+import MaterialBasicRegisterPanel from "./material-basic-register-panel"
+import MaterialTaskRegisterPanel from "./material-task-register-panel"
+import CancelButton from "@/components/cancel-button"
+import React from "react"
+import { MaterialBaseSchema, MaterialDateRangeSchema } from "@/lib/validators/material"
+import { rounds, title, unitCount } from "@/lib/constant/material-constant"
+import { Project } from "@/lib/type/project_type"
+import { saveNewMaterial, updateMaterial } from "./_lib/actions"
+import { errorToast, successToast } from "@/components/toast"
+import { useRouter } from "next/navigation"
+import type { Material } from "@/lib/type/material_type"
 
-import type { Step } from "./_components/primary-panel/material-editor-step-nav"
-
-import MaterialEditorPrimaryPanel from "./_components/primary-panel/material-editor-primary-panel"
-import PlanAdjustCalendar from "./_components/plan-adjust-calendar"
-import { PlanShareDialog } from "./_components/plan-share-dialog"
-
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Card, CardContent } from "@/components/ui/card"
-
-import { saveNewMaterialAction, updateMaterialAction } from "./actions"
-import { createTemplateAction, fetchTemplateAction } from "./template-actions"
-
-import { unit_type, unitLabel as unit_typeLabel } from "@/lib/type/unit-type"
-import { unitLabelByType } from "@/lib/unit-wording"
-import type {
-  MaterialRegisterValue,
-  MaterialRow,
-  UpdateMaterialInput,
-  ProjectOption,
-} from "@/lib/type/material_type"
-
-import { ProjectRow } from "@/lib/type/project_type"
-import { iso } from "@/lib/date/date"
-import { MaterialSchema } from "@/lib/validators/material"
-
-function buildMaterialEditorSaveDraft(args: {
-  step1: UpdateMaterialInput
-  materialStep: MaterialRegisterValue
-  planDays: number[]
-}) {
-  return {
-    projectMode: args.step1.projectMode,
-    selectedProjectId: args.step1.selectedProjectId,
-    newProjectName: args.step1.newProjectName ?? "",
-    title: args.materialStep.title,
-    start_date: args.materialStep.start_date
-      ? new Date(args.materialStep.start_date)
-      : undefined,
-    end_date: args.materialStep.end_date
-      ? new Date(args.materialStep.end_date)
-      : undefined,
-    unit_type: args.materialStep.unit_type,
-    unit_count: args.materialStep.unit_count,
-    rounds: args.materialStep.rounds,
-    planDays: args.planDays,
-  }
+type Props = {
+  userId: string,
+  projectsRow: Project[],
+  initialMaterial: Material | null,
+  editSlug?: string
 }
 
-function buildMaterialEditorShareDraft(args: {
-  step1: UpdateMaterialInput
-  materialStep: MaterialRegisterValue
-  planDays: number[]
-}) {
-  return buildMaterialEditorSaveDraft(args)
-}
-
-function getPlanSummary(args: {
-  range?: { from?: string; to?: string }
-  unit_count?: number
-  rounds?: number
-  planDays: number[]
-}) {
-  if (!args.range?.from || !args.range?.to || !args.unit_count || !args.rounds) {
-    return { remainingTaskCount: null }
-  }
-
-  const total = args.unit_count * args.rounds
-  const planned = args.planDays.reduce((sum, n) => sum + n, 0)
-
-  return {
-    remainingTaskCount: total - planned,
-  }
+function toDate(value?: string | Date | null) {
+  if (!value) return new Date()
+  return value instanceof Date ? value : new Date(value)
 }
 
 export default function MaterialEditorPageBody({
-  projects,
-  initial,
-}: {
-  projects: ProjectRow[]
-  initial?: MaterialRow & { edit_slug: string }
-}) {
-  const searchParams = useSearchParams()
-  const templateId = searchParams.get("template")
-  const isTemplateMode = !!templateId
-  const isEdit = !!initial?.edit_slug && !isTemplateMode
+  userId,
+  projectsRow,
+  initialMaterial,
+  editSlug
+}: Props) {
 
-  const [step1, setStep1] = React.useState<UpdateMaterialInput>({
-    projectMode: "existing",
-    selectedProjectId: initial?.project_id,
-    newProjectName: "",
-  })
+  const today = new Date()
+  const isEditMode = !!initialMaterial && !!editSlug
 
-  const [materialStep, setMaterialStep] = React.useState<MaterialRegisterValue>({
-    title: initial?.title ?? "",
-    start_date: initial?.start_date ?? undefined,
-    end_date: initial?.end_date ?? undefined,
-    unit_type: initial?.unit_type ?? "section",
-    unit_count: initial?.unit_count ?? 0,
-    rounds: initial?.rounds ?? 0,
-  })
+  console.log(isEditMode)
 
-  const [planDays, setPlanDays] = React.useState<number[]>(
-    Array.isArray(initial?.plan_days) ? initial.plan_days : []
+  // 教材名
+  const [materialNameValue, setMaterialNameValue] = React.useState<string>(initialMaterial?.title ?? "")
+  const [materialNameError, setMaterialNameError] = React.useState<string | undefined>(undefined)
+
+  function handleMaterialValue(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value
+    if (value.length > title.max) return
+
+    const parsedResult = MaterialBaseSchema.shape.title.safeParse(value)
+
+    if (!parsedResult.success) {
+      setMaterialNameError(parsedResult.error.issues[0]?.message)
+    } else {
+      setMaterialNameError(undefined)
+    }
+
+    setMaterialNameValue(value)
+  }
+
+  //プロジェクト
+  const [projectValue, setProjectValue] = React.useState<string>(
+    initialMaterial?.project_id != null ? String(initialMaterial.project_id) : ""
   )
+  const [projectError, setProjectError] = React.useState<string | undefined>(undefined)
 
-  const [templateInitialPlanDays, setTemplateInitialPlanDays] = React.useState<
-    number[] | undefined
-  >(undefined)
+  function handleProjectValue(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value
 
-  const [restDays, setRestDays] = React.useState<Set<number>>(new Set())
-  const [openDetails, setOpenDetails] = React.useState(false)
-  const [isSaving, setIsSaving] = React.useState(false)
-  const [saveValidationMessage, setSaveValidationMessage] = React.useState("")
-  const [currentStep, setCurrentStep] = React.useState<Step>(isEdit ? 2 : 1)
+    const parsedResult = MaterialBaseSchema.shape.project.safeParse(value)
 
-  const [shareOpen, setShareOpen] = React.useState(false)
-  const [shareUrl, setShareUrl] = React.useState("")
-  const [notice, setNotice] = React.useState("")
-  const [isPlanManuallyChanged, setIsPlanManuallyChanged] = React.useState(false)
-
-  const noticeTimerRef = React.useRef<number | null>(null)
-  const appliedTemplateIdRef = React.useRef<string | null>(null)
-
-  const goStep2 = () => setCurrentStep(2)
-
-
-  //テンプレート
-  React.useEffect(() => {
-    if (!templateId) return
-    if (appliedTemplateIdRef.current === templateId) return
-
-    appliedTemplateIdRef.current = templateId
-
-    const applyTemplate = async () => {
-      const t = await fetchTemplateAction(templateId)
-
-      const projectName = t.projectName.trim()
-
-      //テンプレートプロジェクト名あり
-      if (projectName) {
-        const matchedProject = projects.find((p) => p.name === projectName)
-        //同じプロジェクト名があればそれに設定
-        if (matchedProject) {
-          setStep1({
-            projectMode: "existing",
-            selectedProjectId: matchedProject.id,
-            newProjectName: "",
-          })
-        } else {
-          //なければ新たに作成
-          setStep1({
-            projectMode: "new",
-            selectedProjectId: undefined,
-            newProjectName: projectName,
-          })
-        }
-        //テンプレートプロジェクト名なし
-      } else {
-        setStep1({
-          projectMode: "new",
-          selectedProjectId: undefined,
-          newProjectName: "",
-        })
-      }
-
-      const today = new Date()
-      const nextPlanDays = t.planDays
-      const endDate = addDays(today, Math.max(0, nextPlanDays.length - 1))
-
-      setMaterialStep({
-        title: t.title,
-        start_date: iso(today),
-        end_date: iso(endDate),
-        unit_type: t.unit_type,
-        unit_count: t.unit_count,
-        rounds: t.rounds,
-      })
-
-      setPlanDays(nextPlanDays)
-      setTemplateInitialPlanDays(nextPlanDays)
-      setCurrentStep(2)
+    if (!parsedResult.success) {
+      setProjectError(parsedResult.error.issues[0]?.message)
+    } else {
+      setProjectError(undefined)
     }
 
-    void applyTemplate()
-  }, [templateId, projects])
-
-  React.useEffect(() => {
-    return () => {
-      if (noticeTimerRef.current) {
-        window.clearTimeout(noticeTimerRef.current)
-      }
-    }
-  }, [])
-
-  React.useEffect(() => {
-    if (saveValidationMessage) {
-      setSaveValidationMessage("")
-    }
-  }, [step1, materialStep, planDays])
-
-  const showNotice = (msg: string) => {
-    setNotice(msg)
-
-    if (noticeTimerRef.current) {
-      window.clearTimeout(noticeTimerRef.current)
-    }
-
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice("")
-      noticeTimerRef.current = null
-    }, 2000)
+    setProjectValue(value)
   }
 
-  const range =
-    materialStep.start_date && materialStep.end_date
-      ? { from: materialStep.start_date, to: materialStep.end_date }
-      : undefined
+  // 開始日
+  const [startDateValue, setStartDateValue] = React.useState<Date>(
+    initialMaterial?.start_date
+      ? toDate(initialMaterial.start_date)
+      : new Date()
+  )
+  const [startDateError, setStartDateError] = React.useState<string | undefined>(undefined)
 
-  const unitCountNum =
-    typeof materialStep.unit_count === "number" && materialStep.unit_count > 0
-      ? materialStep.unit_count
-      : undefined
+  function handleStartDateValue(date: Date) {
 
-  const roundsCountNum =
-    typeof materialStep.rounds === "number" && materialStep.rounds > 0
-      ? materialStep.rounds
-      : undefined
-
-  const unitLabelText = unit_typeLabel(materialStep.unit_type)
-
-  const initialPlanDays =
-    templateInitialPlanDays ?? (isEdit ? initial?.plan_days : undefined)
-
-  const { remainingTaskCount } = getPlanSummary({
-    range,
-    unit_count: unitCountNum,
-    rounds: roundsCountNum,
-    planDays,
-  })
-
-  const handleSave = async () => {
-    if (isSaving) return
-
-    const draft = buildMaterialEditorSaveDraft({
-      step1,
-      materialStep,
-      planDays,
+    const parsedResult = MaterialDateRangeSchema.safeParse({
+      start_date: date,
+      end_date: endDateValue,
     })
 
-    if (draft.projectMode === "existing" && !draft.selectedProjectId) {
-      setSaveValidationMessage("既存プロジェクトを選択してください")
-      return
+    if (!parsedResult.success) {
+      setStartDateError(parsedResult.error.flatten().fieldErrors.start_date?.[0])
+      setEndDateError(parsedResult.error.flatten().fieldErrors.end_date?.[0])
+    } else {
+      setStartDateError(undefined)
+      setEndDateError(undefined)
     }
 
-    if (draft.projectMode === "new" && !draft.newProjectName.trim()) {
-      setSaveValidationMessage("新しいプロジェクト名を入力してください")
-      return
-    }
-
-    const parsed = MaterialSchema.safeParse({
-      title: draft.title,
-      start_date: draft.start_date,
-      end_date: draft.end_date,
-      unit_type: draft.unit_type,
-      unit_count: draft.unit_count,
-      rounds: draft.rounds,
-    })
-
-    if (!parsed.success) {
-      setSaveValidationMessage(
-        parsed.error.issues[0]?.message ?? "入力内容を確認してください。"
-      )
-      return
-    }
-
-    try {
-      setIsSaving(true)
-      setSaveValidationMessage("")
-
-      if (isEdit && initial) {
-        await updateMaterialAction({
-          slug: initial.edit_slug,
-          projectMode: draft.projectMode,
-          selectedProjectId: draft.selectedProjectId,
-          newProjectName: draft.newProjectName,
-          title: parsed.data.title,
-          start_date: iso(parsed.data.start_date),
-          end_date: iso(parsed.data.end_date),
-          unit_type: parsed.data.unit_type,
-          unit_count: parsed.data.unit_count,
-          rounds: parsed.data.rounds,
-          planDays: draft.planDays,
-        })
-        return
-      }
-
-      await saveNewMaterialAction({
-        projectMode: draft.projectMode,
-        selectedProjectId: draft.selectedProjectId,
-        newProjectName: draft.newProjectName,
-        title: parsed.data.title,
-        start_date: iso(parsed.data.start_date),
-        end_date: iso(parsed.data.end_date),
-        unit_type: parsed.data.unit_type,
-        unit_count: parsed.data.unit_count,
-        rounds: parsed.data.rounds,
-        planDays: draft.planDays,
-        actualDays: Array.from({ length: draft.planDays.length }, () => 0),
-      })
-    } catch (e: unknown) {
-      if (isRedirectError(e)) throw e
-
-      setSaveValidationMessage(
-        e instanceof Error ? e.message : "保存に失敗しました。"
-      )
-    } finally {
-      setIsSaving(false)
-    }
+    setStartDateValue(date)
   }
 
-  const handleShare = async () => {
-    const draft = buildMaterialEditorShareDraft({
-      step1,
-      materialStep,
-      planDays,
+  //終了日
+  const [endDateValue, setEndDateValue] = React.useState<Date>(
+    initialMaterial?.end_date
+      ? toDate(initialMaterial.end_date)
+      : new Date(today.getFullYear(), today.getMonth() + 1, today.getDate())
+  )
+  const [endDateError, setEndDateError] = React.useState<string | undefined>(undefined)
+
+  function handleEndDateValue(date: Date) {
+    const parsedResult = MaterialDateRangeSchema.safeParse({
+      start_date: startDateValue,
+      end_date: date,
     })
 
-    if (draft.projectMode === "existing" && !draft.selectedProjectId) {
-      setShareUrl("既存プロジェクトを選択してください")
-      setShareOpen(true)
-      return
+    if (!parsedResult.success) {
+      setStartDateError(parsedResult.error.flatten().fieldErrors.start_date?.[0])
+      setEndDateError(parsedResult.error.flatten().fieldErrors.end_date?.[0])
+    } else {
+      setStartDateError(undefined)
+      setEndDateError(undefined)
     }
 
-    if (draft.projectMode === "new" && !draft.newProjectName.trim()) {
-      setShareUrl("新しいプロジェクト名を入力してください")
-      setShareOpen(true)
-      return
-    }
+    setEndDateValue(date)
+  }
+  //ユニットタイプ
+  const [unitTypeValue, setUnitTypeValue] = React.useState<string>(initialMaterial?.unit_type ?? "")
 
-    const parsed = MaterialSchema.safeParse({
-      title: draft.title,
-      start_date: draft.start_date,
-      end_date: draft.end_date,
-      unit_type: draft.unit_type,
-      unit_count: draft.unit_count,
-      rounds: draft.rounds,
-    })
+  function handleUnitTypeValue(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value
 
-    if (!parsed.success) {
-      setShareUrl(parsed.error.issues[0]?.message ?? "共有URLの作成に失敗しました")
-      setShareOpen(true)
-      return
-    }
-
-    try {
-      const projectName =
-        draft.projectMode === "new"
-          ? draft.newProjectName.trim()
-          : (
-            projects.find((p) => Number(p.id) === draft.selectedProjectId)?.name ?? ""
-          ).trim()
-
-      const { publicId } = await createTemplateAction({
-        projectName,
-        title: parsed.data.title,
-        unit_type: parsed.data.unit_type,
-        unit_count: parsed.data.unit_count,
-        rounds: parsed.data.rounds,
-        planDays: draft.planDays,
-      })
-
-      setShareUrl(`${window.location.origin}/material-editor?template=${publicId}`)
-      setShareOpen(true)
-    } catch (e: unknown) {
-      setShareUrl(e instanceof Error ? e.message : "共有URLの作成に失敗しました")
-      setShareOpen(true)
-    }
+    setUnitTypeValue(value)
   }
 
-  const canShowCalendar =
-    !!range?.from && !!range?.to && !!unitCountNum && !!roundsCountNum && !!unitLabelText
+  //ユニット数
+  const [unitCountValue, setUnitCountValue] = React.useState<string>(
+    initialMaterial?.unit_count != null ? String(initialMaterial.unit_count) : "1"
+  )
+  const [unitCountError, setUnitCountError] = React.useState<string | undefined>(undefined)
+
+  function handleUnitCountValue(e: React.ChangeEvent<HTMLInputElement>) {
+    let v = e.target.value
+    if (!/^\d*$/.test(v)) return
+
+    if (v.length > 1) v = v.replace(/^0+/, "")
+    if (v === "") {
+      setUnitCountValue("")
+      setUnitCountError("ユニット数を入力してください")
+      return
+    }
+
+    const num = Number(v)
+    if (num > unitCount.max) return
+
+    const parsedResult = MaterialBaseSchema.shape.unit_count.safeParse(num)
+
+    if (!parsedResult.success) {
+      setUnitCountError(parsedResult.error.issues[0]?.message)
+    } else {
+      setUnitCountError(undefined)
+    }
+
+    setUnitCountValue(v)
+  }
+
+  //周回数
+  const [roundsValue, setRoundsValue] = React.useState<string>(
+    initialMaterial?.rounds != null ? String(initialMaterial.rounds) : "1"
+  )
+  const [roundsError, setRoundsError] = React.useState<string | undefined>(undefined)
+
+  function handleRoundValue(e: React.ChangeEvent<HTMLInputElement>) {
+    let v = e.target.value
+    if (!/^\d*$/.test(v)) return
+
+    if (v.length > 1) v = v.replace(/^0+/, "")
+    if (v === "") {
+      setRoundsValue("")
+      setRoundsError("周回数を入力してください")
+      return
+    }
+
+    const num = Number(v)
+    if (num > rounds.max) return
+
+    const parsedResult = MaterialBaseSchema.shape.rounds.safeParse(num)
+
+    if (!parsedResult.success) {
+      setRoundsError(parsedResult.error.issues[0]?.message)
+    } else {
+      setRoundsError(undefined)
+    }
+
+    setRoundsValue(v)
+  }
+
+  const [isCompleted, setIsCompleted] = React.useState<boolean>(false)
+
+  const [allErrorMessage, setAllErrorMessage] = React.useState<string | undefined>(undefined)
+
+  React.useEffect(() => {
+
+    const rowData = {
+      title: materialNameValue,
+      project: projectValue,
+      start_date: startDateValue,
+      end_date: endDateValue,
+      unit_type: unitTypeValue,
+      unit_count: Number(unitCountValue),
+      rounds: Number(roundsValue)
+    }
+
+    const result = MaterialBaseSchema.safeParse(rowData)
+
+    if (!result.success) {
+      setAllErrorMessage(result.error.issues[0].message)
+      setIsCompleted(false)
+    } else {
+      setAllErrorMessage(undefined)
+      setIsCompleted(true)
+    }
+
+  }, [materialNameValue, projectValue, startDateValue, endDateValue, unitTypeValue, unitCountValue, roundsValue])
+
+  const isDisabled: boolean = !isCompleted
+
+  const router = useRouter()
+  //保存処理
+  async function handleSubmit(formData: FormData) {
+    const result = isEditMode
+      ? await updateMaterial(formData)
+      : await saveNewMaterial(formData)
+
+    if (!result.ok) {
+      errorToast(result.message)
+    }
+    else {
+      successToast(result.message)
+      router.push("/dashboard")
+    }
+  }
 
   return (
     <>
-      <main className="flex flex-col md:grid md:grid-cols-2 h-full min-h-0">
-        <div className="flex-1 min-h-0 md:col-span-1 md:flex-none">
-          <MaterialEditorPrimaryPanel
-            currentStep={currentStep}
-            onChangeStep={setCurrentStep}
-            projects={projects}
-            step1={step1}
-            onChangeStep1={setStep1}
-            onNext={goStep2}
-            materialStep={materialStep}
-            onChangeMaterialStep={setMaterialStep}
-            restDays={restDays}
-            onChangeRestDays={setRestDays}
-            onOpenDetails={() => setOpenDetails(true)}
-            onSave={handleSave}
-            isEdit={isEdit}
-            isSaving={isSaving}
-            isPlanManuallyChanged={isPlanManuallyChanged}
-            onManualPlanChange={() => setIsPlanManuallyChanged(true)}
-            remainingTaskCount={remainingTaskCount}
-            saveValidationMessage={saveValidationMessage}
-            onClearSaveValidationMessage={() => setSaveValidationMessage("")}
-          />
-        </div>
+      <form action={handleSubmit} className="lg:h-full min-h-0 flex flex-col justify-between p-1 overflow-y-auto">
+        {isEditMode ? (
+          <input type="hidden" name="editSlug" value={editSlug} />
+        ) : null}
 
-        <div className="hidden md:flex md:col-span-1 h-full min-h-0">
-          {canShowCalendar ? (
-            <PlanAdjustCalendar
-              range={range}
-              unit_count={unitCountNum}
-              rounds={roundsCountNum}
-              unitLabel={unitLabelText}
-              restDays={restDays}
-              unit_type={materialStep.unit_type}
-              onPlanDaysChange={setPlanDays}
-              initialPlanDays={initialPlanDays}
-              onShare={handleShare}
-              onManualPlanChange={() => setIsPlanManuallyChanged(true)}
+        <div className="lg:grid lg:grid-cols-2  lg:h-6/7 ">
+          <div className="min-h-0 col-span-1 lg:h-full p-1">
+            <MaterialBasicRegisterPanel
+              projectsRow={projectsRow}
+              materialNameValue={materialNameValue}
+              handleMaterialValue={handleMaterialValue}
+              materialNameError={materialNameError}
+              projectValue={projectValue}
+              handleProjectValue={handleProjectValue}
+              projectError={projectError}
+              startDateValue={startDateValue}
+              handleStartDateValue={handleStartDateValue}
+              startDateError={startDateError}
+              endDateValue={endDateValue}
+              handleEndDateValue={handleEndDateValue}
+              endDateError={endDateError}
+              unitTypeValue={unitTypeValue}
+              handleUnitTypeValue={handleUnitTypeValue}
+              unitCountValue={unitCountValue}
+              handleUnitCountValue={handleUnitCountValue}
+              unitCountError={unitCountError}
+              roundValue={roundsValue}
+              handleRoundValue={handleRoundValue}
+              roundsError={roundsError}
             />
-          ) : (
-            <Card className="w-full m-3 p-12 flex items-center">
-              <CardContent className="p-0 gap-2 text-sm text-muted-foreground flex justify-center items-center">
-                <NotebookPen />
-                教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unit_type)}数 / 周回数」を入力してください。
-              </CardContent>
-            </Card>
-          )}
+          </div>
+          <div className="mt-4 lg:mt-0 min-h-0 lg:col-span-1 lg:h-full p-1">
+            <MaterialTaskRegisterPanel
+              startDate={startDateValue}
+              endDate={endDateValue}
+              unitCount={Number(unitCountValue)}
+              rounds={Number(roundsValue)}
+              initialTaskRatioRow={initialMaterial?.task_ratio_row ?? null}
+            />
+          </div>
         </div>
-
-        <div className="md:hidden">
-          <Sheet open={openDetails} onOpenChange={setOpenDetails}>
-            <SheetContent side="bottom" className="p-0 max-h-[85vh]">
-              <SheetHeader className="sr-only">
-                <SheetTitle>計画調整</SheetTitle>
-              </SheetHeader>
-
-              <div className="h-full p-3 flex flex-col min-h-0">
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  {canShowCalendar ? (
-                    <PlanAdjustCalendar
-                      range={range}
-                      unit_count={unitCountNum}
-                      rounds={roundsCountNum}
-                      unitLabel={unitLabelText}
-                      restDays={restDays}
-                      unit_type={materialStep.unit_type}
-                      onPlanDaysChange={setPlanDays}
-                      initialPlanDays={initialPlanDays}
-                      onShare={handleShare}
-                      onManualPlanChange={() => setIsPlanManuallyChanged(true)}
-                    />
-                  ) : (
-                    <Card className="w-full m-3 p-12 flex items-center">
-                      <CardContent className="p-0 gap-2 text-sm text-muted-foreground flex justify-center items-center">
-                        <NotebookPen />
-                        教材入力で「開始日 / 終了日 / {unitLabelByType(materialStep.unit_type)}数 / 周回数」を入力してください。
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+        <div className="grid grid-cols-2 mb-25 lg:mb-0">
+          <div className="col-span-1 p-1">
+            <CancelButton />
+          </div>
+          <div className="col-span-1 p-1">
+            <SaveButton
+              isDisabled={isDisabled}
+              errorMessage={allErrorMessage}
+            />
+          </div>
         </div>
-      </main>
-
-      <PlanShareDialog
-        shareUrl={shareUrl}
-        shareOpen={shareOpen}
-        setShareOpen={setShareOpen}
-        notice={notice}
-        showNotice={showNotice}
-      />
+      </form>
     </>
   )
 }

@@ -33,7 +33,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <div className="flex items-center gap-2">
             {user ? (
               <Button asChild size="sm">
-                <Link href="/project">アプリを開く</Link>
+                <Link href="/dashboard">アプリを開く</Link>
               </Button>
             ) : (
               <Button

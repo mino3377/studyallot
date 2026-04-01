@@ -1,6 +1,6 @@
 // C:\Users\chiso\nextjs\study-allot\src\app\(public)\privacy\page.tsx
 
-import BackButton from "@/components/buck-button"
+import BackButton from "@/components/back-button"
 
 export const metadata = {
     title: "プライバシーポリシー | StudyAllot",
