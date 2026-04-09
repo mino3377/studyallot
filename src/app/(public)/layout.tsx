@@ -2,68 +2,68 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/utils/supabase/server"
-import studyallot_logo from "@/components/image/studyallot_logo1.svg"
+import studyallot_logo from "@/components/image/studyallot_logo4.svg"
 import Image from "next/image"
+import AppImage from "@/components/app_image"
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   return (
-    <>
-      <header className="sticky top-0 z-50 px-3 backdrop-blur-md">
-        <div className="mx-auto max-w-6xl h-12 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-3 text-sm font-semibold"
-            aria-label="StudyAllot ホームへ"
-          >
-            <div className="bg-white rounded-xs">
-              <Image
-                src={studyallot_logo}
-                alt="StudyAllot"
-                className="h-4 w-4 m-1"
-                priority
-              />
+    <div className="relative min-h-screen bg-[#f5f5f3] text-[#18181b] font-serif">
+      <div className="relative z-10">
+        <header className="sticky top-0 z-50 border-b border-black/8 bg-white/70 px-3 backdrop-blur-xl">
+          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between">
+            <Link
+              href="/"
+              aria-label="StudyAllot ホームへ"
+            >
+              <AppImage />
+            </Link>
+
+            <div className="flex items-center gap-2">
+              {user ? (
+                <Button
+                  asChild
+                  size="sm"
+                  className="bg-[#18181b] text-white hover:bg-[#25252b]"
+                >
+                  <Link href="/dashboard">アプリを開く</Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="border-black/10 bg-white/80 text-[#18181b] hover:bg-white"
+                >
+                  <Link href="/login" className="font-sans">ログイン</Link>
+                </Button>
+              )}
             </div>
-
-            <span>StudyAllot</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            {user ? (
-              <Button asChild size="sm">
-                <Link href="/dashboard">アプリを開く</Link>
-              </Button>
-            ) : (
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-
-              >
-                <Link href="/login">ログイン</Link>
-              </Button>
-            )}
           </div>
-        </div>
-      </header>
+        </header>
 
-      {children}
+        {children}
 
-      <footer className="border-t mt-20">
-        <div className="mx-auto max-w-6xl px-4 md:px-6 py-10 text-sm text-muted-foreground flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-          <div>© {new Date().getFullYear()} StudyAllot</div>
+        <footer className="mt-24 border-t border-black/8">
+          <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 text-sm text-black/48 md:flex-row md:items-center md:justify-between md:px-6">
+            <div>© {new Date().getFullYear()} StudyAllot</div>
 
-          <div className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
-              プライバシーポリシー
-            </Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              利用規約
-            </Link>
+            <div className="flex items-center gap-5">
+              <Link href="/privacy" className="transition-colors hover:text-black/80">
+                プライバシーポリシー
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-black/80">
+                利用規約
+              </Link>
+            </div>
           </div>
-        </div>
-      </footer>
-    </>
+        </footer>
+      </div>
+    </div>
   )
 }

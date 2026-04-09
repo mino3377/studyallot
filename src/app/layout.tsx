@@ -17,18 +17,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StudyAllot｜逆算して学習計画を自動配分",
+  title: "StudyAllot | 勉強計画アプリ・学習管理アプリ",
   description:
-    "教材を登録するだけで学習計画を自動配分。今日やること、進捗率、周回数、期限までの遅れを一元管理できる学習管理アプリ。",
-  keywords: ["資格試験","学習管理アプリ","遅れ","進捗","タスク","教材","逆算","周回","受験"],
+     "教材を登録するだけで、逆算した学習計画と今日やるべきことが見える学習管理アプリ。進捗管理や学習記録にも対応。",
   openGraph: {
-    title: "StudyAllot｜逆算して学習計画を自動配分",
-    description: "教材を登録するだけで学習計画を自動配分。今日やること、進捗率、周回数、期限までの遅れを一元管理できる学習管理アプリ。",
+    title: "StudyAllot | 勉強計画アプリ・学習管理アプリ",
+    description:
+       "教材を登録するだけで、逆算した学習計画と今日やるべきことが見える学習管理アプリ。進捗管理や学習記録にも対応。",
     url: "https://studyallot.com",
     siteName: "StudyAllot",
     type: "website",
   },
-};
+}
 
 export default function RootLayout({
   children,

@@ -8,7 +8,7 @@ export default function HeaderClient() {
   return (
     <div className=" items-center">
       <Link href={"/dashboard"}>
-        <AppImage />
+        <AppImage isBlack={true}/>
       </Link>
     </div>
   )

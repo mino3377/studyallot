@@ -21,6 +21,7 @@ import { taskCount } from "@/lib/constant/material-constant"
 import { CheckSheetSchema } from "@/lib/validators/record"
 import { getMaterialRecordRows, type RecordRow } from "./_lib/queries"
 import { saveRecord, updateRecord } from "./_lib/action"
+import { useRouter } from "next/navigation"
 
 type Props = {
     userId: string
@@ -151,6 +152,8 @@ export default function CheckSheet({
     }, [dateValue, taskCountValue, studyTimeValue, contentValue])
 
     const isDisabled: boolean = !isCompleted
+
+    const router = useRouter()
     async function handleSubmit(formData: FormData) {
         const result = recordId === null
             ? await saveRecord(id, formData)
@@ -161,6 +164,7 @@ export default function CheckSheet({
         } else {
             successToast(result.message)
             onOpenChenge()
+            router.refresh()
         }
 
     }

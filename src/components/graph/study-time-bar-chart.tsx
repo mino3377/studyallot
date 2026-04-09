@@ -72,9 +72,9 @@ export function StudyTimeBarChart({ materialRow, recordRow }: Props) {
                     accessibilityLayer
                     data={chartData}
                     margin={{
-                        top: 10,
+                        top: 15,
                         right: 0,
-                        left: -20,
+                        left: 0,
                         bottom: 0,
                     }}
                 >
@@ -100,6 +100,7 @@ export function StudyTimeBarChart({ materialRow, recordRow }: Props) {
                             formatter={(value: number) =>
                                 Number(value) === 0 ? "" : `${(Number(value) / 60).toFixed(1)}`
                             }
+                            
                         />
                     </Bar>
                 </BarChart>

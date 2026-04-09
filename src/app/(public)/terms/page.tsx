@@ -4,6 +4,10 @@ import Link from "next/link"
 
 export const metadata = {
   title: "利用規約 | StudyAllot",
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 function Section({

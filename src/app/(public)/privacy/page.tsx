@@ -4,6 +4,10 @@ import BackButton from "@/components/back-button"
 
 export const metadata = {
     title: "プライバシーポリシー | StudyAllot",
+    robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 function Section({
