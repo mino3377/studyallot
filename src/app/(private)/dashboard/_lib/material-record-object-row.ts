@@ -38,18 +38,16 @@ export function materialRecordObjectRow(materialRow: Material[], recordRow: Reco
 }
 
 //ある日までにその教材がどのくらいタスクを完了しているのか
-export function calcDoneTaskCount(material: Material, records: recordTaskMap) {
+export function calcDoneTaskCount(records: recordTaskMap) {
 
-    const today = new Date()
+    // const today = new Date()
 
     const doneTaskCount = Object
         .entries(records)
-        .filter((record) => new Date(record[0]).getTime() <= today.getTime())
         .reduce((sum, record) => sum += record[1].taskCount, 0)
-
+    // .filter((record) => new Date(record[0]).getTime() <= today.getTime())
     return doneTaskCount
 }
-
 
 // 記録の特定の期間内でのやったタスク数と学習時間のオブジェクト　{タスク合計:~,学習時間合計:~}
 export function calcRecordSumInRange(
@@ -71,7 +69,6 @@ export function calcRecordSumInRange(
 
     return { recordTaskSum: recordTaskSum, recordStudyTimeSum: recordStudyTimeSum }
 }
-
 
 // 教材横断で日付ごとの記録をまとめる関数
 // { "2026-03-30": { taskCount: ~, studyTime: ~ }, ... }

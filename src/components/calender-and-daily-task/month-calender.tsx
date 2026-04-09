@@ -101,6 +101,10 @@ setDisplayDate
                   day.getDate() === selectedDay.getDate()
                   ? "bg-black text-white hover:bg-black/70"
                   : "hover:bg-muted-foreground/70"
+                }
+                ${day.getMonth() !== displayDate.getMonth()
+                  ? "text-muted-foreground/80"
+                  : null
                 }`}
             >
               {day.getDate()}

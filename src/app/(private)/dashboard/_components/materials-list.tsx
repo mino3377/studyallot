@@ -18,6 +18,8 @@ export default function MaterialsList({
     materialRecordRow
 }: Props) {
 
+    console.log(materialRecordRow)
+
     return (
         <div className="space-y-2 h-[calc(100vh/2)] lg:h-full overflow-y-auto min-h-0">
             {materialRecordRow.map((m) => {
@@ -33,7 +35,7 @@ export default function MaterialsList({
                         <div className="col-span-1 flex justify-center items-center">
                             <PieChart
                                 percent={Math.floor(
-                                    (calcDoneTaskCount(m.material, m.record) /
+                                    (calcDoneTaskCount(m.record) /
                                         (m.material.unit_count * m.material.rounds)) *
                                     100
                                 )}
