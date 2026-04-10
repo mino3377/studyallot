@@ -18,8 +18,6 @@ export default function MaterialsList({
     materialRecordRow
 }: Props) {
 
-    console.log(materialRecordRow)
-
     return (
         <div className="space-y-2 h-[calc(100vh/2)] lg:h-full overflow-y-auto min-h-0">
             {materialRecordRow.map((m) => {

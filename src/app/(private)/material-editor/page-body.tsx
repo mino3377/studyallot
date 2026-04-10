@@ -34,8 +34,6 @@ export default function MaterialEditorPageBody({
   const today = new Date()
   const isEditMode = !!initialMaterial && !!editSlug
 
-  console.log(isEditMode)
-
   // 教材名
   const [materialNameValue, setMaterialNameValue] = React.useState<string>(initialMaterial?.title ?? "")
   const [materialNameError, setMaterialNameError] = React.useState<string | undefined>(undefined)

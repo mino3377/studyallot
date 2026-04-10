@@ -10,17 +10,14 @@ export async function GET(request: Request) {
 
   if (!code) {
     const errDest = `${url.origin}/login?error=missing_code`
-    console.log("[callback] redirect ->", errDest)
     return NextResponse.redirect(errDest)
   }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.exchangeCodeForSession(code)
-  console.log("[callback] exchange error =", error)
 
   if (error) {
     const errDest = `${url.origin}/login?error=exchange_failed`
-    console.log("[callback] redirect ->", errDest)
     return NextResponse.redirect(errDest)
   }
   const safeNext =
@@ -29,6 +26,5 @@ export async function GET(request: Request) {
       : "/dashboard"
 
   const dest = `${url.origin}${safeNext}`
-  console.log("[callback] redirect ->", dest)
   return NextResponse.redirect(dest)
 }

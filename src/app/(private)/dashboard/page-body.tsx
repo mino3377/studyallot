@@ -13,6 +13,8 @@ import { materialRecordObjectRow } from "./_lib/material-record-object-row"
 import { weekLabelJP } from "@/lib/constant/period-label"
 import { CompareProgressLineChart } from "../../../components/graph/compare-progress-line-chart"
 import Hero from "./_components/hero"
+import React, { useEffect } from "react"
+import { usePathname, useSearchParams } from "next/navigation"
 
 export type MaterialTaskMap = {
   material: Material,
@@ -34,6 +36,36 @@ export function ProjectPageBody({ userId, materialRow, recordRow }: Props) {
 
   const materialRowForList = getCurrentMaterials(materialRow)
   const materialRecordRow = materialRecordObjectRow(materialRowForList, recordRow)
+
+
+  //初期値はparams→ボタン
+
+  const searchParams = useSearchParams();
+  const pathname = usePathname()
+  const materialSlugParams = searchParams.get("material")
+
+  const find = materialRowForList.find((material) => {
+    if (materialSlugParams === material.slug) return material.id
+  })
+
+  const [selectedMaterialId, setSelectedMaterialId] = React.useState<string>(
+    find ? String(find.id) : (materialRowForList[0] ? String(materialRowForList[0].id) : "")
+  )
+
+  //ボタンで切り替える時はボタン→params
+  useEffect(() => {
+    const find = materialRowForList.find((material) => selectedMaterialId === String(material.id))
+    const materialSlug = find?.slug ?? (materialRowForList[0] ? materialRowForList[0].slug : "")
+
+    const params = new URLSearchParams(searchParams.toString())
+
+    params.set("material", materialSlug)
+
+    window.history.replaceState(null, "", `${pathname}?${params}`)
+
+  }, [selectedMaterialId])
+
+
 
   return (
     <div className="flex h-full min-h-0 flex-col rounded-t-2xl">
@@ -71,6 +103,8 @@ export function ProjectPageBody({ userId, materialRow, recordRow }: Props) {
                 <CompareProgressLineChart
                   materialRow={materialRowForList}
                   recordRow={recordRow}
+                  selectedMaterialId={selectedMaterialId}
+                  setSelectedMaterialId={(s) => setSelectedMaterialId(s)}
                 />
               </div>
             </div>
