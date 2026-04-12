@@ -1,36 +1,248 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 学習管理アプリStudyAllot
 
-## Getting Started
+<img width="600" alt="studyallot_hero2" src="https://github.com/user-attachments/assets/9fdec98c-99c8-4328-929c-eb78c2ef4f58" />
 
-First, run the development server:
+<br>
+<br>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ゲストログイン
+メアド : demo@example.com
+<br>
+パスワード : demoaccount
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+<br>
+<br>
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## アプリの概要
 
-## Learn More
+StudyAllotは、やるべきタスクを基準に計画を立てられる学習管理アプリです。学習期間や教材の内容量、周回数などをもとに学習内容を日ごとに割り当て、今日やるべきタスクに迷いをなくし計画的に学習を進めていくことができます。学習が終わったらその日にやったタスクの量や学習時間、内容を記録することで統計データに反映され、進んでいるという実感を得ながら目標まで伴走します。
 
-To learn more about Next.js, take a look at the following resources:
+<br>
+<br>
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 開発背景
+私自身が学校の試験や資格の学習を進めていく中で、気分でその日の学習量を決めてしまうことが多く、期日ギリギリに慌てて勉強量を増やすといったことが何度かあったことから、まずは既存の学習アプリを探しました。ただ、それらの多くは学習時間にフォーカスしたものが多く、自身の思い描く学習計画アプリにはなかなか出会えませんでした。そこで、今日やるべきタスクを提示してくれて、複数の教材をプロジェクト単位で管理ができて、進捗率も可視化されているアプリを自分で作ろうと決めました。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+<br>
+<br>
 
-## Deploy on Vercel
+## 想定するユーザー
+- タスク重視で学習計画をたてたい方
+- 複数教材を管理しながら学習を進めたい方
+- 曜日ごとに計画を立てたい方
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+<br>
+<br>
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 利用者による統計データ
+今回アプリを制作するにあたって、実際に資格試験に向けて勉強している12名の方々に協力してもらい、普段の学習スタイルからStudyAllotを使ってみた感想や意見を伺い改善することにしました。なお今回のアンケートは、初回版、改善版、最終版と修正を繰り返してきた中の、改善版にあたる際のアンケートです。今のアプリの形はそれらの意見をもとに作成したものです。
+
+<br>
+<br>
+
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/1f7944b7-f0c6-48c0-9415-819303831209" />
+  <br>
+  <br>
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/339a9456-21b2-4476-859b-97b48a114100" />
+  <br>
+  <br>
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/2d9a7405-5481-45f3-8105-84a3e1033121" />
+  <br>
+  <br>
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/c65068a8-458b-479c-accb-5d6f452ab636" />
+
+<br>
+<br>
+
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/7f415c2b-24fa-4641-9668-2fe4f0b52f32" />
+
+<br>
+<br>
+
+<img  width="600" alt="image" src="https://github.com/user-attachments/assets/807d1de9-9568-4b27-a7fe-4aa1a7b9daed" />
+
+<br>
+<br>
+
+#### 既存の学習計画アプリを使っていて困っている点、または改善してほしい点など
+
+- 期間を選ぶ欄に曜日を入れられるとさらに使いやすいと感じました。
+- 記録型なので、計画メインの機能があまりない点
+- 親課題と子課題に分類が思ったようにできない点
+- 累計で自分がどれくらい勉強したのかを知るために、細かく記録できるといいと思いました。
+- 長期で計画を立てても、計画通りにいかず挫折してしまう点
+- モチベーションを上げるところまではいかない点
+
+<br>
+<br>
+
+## アンケート要約
+
+普段勉強している中で困っている点として、"進捗が見えない"、"継続ができない"、"モチベーションが続かない"という声が多かったです。おそらく進捗が見えれば継続やモチベーションにつながるのではないかという点と、他の学習者と繋がれるような機能があればコミュニティで報告し合うような形でモチベーションや継続につながるのではないかと考えました。学習アプリはスマホを使うことが多く、将来的なPWAやネイティブ化は必要と感じました。また、アプリで行き詰った点として最初に何をすればいいのか迷ったという声が多かったです。特にプロジェクト作成と教材作成のページが横並びで、どっちを先に押せばいいのかを迷わせてしまったり、最初に表示される今日のタスクページに新規教材追加ボタンが無かったりなど、配慮が行き届いていませんでした。欲しい追加の機能として、学習時間の記録が必要であることと、計画面での負担を減らしつつある程度自由に計画を立てられるようにするという課題が浮き彫りとなりました。
+
+<br>
+<br>
+
+## データから見えてきた改善策
+
+<br>
+
+1. 他のアプリとの連携など
+
+閉ざされたアプリよりも今の時代は複数のアプリ間で連携ができた方がより使われるアプリになると感じました。例えばアプリを開かずとも計画を立てて普段ユーザーが使っているカレンダーでタスクを閲覧できたほうがそのユーザーにとっては良いかもしれません。すぐに連携機能を追加することは難しいですが、いずれは必須だと感じました。
+
+<br>
+<br>
+
+2. 見やすく美しいデザインを意識することでモチベーションの維持を図る
+
+開いた時にやる気の出るＵＩは、特に最初の掴みとしては大切に感じました。個人的なこだわりもあり、最終版ではありきたりではなく個性のあるデザイン作りにも取り組んでいこうと思いました。
+
+<br>
+<br>
+
+3. ページの統合
+
+ページを分散させるよりある程度複数の機能を一つのページにまとめることで、わざわざページ遷移をしなくても一つのページで完結できて使い勝手が良くなると感じました。分散しているほど余計なＤＢとのやり取りも多くなり重く感じる原因の一つにもなりうると結論付けました。
+
+<br>
+<br>
+
+4. 早い表示速度でUXを向上させる
+
+今回の声で特に目立っていたのがボタンを押しているのに反応しているのかわからない、重く感じるという声でした。ボタンを押した後、サーバー処理中はisPendingで「保存中」とボタン内の文字を変えたり、isDisabledにしてタップできないようにするという簡単な改善がまずは必要でした。
+
+<br>
+<br>
+
+5. 説明
+
+自分で作っているからどこに何があって何をすればいいのかわかりますが、他人から見れば何もわからないため、直感的に丁寧に説明することは必須だと感じました。そして説明しなくても伝わるＵＩづくりも同時に必須だと思いました。
+
+<br>
+<br>
+
+## アプリの機能
+
+<br>
+
+1. 教材の新規作成
+
+教材名、開始日、終了日、タイプ、ユニット数、周回数、タスク配分を入力して保存します。
+<br>
+<br>
+<img src="https://github.com/user-attachments/assets/d533fc12-7c46-411c-a992-e7f6037055a4" width="600">
+<br>
+<br>
+
+2. 教材編集
+
+編集ボタンを押すと、入力欄に内容が入った状態の編集ページが開きます。新規作成時と同じように入力し、保存します。
+<br>
+<br>
+
+<img src="https://github.com/user-attachments/assets/d8f7906f-78a4-4189-8154-5c71eec20cda" width="600">
+<br>
+<br>
+
+3. 学習の記録
+
+記録ボタンを押すと、学習記録用のダイアログが開きます。日付、タスク量、学習時間、学習内容を入力し、保存します。
+<br>
+<br>
+<img src="https://github.com/user-attachments/assets/3b8baa81-37fa-4e16-aede-cfc632b38b84" width="600">
+<br>
+<br>
+
+4. プロジェクト編集
+
+プロジェクト作成ボタンからプロジェクトを作成、プロジェクト編集ボタンからプロジェクトを編集・削除できます。
+<br>
+<br>
+<img src="https://github.com/user-attachments/assets/c9cd5d7f-d964-44f3-9efa-b11cc1c260c7" width="600">
+<br>
+<br>
+
+
+5. プロジェクトと教材の順番
+
+ドラッグ＆ドロップによってプロジェクトや教材の並び順を直感的に変更することができます。
+<br>
+<br>
+<img src="https://github.com/user-attachments/assets/cc42e724-7dc9-47d1-b481-0e8254a8482f" width="600">
+<br>
+<br>
+
+6. バリデーション
+
+入力時、各項目ごとにリアルタイムでバリデーションを通し、すべてのエラーがなくなるまで保存ができないようになっています。
+<br>
+<br>
+<img src="https://github.com/user-attachments/assets/cb5df073-c799-41e1-883a-806051085308" width="600">
+<br>
+<br>
+
+## ER図
+
+<br>
+
+<img width="600" alt="studyallot_er2" src="https://github.com/user-attachments/assets/3d123188-9b68-4b71-bc8c-fd7363bb4ac4" />
+
+<br>
+<br>
+
+## 技術スタック
+- フロントエンド Next.js React19 TailwindCSS shadcn/ui dnd-kit
+- バックエンド Next.js Supabase
+- デプロイ Vercel
+
+<br>
+<br>
+
+## 技術的工夫点
+
+当初作り始めたときから大きく2回の変更で今の形に行き着きました。ユーザーがより自由に記録を付けることができればそれだけ多くのケースに対応はできますが、データの構造が複雑になってしまったりデータが膨張しすぎてしまう可能性が上がることを学び、良い教訓となりました。
+
+
+### 初期案
+
+教材の内容量×周回数の分だけマスをもって、勉強が終わったらチェックを入れていく形でした。たとえば、10ユニットの教材を3周したい場合には、合計30マスを用意し、1周目の1ユニットが終わったらそこに対応するマスにチェックを入れます。
+この方法は、どのタスクをいつ進めたかを細かく管理でき、自由度も高い利点がある一方で、データの量が膨張しやすく、例えば200ページを10周やる教材があれば合計2000回チェックを入れる仕様になり、実際に使うには手間が大きすぎるという問題がありました。
+
+### 改善案
+
+次に、計画用の配列と実績用の配列を分けて持つ方法に修正しました。教材の期間の日数に応じて配列の長さを固定し、計画配列にはその日に進めるべきタスク量、実績配列にはその日に実際に進めたタスク量を入れる形です。これにより、前から順番にタスクを割り振ることで、計画と実績の対応関係を保ちやすくなりました。特に、計画配列では開始日さえわかれば計画をそのままずらすことも可能なため、テンプレ化もできる点で可能性を感じましたが、期間や内容量、周回数を後から変更した場合に崩れやすく、日ごとのタスク量を細かく設定する必要があり、その点で入力負担を感じさせました。
+
+### 最終案
+
+最終的に、曜日ごとの比率と日別の学習記録を組み合わせる方法を採用することにしました。教材側には、各曜日にどれくらい進めるかを10段階で表した7つの要素の配列で持たせ、実際の学習は教材ごとに日単位で記録する形にしました。例えば日曜日は休みの日で0、月曜日は少し多めに勉強したいので4、といった具合に計画を決めて、それによって決定した各日のタスク量をもとに勉強したらその日学習した内容を記録するという形です。これにより、期間や内容量、周回数を後から変更しても対応しやすくなり、毎日のタスク量を細かく設定する手間も減らせました。
+欠点は、日ごとに「今日は何ページから何ページまで進める」といった細かな指示までは行わず何タスク進めるかのみを確認できるため、具体的な内容も決めてほしいという要望には応えられていない点と、計画は曜日ごとなので毎日細かく計画を立てることが難しい点です。ただ、これらは多くの場合看過できるもので、それ以上のメリットが多いと判断し採用しました。
+
+<br>
+<br>
+
+## 今後実装したい機能や課題
+
+1. 各教材ページやプロジェクトページ、統計ページなどの作成
+2. アプリの使用法についてより視覚的にわかりやすくすること
+3. 直近にはPWAを、長期的にはネイティブ化して、学習アプリとしてより使いやすくすること
+4. セキュリティ面の強化
+5. カレンダーの連携
+
+他にも、エラーページの作成やサーバー処理中のスピナー表示、スケルトン表示など、すぐに取り掛かれる箇所から改善していきたいです。またより多くのユーザーに使ってもらえるよう、SEO対策などにも取り組んでいきたいと考えています。
+
+<br>
+<br>
+
+## 最後に
+
+ここまでご覧いただきありがとうございます。自分自身初めてのアプリ制作で、コードの理解をするためにほとんど手作業でコードを書いたことでかなり時間を要してしまいましたが、簡単なものであれば形にできる力がついたと実感しています。まだまだ学びたいことは山ほどありますが、今後もより多くの実装を通して腕を磨いていきたいと心から思っています。ゲストログインから是非アプリを見ていただけると嬉しいです。
+
+<br>
+<br>
+
+### ゲストログイン
+メアド : demo@example.com
+<br>
+パスワード : demoaccount
