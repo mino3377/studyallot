@@ -122,7 +122,7 @@ export function CompareProgressLineChart({
           lastRecordKey !== null && key <= lastRecordKey ? actualSum : null,
       }
     })
-    
+
   }, [selectedMaterialTaskMap, selectedMaterialRecord])
 
   const stats = React.useMemo(() => {
@@ -144,7 +144,7 @@ export function CompareProgressLineChart({
       .map((row) => row.actual)
       .filter((value): value is number => value !== null)
 
-      console.log(chartData)
+    console.log(chartData)
 
     const totalActual =
       actualValues.length > 0 ? actualValues[actualValues.length - 1] : 0
@@ -184,11 +184,16 @@ export function CompareProgressLineChart({
             </CardTitle>
 
             <Select value={selectedMaterialId} onValueChange={setSelectedMaterialId}>
-              <SelectTrigger
-                className="h-auto border p-1 rounded-2xl max-w-40 lg:max-w-80 min-w-0 truncate gap-1 bg-transparent text-xs text-center shadow-none ring-0 outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              >
-                <SelectValue className="truncate" />
-              </SelectTrigger>
+              {selectedMaterialId === "" ? null:
+
+                <SelectTrigger
+                  className="h-auto border p-1 rounded-2xl max-w-40 lg:max-w-80 min-w-0 truncate gap-1 bg-transparent text-xs text-center shadow-none ring-0 outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                >
+                  <SelectValue className="truncate" />
+                </SelectTrigger>
+
+              }
+
               <SelectContent>
                 {materialRow.map((material) => (
                   <SelectItem key={material.id} value={String(material.id)}>
@@ -217,76 +222,83 @@ export function CompareProgressLineChart({
       </CardHeader>
 
       <CardContent className="p-0 pt-2 min-h-0 flex-1">
-        <ChartContainer
-          config={chartConfig}
-          className="w-full h-full p-2"
-        >
-          <LineChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              top: 6,
-              right: 18,
-              left: -12,
-              bottom: 0,
-            }}
+        {stats.totalPlan === 0 && stats.totalActual === 0 ?
+          <div className="size-full flex items-start justify-center">
+            データがありません
+          </div>
+          :
+          <ChartContainer
+            config={chartConfig}
+            className="w-full h-full p-2"
           >
-            <defs>
-              <linearGradient id="planFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#D9D9D9" stopOpacity={0.28} />
-                <stop offset="65%" stopColor="#D9D9D9" stopOpacity={0.1} />
-                <stop offset="100%" stopColor="#D9D9D9" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+            <LineChart
+              accessibilityLayer
+              data={chartData}
+              margin={{
+                top: 6,
+                right: 18,
+                left: -12,
+                bottom: 0,
+              }}
+            >
+              <defs>
+                <linearGradient id="planFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#D9D9D9" stopOpacity={0.28} />
+                  <stop offset="65%" stopColor="#D9D9D9" stopOpacity={0.1} />
+                  <stop offset="100%" stopColor="#D9D9D9" stopOpacity={0} />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid
-              vertical={false}
-              stroke="#E9E9E9"
-              strokeOpacity={0.9}
-            />
+              <CartesianGrid
+                vertical={false}
+                stroke="#E9E9E9"
+                strokeOpacity={0.9}
+              />
 
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={24}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={0}
-              width={50}
-            />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={24}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={0}
+                width={50}
+              />
 
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
 
-            <Area
-              type="monotone"
-              dataKey="plan"
-              stroke="none"
-              fill="url(#planFill)"
-            />
+              <Area
+                type="monotone"
+                dataKey="plan"
+                stroke="none"
+                fill="url(#planFill)"
+              />
 
-            <Line
-              dataKey="plan"
-              type="monotone"
-              stroke="#C8C8C8"
-              strokeWidth={4}
-              strokeDasharray="14 10"
-              dot={false}
-            />
+              <Line
+                dataKey="plan"
+                type="monotone"
+                stroke="#C8C8C8"
+                strokeWidth={4}
+                strokeDasharray="14 10"
+                dot={false}
+              />
 
-            <Line
-              dataKey="actual"
-              type="monotone"
-              stroke="#121212"
-              strokeWidth={4}
-              dot={false}
-              connectNulls={false}
-            />
-          </LineChart>
-        </ChartContainer>
+              <Line
+                dataKey="actual"
+                type="monotone"
+                stroke="#121212"
+                strokeWidth={4}
+                dot={false}
+                connectNulls={false}
+              />
+            </LineChart>
+          </ChartContainer>
+        }
+
       </CardContent>
     </Card>
   )

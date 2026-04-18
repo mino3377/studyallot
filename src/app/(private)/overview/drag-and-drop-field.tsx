@@ -8,6 +8,8 @@ import Column from './column'
 import Item from './Item'
 import { ProjectIdString } from '@/lib/type/project_type'
 import { projectMaterialObj } from './data'
+import Link from 'next/link'
+import { CirclePlus } from 'lucide-react'
 
 type SavePayload = {
   projectOrderRow: {
@@ -115,6 +117,12 @@ export function DragAndDropField({ userId,projectMaterialRow, onSaveOrder }: Pro
                 slug={material.slug}
               />
             ))}
+            <button className="w-full">
+                <Link href={"/material-editor"} className="text-muted-foreground flex gap-3 items-center justify-center">
+                    <CirclePlus className="size-5" />
+                    <span>教材を追加</span>
+                </Link>
+            </button>
           </Column>
         ))}
       </div>

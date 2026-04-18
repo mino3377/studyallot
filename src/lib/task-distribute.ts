@@ -109,6 +109,7 @@ export function taskDistribute({
 //期間が被った[{何月何日:何タスク}...]の期間を統合して、その日のタスクの合計の配列へ
 export function convertToDateTaskSum(materialTaskRow: dayTaskRecord[]) {
     const sortedRow = materialTaskRow.sort((a, b) => a.date.getTime() - b.date.getTime())
+    if (sortedRow.length === 0) return
     const IntervalRow = eachDayOfInterval({
         start: sortedRow[0].date,
         end: sortedRow[sortedRow.length - 1].date
@@ -129,13 +130,17 @@ export function convertToDateTaskSum(materialTaskRow: dayTaskRecord[]) {
 }
 
 // 特定の期間の中に計画上何タスクあるのか
-export function calcTaskSumInRange(start: Date, end: Date, taskSumRow: dayTaskRecord[]) {
+export function calcTaskSumInRange(start: Date, end: Date, taskSumRow?: dayTaskRecord[]) {
+
     const IntervalRow = eachDayOfInterval({
         start: start,
         end: end
     })
 
+
     let sum: number = 0
+
+    if (!taskSumRow) return sum
 
     for (let i = 0; i < IntervalRow.length; i++) {
         const task = taskSumRow.find(

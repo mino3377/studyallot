@@ -5,6 +5,8 @@ import { Project } from '@/lib/type/project_type'
 import { projectAndMaterialRow } from './data'
 import { Material } from '@/lib/type/material_type'
 import { saveOverviewOrderAction } from './action'
+import ProjectAddButton from '@/components/button/project-add-button'
+import ProjectEditButton from '@/components/button/project-edit-button'
 
 type Props = {
   userId: string
@@ -34,12 +36,27 @@ export default function PageBody({ userId, projectRow, materialRow }: Props) {
   }
 
   return (
-    <div className='flex-1 p-2 min-h-0 min-w-0'>
-      <DragAndDropField
-        userId={userId}
-        projectMaterialRow={projectMaterialRow}
-        onSaveOrder={handleSaveOrder}
-      />
+    <div className='flex-1 p-2 min-h-0 min-w-0 space-y-3 flex flex-col'>
+      <div className='flex gap-3'>
+        <ProjectAddButton />
+        <ProjectEditButton projectsRow={projectRow} />
+      </div>
+      {projectMaterialRow.length === 0 ?
+
+        <div>
+          プロジェクトを作成してください。
+        </div>
+
+        :
+        <div className='flex-1'>
+          <DragAndDropField
+            userId={userId}
+            projectMaterialRow={projectMaterialRow}
+            onSaveOrder={handleSaveOrder}
+          />
+        </div>
+      }
+
     </div>
   )
 }

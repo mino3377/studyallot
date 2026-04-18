@@ -50,7 +50,7 @@ export default function SimpleStatsPanel({
     return (
         <>
             <div className="">
-                <SimpleStatsCard title="進捗率" stats={Math.min(100, Math.floor((result.recordTaskSum / taskSum) * 100) ?? 0)} unit="%" />
+                <SimpleStatsCard title="進捗率" stats={Math.min(100, Math.floor((result.recordTaskSum ?? 1 / taskSum) * 100) ?? 0)} unit="%" />
             </div >
 
             <div className="border-l-2">
