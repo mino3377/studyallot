@@ -1,14 +1,15 @@
 "use client"
 
-import { ChartColumnBig, LayoutDashboard, LibraryBig, Pen } from "lucide-react"
+import { ChartColumnBig, LayoutDashboard, LibraryBig, Pen, SendToBack } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const nameconverterRow = [
     { title: "Dashboard", pathname: "/dashboard" },
     { title: "Editor", pathname: "/material-editor" },
+    { title: "Order", pathname: "/order" },
+    { title: "Overview", pathname: "/overview" },
     { title: "Statistics", pathname: "/statistics" },
-    { title: "Overview", pathname: "/overview" }
 ]
 
 function isSelected(name: string, pathname?: string) {
@@ -123,17 +124,26 @@ export function SideNav() {
                 </NavIcon>
             </NavIconAndText>
 
+
+
+            <NavIconAndText name={nameconverterRow[2].title} href={`${nameconverterRow[2].pathname}`} pathname={pathname}>
+                <NavIcon name={nameconverterRow[2].title} pathname={pathname}>
+                    <SendToBack className="h-5 w-5" />
+                </NavIcon>
+            </NavIconAndText>
+
             <NavIconAndText name={nameconverterRow[3].title} href={`${nameconverterRow[3].pathname}`} pathname={pathname}>
                 <NavIcon name={nameconverterRow[3].title} pathname={pathname}>
                     <LibraryBig className="h-5 w-5" />
                 </NavIcon>
             </NavIconAndText>
 
-            <NavIconAndText name={nameconverterRow[2].title} pathname={pathname}>
-                <NavIcon name={nameconverterRow[2].title} pathname={pathname}>
+            <NavIconAndText name={nameconverterRow[4].title} pathname={pathname}>
+                <NavIcon name={nameconverterRow[4].title} pathname={pathname}>
                     <ChartColumnBig className="h-5 w-5" />
                 </NavIcon>
             </NavIconAndText>
+
 
         </div>
     )

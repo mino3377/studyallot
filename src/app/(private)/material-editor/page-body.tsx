@@ -242,7 +242,7 @@ export default function MaterialEditorPageBody({
 
   return (
     <>
-      <form action={handleSubmit} className="lg:h-full min-h-0 flex flex-col justify-between p-1 overflow-y-auto">
+      <form action={handleSubmit} className="lg:h-full min-h-0 flex flex-col justify-between p-1 overflow-y-auto bg-stone-200 rounded-2xl">
         {isEditMode ? (
           <input type="hidden" name="editSlug" value={editSlug} />
         ) : null}

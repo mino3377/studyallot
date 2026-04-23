@@ -43,7 +43,7 @@ export async function saveProject(formData: FormData) {
     const { error } = await supabase
         .from("projects")
         .insert({
-            "slug": makePublicId("m"),
+            "slug": makePublicId("p"),
             "user_id": user.id,
             "order": orderRow.length,
             "title": parsedData.data.title

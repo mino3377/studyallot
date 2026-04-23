@@ -42,7 +42,7 @@ export default function MaterialEditorPageBody({ material }: Props) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col bg-stone-200">
       <div className="relative grid h-full min-h-0 grid-cols-7 p-2">
         <div className="col-span-5 h-full min-h-0 pr-2">
           <div className="flex h-full min-h-0 flex-col gap-4">
