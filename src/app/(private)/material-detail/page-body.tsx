@@ -4,6 +4,7 @@ import SimpleStatsCard from "@/components/stats-card/simple-stats-card"
 import MonthCalender from "@/components/calender-and-daily-task/month-calender"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
+import { getThemeColor } from "@/lib/constant/bg-color"
 
 type Props = {
   material: Material | null
@@ -41,8 +42,10 @@ export default function MaterialEditorPageBody({ material }: Props) {
     return <div>教材がありません</div>
   }
 
+  const theme = getThemeColor("stone")
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-stone-200">
+    <div className={`flex h-full min-h-0 flex-col ${theme.panel}`}>
       <div className="relative grid h-full min-h-0 grid-cols-7 p-2">
         <div className="col-span-5 h-full min-h-0 pr-2">
           <div className="flex h-full min-h-0 flex-col gap-4">

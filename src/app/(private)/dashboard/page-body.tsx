@@ -15,6 +15,7 @@ import { CompareProgressLineChart } from "../../../components/graph/compare-prog
 import Hero from "./_components/hero"
 import React, { useEffect } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
+import { getThemeColor } from "@/lib/constant/bg-color"
 
 export type MaterialTaskMap = {
   material: Material,
@@ -65,10 +66,10 @@ export function ProjectPageBody({ userId, materialRow, recordRow }: Props) {
 
   }, [selectedMaterialId])
 
-
+const theme = getThemeColor("stone")
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-t-2xl bg-stone-200">
+    <div className={`flex h-full min-h-0 flex-col rounded-t-2xl ${theme.panel}`}>
       <div className="overflow-y-auto lg:grid lg:h-full min-h-0 lg:grid-cols-7 gap-2 p-3">
         <div className="lg:col-span-5 lg:grid min-h-0 lg:h-full lg:grid-rows-[minmax(200px,32%)_minmax(0,1fr)] gap-2">
           <Hero materialRow={materialRow} recordRow={recordRow} />

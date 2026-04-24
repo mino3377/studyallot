@@ -14,6 +14,7 @@ import {
 } from './data'
 import { ProjectFilterDialog } from './components/project-filter-dialog'
 import { MaterialHoverCard } from './components/material-hover-card'
+import { getThemeColor } from '@/lib/constant/bg-color'
 
 type Props = {
     materialRow: Material[]
@@ -92,8 +93,10 @@ export default function PageBody({ materialRow, projectRow }: Props) {
         window.history.replaceState(null, "", nextUrl)
     }
 
+    const theme = getThemeColor("stone")
+
     return (
-        <div className='h-full w-full bg-stone-200 rounded-2xl text-black'>
+        <div className={`h-full w-full bg-stone-200 ${theme.panel} rounded-2xl text-black`}>
             <div className='flex h-full w-full flex-col px-4 py-2'>
                 <div className='shrink-0 pb-3'>
                     <div className='mt-4 w-full flex justify-end'>

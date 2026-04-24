@@ -7,6 +7,7 @@ import { Material } from '@/lib/type/material_type'
 import { saveOverviewOrderAction } from './action'
 import ProjectAddButton from '@/components/button/project-add-button'
 import ProjectEditButton from '@/components/button/project-edit-button'
+import { getThemeColor } from '@/lib/constant/bg-color'
 
 type Props = {
   userId: string
@@ -35,8 +36,10 @@ export default function PageBody({ userId, projectRow, materialRow }: Props) {
     }
   }
 
+  const theme = getThemeColor("stone")
+
   return (
-    <div className='flex-1 p-2 min-h-0 min-w-0 space-y-3 flex flex-col bg-stone-200 rounded-2xl'>
+    <div className={`flex-1 p-2 min-h-0 min-w-0 space-y-3 flex flex-col ${theme.panel} rounded-2xl`}>
       <div className='flex gap-3'>
         <ProjectAddButton />
         <ProjectEditButton projectsRow={projectRow} />

@@ -12,6 +12,7 @@ import { saveNewMaterial, updateMaterial } from "./_lib/actions"
 import { errorToast, successToast } from "@/components/toast"
 import { useRouter } from "next/navigation"
 import type { Material } from "@/lib/type/material_type"
+import { getThemeColor } from "@/lib/constant/bg-color"
 
 type Props = {
   userId: string,
@@ -240,9 +241,11 @@ export default function MaterialEditorPageBody({
     }
   }
 
+  const theme = getThemeColor("stone")
+
   return (
     <>
-      <form action={handleSubmit} className="lg:h-full min-h-0 flex flex-col justify-between p-1 overflow-y-auto bg-stone-200 rounded-2xl">
+      <form action={handleSubmit} className={`lg:h-full min-h-0 flex flex-col justify-between p-1 overflow-y-auto ${theme.panel} rounded-2xl`}>
         {isEditMode ? (
           <input type="hidden" name="editSlug" value={editSlug} />
         ) : null}
