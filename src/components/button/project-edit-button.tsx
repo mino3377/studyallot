@@ -153,7 +153,7 @@ export default function ProjectEditButton({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button
-                    className="lg:h-10 rounded-2xl text-xs bg-white/70 border border-black/70 lg:p-0 text-black hover:bg-white/50"
+                    className="lg:h-10 rounded-md text-xs bg-white/70 border border-black/70 lg:p-0 text-black hover:bg-white/50"
                 >
                     <Pencil />
                     プロジェクト編集

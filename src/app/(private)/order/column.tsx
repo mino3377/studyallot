@@ -23,7 +23,7 @@ export default function Column({ id, title, index, children }: Props) {
     return (
         <div
             ref={ref} id={id}
-            className=' bg-linear-to-b from-black to-black/50 p-2 shadow-md rounded-2xl max-w-60  w-[calc(100vw/1.3)] sm:w-[calc(100vw/3)] lg:max-w-80 lg:w-[calc(100vw/5)] h-full flex flex-col min-h-0 shrink-0'
+            className=' bg-linear-to-b from-black to-black/50 p-2 shadow-md rounded-md max-w-60  w-[calc(100vw/1.3)] sm:w-[calc(100vw/3)] lg:max-w-80 lg:w-[calc(100vw/5)] h-full flex flex-col min-h-0 shrink-0'
         >
             <div className='text-white font-semibold h-10 overflow-hidden'>
                 {title}

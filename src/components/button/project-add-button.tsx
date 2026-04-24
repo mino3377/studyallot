@@ -76,7 +76,7 @@ export default function ProjectAddButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="lg:h-10 rounded-xl text-xs bg-linear-to-b from-black to-white/30 lg:px-8 text-white hover:bg-black/40">
+        <Button className="lg:h-10 rounded-md text-xs bg-linear-to-b from-black to-white/30 lg:px-8 text-white hover:bg-black/40">
           <Plus className="size-4" />
           プロジェクト作成
         </Button>

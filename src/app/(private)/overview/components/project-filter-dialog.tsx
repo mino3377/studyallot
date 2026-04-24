@@ -33,7 +33,7 @@ export function ProjectFilterDialog({
           variant="outline"
           className="h-9 border-black/20 rounded-sm text-black hover:opacity-80"
         >
-          Project / {selectedProjectTitle}
+          {selectedProjectTitle}
         </Button>
       </DialogTrigger>
 

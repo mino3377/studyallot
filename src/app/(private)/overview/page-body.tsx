@@ -63,7 +63,15 @@ export default function PageBody({ materialRow, projectRow }: Props) {
     }, [filteredMaterialRow, sortedProjectRow, rangeArr])
 
     const bodyHeight = Math.max(ganttBarMaterials.length * 56, 120)
-    const colWidthClass = 'w-[calc(100vw/14)] shrink-0'
+    const colWidthClass = 'w-[calc(100vw/5)] md:w-[calc(100vw/8)] lg:w-[calc(100vw/14)] shrink-0'
+
+    const colWidthVar = 'calc(100vw / 5)'
+
+    const barStyle = (material: (typeof ganttBarMaterials)[number], i: number): React.CSSProperties => ({
+        top: `${i * 56 + 8}px`,
+        left: `calc(var(--gantt-col-width) * ${material.startIndex})`,
+        width: `calc(var(--gantt-col-width) * ${material.endIndex - material.startIndex + 1})`,
+    })
 
     function handleProjectSelect(projectSlug: string | "all") {
         setSelectedProjectSlug(projectSlug)
@@ -106,7 +114,9 @@ export default function PageBody({ materialRow, projectRow }: Props) {
                     </div>
 
                     <div className='min-h-0 flex-1 overflow-x-auto overflow-y-auto border-t border-black'>
-                        <div className='min-w-max'>
+                        <div
+                            className='min-w-max [--gantt-col-width:calc(100vw/5)] md:[--gantt-col-width:calc(100vw/8)] lg:[--gantt-col-width:calc(100vw/14)]'
+                        >
                             <div className='sticky top-0 z-20 flex border-b border-black/10'>
                                 {rangeArr.map((date, index) => (
                                     <div
@@ -150,11 +160,7 @@ export default function PageBody({ materialRow, projectRow }: Props) {
                                         <MaterialHoverCard key={material.id} material={material}>
                                             <div
                                                 className='absolute flex h-10 items-center rounded-sm border border-black/10 bg-linear-to-b from-black to-gray-500 px-3 text-sm text-white shadow-[0_0_0_1px_rgba(0,0,0,0.04)]'
-                                                style={{
-                                                    top: `${i * 56 + 8}px`,
-                                                    left: `calc((100vw / 14) * ${material.startIndex})`,
-                                                    width: `calc((100vw / 14) * ${material.endIndex - material.startIndex + 1})`,
-                                                }}
+                                                style={barStyle(material, i)}
                                             >
                                                 <span className='truncate'>
                                                     {material.title}
